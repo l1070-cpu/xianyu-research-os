@@ -2,6 +2,7 @@ import sys
 from .main import main as show_main
 from .engines.project_engine import ProjectEngine
 from .engines.review_engine import ReviewEngine
+from .engines.experiment_engine import ExperimentEngine
 
 def main():
     args = sys.argv[1:]
@@ -13,11 +14,15 @@ def main():
     command = args[0]
 
     if command == "today":
-        engine = ProjectEngine()
-        print(engine.today())
+        print(ProjectEngine().today())
     elif command == "end":
-        engine = ReviewEngine()
-        print(engine.create_daily_review())
+        print(ReviewEngine().create_daily_review())
+    elif command == "new-exp":
+        if len(args) < 2:
+            print("用法：xianyu new-exp 实验名称")
+            return
+        name = " ".join(args[1:])
+        print(ExperimentEngine().create_experiment(name))
     else:
         print(f"未知命令：{command}")
-        print("可用命令：xianyu, xianyu today, xianyu end")
+        print("可用命令：xianyu, xianyu today, xianyu end, xianyu new-exp 实验名称")
