@@ -3,6 +3,7 @@ from .main import main as show_main
 from .engines.project_engine import ProjectEngine
 from .engines.review_engine import ReviewEngine
 from .engines.experiment_engine import ExperimentEngine
+from .engines.failure_engine import FailureEngine
 
 def main():
     args = sys.argv[1:]
@@ -23,6 +24,12 @@ def main():
             return
         name = " ".join(args[1:])
         print(ExperimentEngine().create_experiment(name))
+    elif command == "fail":
+        if len(args) < 2:
+            print("用法：xianyu fail 问题名称")
+            return
+        title = " ".join(args[1:])
+        print(FailureEngine().create_failure(title))
     else:
         print(f"未知命令：{command}")
-        print("可用命令：xianyu, xianyu today, xianyu end, xianyu new-exp 实验名称")
+        print("可用命令：xianyu, xianyu today, xianyu end, xianyu new-exp 实验名称, xianyu fail 问题名称")
