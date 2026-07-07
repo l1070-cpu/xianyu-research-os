@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/agents/__init__.py
+src/director/__init__.py
+src/tools/__init__.py
+src/utils/__init__.py
+src/workflows/__init__.py
+src/xianyu/__init__.py
+src/xianyu/cli.py
+src/xianyu/main.py
+src/xianyu_research_os.egg-info/PKG-INFO
+src/xianyu_research_os.egg-info/SOURCES.txt
+src/xianyu_research_os.egg-info/dependency_links.txt
+src/xianyu_research_os.egg-info/entry_points.txt
+src/xianyu_research_os.egg-info/top_level.txt
