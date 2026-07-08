@@ -1205,3 +1205,13 @@ async def upload_pdf(file: UploadFile = File(...)):
     out_path.write_bytes(content)
 
     return RedirectResponse(url="/literature", status_code=303)
+
+
+@app.get("/pdf-library", response_class=HTMLResponse)
+def pdf_library():
+    folder = ROOT / "04_文献笔记" / "PDF库"
+    folder.mkdir(parents=True, exist_ok=True)
+    files = sorted(folder.glob("*.pdf"), key=lambda p: p.stat().st_mtime, reverse=True)
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT))} for f in files]
+    template = env.get_template("pdf_library.html")
+    return template.render(items=items, modules=MODULES)
