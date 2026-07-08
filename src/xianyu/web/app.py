@@ -218,3 +218,80 @@ def literature_new(title: str = Form(...), keywords: str = Form("")):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/experiment", response_class=HTMLResponse)
+def experiment_index():
+    files = list_md("03_实验记录")
+    items = []
+    for file in files[:30]:
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+    template = env.get_template("experiment/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/experiment/new")
+def experiment_new(title: str = Form(...), exp_type: str = Form("general")):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    type_map = {
+        "cell": "细胞实验",
+        "wb": "Western Blot",
+        "qpcr": "RT-qPCR",
+        "flow": "流式细胞术",
+        "image": "成像 / IF / ROS / JC-1",
+        "column": "柱层析 / 提取纯化",
+        "general": "通用实验"
+    }
+
+    if not file_path.exists():
+        content = f"""# 实验记录｜{title}
+
+## 日期
+{today}
+
+## 实验类型
+{type_map.get(exp_type, "通用实验")}
+
+## 实验目的
+
+## 样品 / 细胞 / 试剂
+
+## 分组设计
+- Control：
+- Model：
+- Treatment：
+- Positive control：
+
+## 操作步骤
+
+## 关键参数
+- 细胞密度：
+- 处理浓度：
+- 处理时间：
+- 检测时间：
+- 重复数：
+
+## 原始数据位置
+
+## 结果观察
+
+## 异常情况
+
+## 原因分析
+
+## 下一步优化
+
+## 是否需要沉淀为 SOP
+- [ ] 是
+- [ ] 否
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
