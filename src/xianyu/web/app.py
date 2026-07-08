@@ -295,3 +295,85 @@ def experiment_new(title: str = Form(...), exp_type: str = Form("general")):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/data", response_class=HTMLResponse)
+def data_index():
+    files = list_md("05_数据分析")
+    items = []
+    for file in files[:30]:
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+    template = env.get_template("data/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/data/new")
+def data_new(title: str = Form(...), data_type: str = Form("general")):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    type_map = {
+        "cck8": "CCK-8",
+        "wb": "Western Blot 灰度",
+        "qpcr": "RT-qPCR",
+        "flow": "流式细胞术",
+        "image": "ImageJ 图像定量",
+        "prism": "GraphPad Prism",
+        "general": "通用数据"
+    }
+
+    if not file_path.exists():
+        content = f"""# 数据分析记录｜{title}
+
+## 日期
+{today}
+
+## 数据类型
+{type_map.get(data_type, "通用数据")}
+
+## 原始数据位置
+
+## 实验对应记录
+
+## 分组信息
+- Control：
+- Model：
+- Treatment：
+- Positive control：
+
+## 重复数
+
+## 数据整理规则
+
+## 统计方法
+- t test：
+- One-way ANOVA：
+- Two-way ANOVA：
+- 非参数检验：
+- 多重比较：
+
+## 作图方式
+- 柱状图：
+- 折线图：
+- 散点图：
+- 热图：
+- 其他：
+
+## 初步结果
+
+## 异常值 / 排除标准
+
+## 统计结论
+
+## 可用于论文 Results 的表达
+
+## 下一步
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
