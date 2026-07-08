@@ -1,6 +1,7 @@
 from pathlib import Path
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from datetime import date
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 
@@ -26,6 +27,38 @@ MODULES = {
     "capability": ("capabilities", "🧩 能力包中心"),
 }
 
+CREATE_MAP = {
+    "lit": ("04_文献笔记", "文献笔记"),
+    "new-exp": ("03_实验记录", "实验记录"),
+    "data": ("05_数据分析", "数据分析"),
+    "figure": ("05_数据分析/科研作图", "科研作图"),
+    "paper": ("06_论文写作", "论文写作"),
+    "sop": ("07_常用Prompt/SOP中心", "SOP"),
+    "fail": ("08_失败经验库", "失败经验"),
+    "network": ("02_项目管理/网络药理学", "网络药理学"),
+    "docking": ("02_项目管理/分子对接", "分子对接"),
+}
+
+TEMPLATE = """# {title}｜{name}
+
+## 日期
+{today}
+
+## 目的
+
+## 输入 / 材料 / 数据
+
+## 操作流程
+
+## 关键参数
+
+## 结果记录
+
+## 异常 / 问题
+
+## 下一步
+"""
+
 def read(path):
     return path.read_text(encoding="utf-8") if path.exists() else "暂无内容"
 
@@ -34,6 +67,9 @@ def list_md(folder):
     if not base.exists():
         return []
     return sorted(base.rglob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+def safe_name(name):
+    return name.replace(" ", "_").replace("/", "_")
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -49,14 +85,7 @@ def module_page(key: str):
 
     folder, title = MODULES[key]
     files = list_md(folder)
-    items = []
-    for p in files[:30]:
-        items.append({
-            "name": p.name,
-            "path": str(p.relative_to(ROOT)),
-            "content": read(p)[:400]
-        })
-
+    items = [{"name": p.name, "path": str(p.relative_to(ROOT)), "content": read(p)[:400]} for p in files[:30]]
     template = env.get_template("module.html")
     return template.render(title=title, items=items, modules=MODULES)
 
@@ -65,3 +94,19 @@ def file_page(path: str):
     p = ROOT / path
     template = env.get_template("file.html")
     return template.render(path=path, content=read(p), modules=MODULES)
+
+@app.get("/new", response_class=HTMLResponse)
+def new_page():
+    template = env.get_template("new.html")
+    return template.render(modules=MODULES, create_map=CREATE_MAP)
+
+@app.post("/new")
+def create_record(record_type: str = Form(...), name: str = Form(...)):
+    folder, title = CREATE_MAP[record_type]
+    today = date.today().isoformat()
+    out_dir = ROOT / folder
+    out_dir.mkdir(parents=True, exist_ok=True)
+    file_path = out_dir / f"{today}_{safe_name(name)}.md"
+    if not file_path.exists():
+        file_path.write_text(TEMPLATE.format(title=title, name=name, today=today), encoding="utf-8")
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
