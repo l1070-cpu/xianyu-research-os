@@ -316,7 +316,10 @@ def main():
 
     command = args[0]
 
-    if command == "today":
+    if command == "web":
+        import subprocess
+        subprocess.run(["uvicorn", "xianyu.web.app:app", "--reload"])
+    elif command == "today":
         print(ProjectEngine().today())
     elif command == "end":
         print(ReviewEngine().create_daily_review())
