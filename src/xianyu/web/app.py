@@ -1106,3 +1106,11 @@ def end_review_page():
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/delete")
+def delete_file(path: str = Form(...)):
+    p = ROOT / path
+    if p.exists() and p.is_file():
+        p.unlink()
+    return RedirectResponse(url="/", status_code=303)

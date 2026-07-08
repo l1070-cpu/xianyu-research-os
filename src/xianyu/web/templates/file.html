@@ -17,7 +17,13 @@
 
 <main>
 <h2>{{ path }}</h2>
-<p><a href="/edit?path={{ path }}">✏️ 编辑此记录</a></p>
+<p>
+<a href="/edit?path={{ path }}">✏️ 编辑此记录</a>
+</p>
+<form method="post" action="/delete" onsubmit="return confirm('确定删除这条记录吗？');">
+  <input type="hidden" name="path" value="{{ path }}">
+  <button type="submit">删除此记录</button>
+</form>
 <section>
 <pre>{{ content }}</pre>
 </section>
