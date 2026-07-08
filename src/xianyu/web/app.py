@@ -377,3 +377,86 @@ def data_new(title: str = Form(...), data_type: str = Form("general")):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/figure", response_class=HTMLResponse)
+def figure_index():
+    files = list_md("05_数据分析/科研作图")
+    items = []
+    for file in files[:30]:
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+    template = env.get_template("figure/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/figure/new")
+def figure_new(title: str = Form(...), figure_type: str = Form("general")):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "科研作图"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    type_map = {
+        "stat": "统计图 / GraphPad",
+        "imagej": "ImageJ 定量图",
+        "network": "网络图 / Cytoscape",
+        "docking": "分子对接图 / PyMOL",
+        "mechanism": "机制图",
+        "abstract": "Graphical Abstract",
+        "general": "通用 Figure"
+    }
+
+    if not file_path.exists():
+        content = f"""# 科研作图记录｜{title}
+
+## 日期
+{today}
+
+## 图类型
+{type_map.get(figure_type, "通用 Figure")}
+
+## 对应项目
+
+## 对应实验 / 数据
+
+## 图的核心结论
+
+## 数据来源
+
+## 使用软件
+- GraphPad Prism：
+- ImageJ：
+- Cytoscape：
+- PyMOL：
+- PowerPoint / Illustrator：
+
+## 图组成
+- A：
+- B：
+- C：
+- D：
+
+## 图注草稿
+
+## 统计标注
+- n =
+- mean ± SD / SEM：
+- 统计方法：
+- 显著性：
+
+## 当前问题
+
+## 修改记录
+
+## 最终文件位置
+
+## 是否可进入论文
+- [ ] 是
+- [ ] 否
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
