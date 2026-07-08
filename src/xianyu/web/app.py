@@ -460,3 +460,69 @@ def figure_new(title: str = Form(...), figure_type: str = Form("general")):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/writing", response_class=HTMLResponse)
+def writing_index():
+    files = list_md("06_论文写作")
+    items = []
+    for file in files[:30]:
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+    template = env.get_template("writing/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/writing/new")
+def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    section_map = {
+        "introduction": "Introduction",
+        "methods": "Materials and Methods",
+        "results": "Results",
+        "discussion": "Discussion",
+        "abstract": "Abstract",
+        "cover": "Cover Letter",
+        "response": "Response Letter"
+    }
+
+    if not file_path.exists():
+        content = f"""# 论文写作｜{title}
+
+## 日期
+{today}
+
+## 写作部分
+{section_map.get(section_type, "Discussion")}
+
+## 本部分目的
+
+## 已有数据 / 图表
+
+## 核心结论
+
+## 需要引用的文献
+
+## 初稿
+
+## 逻辑检查
+- [ ] 是否区分预测结果与实验验证结果
+- [ ] 是否避免结论过度
+- [ ] 是否与 Figure 对应
+- [ ] 是否说明机制证据链
+
+## 需要补充的数据
+
+## 修改意见
+
+## 最终版本
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
