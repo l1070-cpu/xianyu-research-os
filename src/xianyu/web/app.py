@@ -121,3 +121,34 @@ def project_page():
     progress = int(done / total * 100) if total else 0
     template = env.get_template("project.html")
     return template.render(overview=overview, progress=progress, modules=MODULES)
+
+
+@app.get("/search", response_class=HTMLResponse)
+def search_page(q: str = ""):
+    results = []
+    if q:
+        for folder in [
+            "01_今日打工",
+            "02_项目管理",
+            "03_实验记录",
+            "04_文献笔记",
+            "05_数据分析",
+            "06_论文写作",
+            "07_常用Prompt",
+            "08_失败经验库",
+            "capabilities"
+        ]:
+            base = ROOT / folder
+            if not base.exists():
+                continue
+            for file in base.rglob("*.md"):
+                content = read(file)
+                if q.lower() in content.lower() or q.lower() in file.name.lower():
+                    results.append({
+                        "name": file.name,
+                        "path": str(file.relative_to(ROOT)),
+                        "content": content[:300]
+                    })
+
+    template = env.get_template("search.html")
+    return template.render(q=q, results=results, modules=MODULES)
