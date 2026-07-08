@@ -110,7 +110,7 @@ def create_record(record_type: str = Form(...), name: str = Form(...)):
     if not file_path.exists():
         file_path.write_text(TEMPLATE.format(title=title, name=name, today=today), encoding="utf-8")
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
-\n
+
 @app.get("/project", response_class=HTMLResponse)
 def project_page():
     overview_path = ROOT / "02_项目管理" / "金毛狗脊_IS_项目总览.md"
