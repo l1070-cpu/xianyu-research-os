@@ -603,3 +603,70 @@ def network_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/screen", response_class=HTMLResponse)
+def screen_index():
+    files = list_md("02_项目管理/虚拟筛选")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("screen/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/screen/new")
+def screen_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "虚拟筛选"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 虚拟筛选任务｜{title}
+
+## 日期
+{today}
+
+## 筛选目的
+
+## 输入化合物
+- 成分表：
+- SMILES：
+- SDF：
+
+## 输入靶点
+- 靶点名称：
+- PDB ID：
+- 来源：
+
+## 筛选规则
+- Lipinski：
+- PAINS：
+- QED：
+- OB：
+- DL：
+- GI absorption：
+- BBB：
+- Toxicity：
+
+## ADMET 初筛
+- SwissADME：
+- pkCSM：
+- ADMETlab：
+
+## Top 候选化合物
+
+## 排除化合物及原因
+
+## 推荐进入分子对接的组合
+
+## 结果解释
+
+## 风险点
+- 是否结构明确：
+- 是否数据库预测可靠：
+- 是否需要实验验证：
+
+## 下一步
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
