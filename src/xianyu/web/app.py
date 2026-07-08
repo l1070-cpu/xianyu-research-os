@@ -1144,3 +1144,9 @@ def git_snapshot():
     subprocess.run(["git", "push"], cwd=ROOT)
 
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.get("/help", response_class=HTMLResponse)
+def help_index():
+    template = env.get_template("help/index.html")
+    return template.render(modules=MODULES)

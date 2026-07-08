@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>使用说明</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside>
+<h1><a href="/">🐟 咸鱼 OS</a></h1>
+<a href="/new">＋ 新建记录</a>
+<a href="/project">📌 项目中心</a>
+<a href="/search">🔍 全局搜索</a>
+<a href="/help">❓ 使用说明</a>
+{% for key, item in modules.items() %}
+<a href="/module/{{ key }}">{{ item[1] }}</a>
+{% endfor %}
+</aside>
+
+<main>
+<h2>❓ 使用说明</h2>
+
+<section>
+<h3>启动网页</h3>
+<pre>cd ~/Downloads/xianyu-research-os
+xianyu web</pre>
+<p>然后打开：http://127.0.0.1:8001</p>
+</section>
+
+<section>
+<h3>日常使用流程</h3>
+<pre>早上：看首页今日任务
+白天：新建文献 / 实验 / 数据 / Figure / 论文记录
+晚上：生成下班复盘
+随时：用全局搜索查 HP20、CCK8、AKT1、Discussion 等关键词
+重要修改后：点击“保存Git快照”</pre>
+</section>
+
+<section>
+<h3>目前已完成模块</h3>
+<pre>
+项目中心
+文献中心
+天然产物 / UPLC-QTOF-MS
+网络药理学
+虚拟筛选
+分子对接
+分子动力学
+ADMET
+实验中心
+数据分析
+科研作图
+论文写作
+科研记忆
+SOP中心
+能力包中心
+全局搜索
+网页编辑
+删除记录
+Git快照
+</pre>
+</section>
+</main>
+</body>
+</html>
