@@ -980,3 +980,57 @@ def natural_product_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/sop", response_class=HTMLResponse)
+def sop_index():
+    files = list_md("07_常用Prompt/SOP中心")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("sop/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/sop/new")
+def sop_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "07_常用Prompt" / "SOP中心"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# SOP｜{title}
+
+## 日期
+{today}
+
+## SOP 目的
+
+## 适用场景
+
+## 材料与试剂
+
+## 仪器设备
+
+## 实验前准备
+
+## 标准操作步骤
+
+## 关键参数
+
+## 质控点
+
+## 常见失败
+
+## 故障排查
+
+## 我的优化经验
+
+## 数据记录模板
+
+## 安全注意事项
+
+## 版本记录
+- v1.0：
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)

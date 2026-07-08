@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SOP中心</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside>
+<h1><a href="/">🐟 咸鱼 OS</a></h1>
+<a href="/new">＋ 新建记录</a>
+<a href="/project">📌 项目中心</a>
+<a href="/search">🔍 全局搜索</a>
+{% for key, item in modules.items() %}
+<a href="/module/{{ key }}">{{ item[1] }}</a>
+{% endfor %}
+</aside>
+
+<main>
+<h2>📖 SOP 中心</h2>
+
+<section>
+<h3>＋ 新建 SOP</h3>
+<form method="post" action="/sop/new">
+  <p>
+    <label>SOP 名称</label><br>
+    <input name="title" placeholder="例如：H_R细胞模型 / CCK8 / WB / HP20柱层析" required>
+  </p>
+  <button type="submit">生成 SOP</button>
+</form>
+</section>
+
+<section>
+<h3>最近 SOP</h3>
+{% if items %}
+  {% for item in items %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <p>{{ item.path }}</p>
+    <pre>{{ item.content }}</pre>
+  </div>
+  {% endfor %}
+{% else %}
+  <p>暂无 SOP。</p>
+{% endif %}
+</section>
+</main>
+</body>
+</html>
