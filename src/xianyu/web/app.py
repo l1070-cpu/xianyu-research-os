@@ -526,3 +526,80 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/network", response_class=HTMLResponse)
+def network_index():
+    files = list_md("02_项目管理/网络药理学")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("network/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/network/new")
+def network_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "网络药理学"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 网络药理学任务｜{title}
+
+## 日期
+{today}
+
+## 研究对象
+- 中药 / 提取物：
+- 疾病：
+- 目标机制：
+
+## 输入文件
+- 成分表：
+- 疾病靶点表：
+- 交集靶点表：
+
+## Step 1 成分整理
+
+## Step 2 靶点预测
+- SwissTargetPrediction：
+- TCMSP / BATMAN / SEA：
+- UniProt 标准化：
+
+## Step 3 疾病靶点
+- GeneCards：
+- OMIM：
+- DisGeNET：
+- DrugBank：
+
+## Step 4 交集靶点
+
+## Step 5 PPI
+- STRING 参数：
+- 物种：
+- 置信度：
+- 导出文件：
+
+## Step 6 GO 富集
+
+## Step 7 KEGG 富集
+
+## Step 8 Cytoscape 网络
+- 成分-靶点网络：
+- PPI 网络：
+- 靶点-通路网络：
+
+## 核心成分
+
+## 核心靶点
+
+## 核心通路
+
+## 可进入分子对接的组合
+
+## 论文 Results 草稿
+
+## 待补充 / 风险点
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
