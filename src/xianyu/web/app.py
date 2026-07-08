@@ -1068,3 +1068,41 @@ def save_file(path: str = Form(...), content: str = Form(...)):
     p = ROOT / path
     p.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/file?path={path}", status_code=303)
+
+
+@app.post("/end")
+def end_review_page():
+    today = date.today().isoformat()
+    folder = ROOT / "01_今日打工" / "下班复盘"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_下班复盘.md"
+
+    if not file_path.exists():
+        content = f"""# 下班复盘｜{today}
+
+## 今天完成了什么？
+- 
+
+## 今天遇到了什么问题？
+- 
+
+## 今天失败 / 异常的地方
+- 
+
+## 可能原因
+- 
+
+## 明天最重要的 3 件事
+- [ ] 
+- [ ] 
+- [ ] 
+
+## 需要沉淀到科研记忆的内容
+- 
+
+## 备注
+- 
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
