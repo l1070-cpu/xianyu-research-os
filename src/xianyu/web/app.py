@@ -670,3 +670,85 @@ def screen_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/md", response_class=HTMLResponse)
+def md_index():
+    files = list_md("02_项目管理/分子动力学")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("md/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/md/new")
+def md_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "分子动力学"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 分子动力学任务｜{title}
+
+## 日期
+{today}
+
+## MD 目的
+
+## 复合物来源
+- Docking 任务：
+- 配体：
+- 蛋白：
+- PDB ID：
+
+## 软件与环境
+- GROMACS：
+- AMBER：
+- CHARMM：
+- MDAnalysis：
+- 服务器 / 本地：
+
+## 前处理
+- 蛋白处理：
+- 配体参数：
+- 力场：
+- 水模型：
+- 离子浓度：
+- 盒子大小：
+
+## 模拟流程
+- 能量最小化：
+- NVT：
+- NPT：
+- Production MD：
+- 模拟时长：
+
+## 分析指标
+- RMSD：
+- RMSF：
+- Rg：
+- SASA：
+- H-bond：
+- PCA：
+- MM-PBSA / MM-GBSA：
+
+## 结果文件位置
+
+## 图表位置
+- RMSD 图：
+- RMSF 图：
+- H-bond 图：
+- MM-PBSA 图：
+
+## 结果解释
+
+## 论文 Results 草稿
+
+## 风险点
+- 体系是否稳定：
+- 配体参数是否可靠：
+- 模拟时间是否足够：
+- 是否存在过度解释：
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
