@@ -318,7 +318,7 @@ def main():
 
     if command == "web":
         import subprocess
-        subprocess.run(["uvicorn", "xianyu.web.app:app", "--reload"])
+        subprocess.run(["uvicorn", "xianyu.web.app:app", "--reload", "--port", "8001"])
     elif command == "today":
         print(ProjectEngine().today())
     elif command == "end":
