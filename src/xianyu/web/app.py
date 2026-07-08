@@ -836,3 +836,54 @@ def admet_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/memory", response_class=HTMLResponse)
+def memory_index():
+    files = list_md("08_失败经验库")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("memory/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/memory/new")
+def memory_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "08_失败经验库"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 科研记忆｜{title}
+
+## 日期
+{today}
+
+## 类型
+失败经验 / SOP优化 / 实验技巧 / 数据分析经验 / 写作经验
+
+## 发生场景
+
+## 出现的问题
+
+## 当时条件
+
+## 可能原因
+
+## 解决办法
+
+## 最终有效方案
+
+## 下次避免方法
+
+## 可复用经验
+
+## 关联项目
+
+## 关联实验 / 数据 / 文献
+
+## 标签
+- 
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
