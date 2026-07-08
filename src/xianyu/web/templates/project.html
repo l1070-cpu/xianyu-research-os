@@ -15,6 +15,9 @@
 <form method="post" action="/snapshot" style="margin:10px 0;">
   <button type="submit">保存Git快照</button>
 </form>
+<form method="post" action="/backup" style="margin:10px 0;">
+  <button type="submit">一键备份</button>
+</form>
 {% for key, item in modules.items() %}
 <a href="/module/{{ key }}">{{ item[1] }}</a>
 {% endfor %}

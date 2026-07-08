@@ -1150,3 +1150,39 @@ def git_snapshot():
 def help_index():
     template = env.get_template("help/index.html")
     return template.render(modules=MODULES)
+
+
+@app.post("/backup")
+def backup_project():
+    import zipfile
+    from datetime import datetime
+
+    archive_dir = ROOT / "99_Archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    zip_path = archive_dir / f"xianyu_backup_{timestamp}.zip"
+
+    include_dirs = [
+        "01_今日打工",
+        "02_项目管理",
+        "03_实验记录",
+        "04_文献笔记",
+        "05_数据分析",
+        "06_论文写作",
+        "07_常用Prompt",
+        "08_失败经验库",
+        "capabilities",
+        "projects"
+    ]
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for folder in include_dirs:
+            base = ROOT / folder
+            if not base.exists():
+                continue
+            for file in base.rglob("*"):
+                if file.is_file():
+                    z.write(file, file.relative_to(ROOT))
+
+    return RedirectResponse(url=f"/file?path={zip_path.relative_to(ROOT)}", status_code=303)
