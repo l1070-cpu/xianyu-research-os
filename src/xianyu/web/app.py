@@ -76,8 +76,21 @@ def safe_name(name):
 def index():
     today = read(ROOT / "01_今日打工" / "今日任务.md")
     overview = read(ROOT / "02_项目管理" / "金毛狗脊_IS_项目总览.md")
+    recent = []
+    for key, item in MODULES.items():
+        folder, title = item
+        files = list_md(folder)
+        if files:
+            f = files[0]
+            recent.append({
+                "title": title,
+                "name": f.name,
+                "path": str(f.relative_to(ROOT)),
+                "content": read(f)[:200]
+            })
+
     template = env.get_template("index.html")
-    return template.render(today=today, overview=overview, modules=MODULES)
+    return template.render(today=today, overview=overview, modules=MODULES, recent=recent)
 
 @app.get("/module/{key}", response_class=HTMLResponse)
 def module_page(key: str):
