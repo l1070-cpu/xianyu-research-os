@@ -1,4 +1,5 @@
 from pathlib import Path
+from pypdf import PdfReader
 from datetime import date
 from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
@@ -1277,4 +1278,50 @@ def pdf_to_note(path: str = Form(...)):
 """
         note_path.write_text(content, encoding="utf-8")
 
+    return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/pdf-extract-note")
+def pdf_extract_note(path: str = Form(...)):
+    today = date.today().isoformat()
+    pdf_path = ROOT / path
+    title = pdf_path.stem
+
+    text_content = ""
+    try:
+        reader = PdfReader(str(pdf_path))
+        for page in reader.pages[:8]:
+            text_content += page.extract_text() or ""
+            text_content += "\n\n"
+    except Exception as e:
+        text_content = f"PDF解析失败：{e}"
+
+    folder = ROOT / "04_文献笔记"
+    folder.mkdir(parents=True, exist_ok=True)
+    note_path = folder / f"{today}_{safe_name(title)}_PDF解析.md"
+
+    content = f"""# PDF文献解析｜{title}
+
+## 日期
+{today}
+
+## 来源PDF
+{path}
+
+## 自动提取文本（前8页）
+{text_content[:8000]}
+
+## AI后续整理
+- 一句话总结：
+- 研究背景：
+- 研究目的：
+- 实验方法：
+- 主要结果：
+- 创新点：
+- 不足：
+- Research Gap：
+- 与我的课题关系：
+"""
+
+    note_path.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
