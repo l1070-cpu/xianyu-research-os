@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>PDF库</title>
+<title>文献中心 V2</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -14,33 +14,33 @@
 <a href="/upload-pdf">📄 上传PDF</a>
 <a href="/pdf-library">📚 PDF库</a>
 <a href="/literature-v2">📚 文献中心V2</a>
-<a href="/help">❓ 使用说明</a>
 {% for key, item in modules.items() %}
 <a href="/module/{{ key }}">{{ item[1] }}</a>
 {% endfor %}
 </aside>
 
 <main>
-<h2>📚 PDF库</h2>
+<h2>📚 文献中心 V2</h2>
+
+<section>
+<h3>PDF自动识别</h3>
+<p>从 PDF 中自动提取标题、DOI 和正文前几页，生成结构化文献卡片。</p>
+</section>
 
 <section>
 {% if items %}
   {% for item in items %}
   <div class="file-card">
-    <h3><a href="/pdf?path={{ item.path }}" target="_blank">{{ item.name }}</a></h3>
+    <h3>{{ item.name }}</h3>
     <p>{{ item.path }}</p>
-<form method="post" action="/pdf-to-note">
-  <input type="hidden" name="path" value="{{ item.path }}">
-  <button type="submit">生成文献笔记</button>
-</form>
-<form method="post" action="/pdf-extract-note">
-  <input type="hidden" name="path" value="{{ item.path }}">
-  <button type="submit">解析PDF生成笔记</button>
-</form>
+    <form method="post" action="/literature-v2/analyze">
+      <input type="hidden" name="path" value="{{ item.path }}">
+      <button type="submit">生成 V2 文献卡片</button>
+    </form>
   </div>
   {% endfor %}
 {% else %}
-  <p>暂无 PDF。请先上传文献 PDF。</p>
+  <p>暂无PDF，请先上传文献PDF。</p>
 {% endif %}
 </section>
 </main>
