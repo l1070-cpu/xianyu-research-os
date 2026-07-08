@@ -152,3 +152,69 @@ def search_page(q: str = ""):
 
     template = env.get_template("search.html")
     return template.render(q=q, results=results, modules=MODULES)
+
+
+@app.get("/literature", response_class=HTMLResponse)
+def literature_index():
+    files = list_md("04_文献笔记")
+    items = []
+    for file in files[:30]:
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+    template = env.get_template("literature/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/literature/new")
+def literature_new(title: str = Form(...), keywords: str = Form("")):
+    today = date.today().isoformat()
+    folder = ROOT / "04_文献笔记"
+    folder.mkdir(parents=True, exist_ok=True)
+    filename = safe_name(title)
+    file_path = folder / f"{today}_{filename}.md"
+
+    if not file_path.exists():
+        content = f"""# 文献笔记｜{title}
+
+## 日期
+{today}
+
+## 关键词
+{keywords}
+
+## 文献信息
+- 标题：
+- 作者：
+- 期刊：
+- 年份：
+- DOI：
+
+## 一句话总结
+
+## 研究背景
+
+## 研究目的
+
+## 实验设计 / 方法
+
+## 主要结果
+
+## 创新点
+
+## 不足与局限
+
+## Research Gap
+
+## 与我的课题关系
+
+## 可用于 Introduction 的内容
+
+## 可用于 Discussion 的内容
+
+## 下一步需要追踪的文献
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
