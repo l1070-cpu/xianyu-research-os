@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import date
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
@@ -1186,3 +1186,22 @@ def backup_project():
                     z.write(file, file.relative_to(ROOT))
 
     return RedirectResponse(url=f"/file?path={zip_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/upload-pdf", response_class=HTMLResponse)
+def upload_pdf_page():
+    template = env.get_template("upload_pdf.html")
+    return template.render(modules=MODULES)
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    folder = ROOT / "04_文献笔记" / "PDF库"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    filename = file.filename.replace(" ", "_")
+    out_path = folder / filename
+
+    content = await file.read()
+    out_path.write_bytes(content)
+
+    return RedirectResponse(url="/literature", status_code=303)
