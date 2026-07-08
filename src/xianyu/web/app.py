@@ -1110,7 +1110,23 @@ def end_review_page():
 
 @app.post("/delete")
 def delete_file(path: str = Form(...)):
+    allowed_prefixes = [
+        "01_今日打工",
+        "02_项目管理",
+        "03_实验记录",
+        "04_文献笔记",
+        "05_数据分析",
+        "06_论文写作",
+        "07_常用Prompt",
+        "08_失败经验库",
+        "capabilities"
+    ]
+
+    if not any(path.startswith(prefix) for prefix in allowed_prefixes):
+        return HTMLResponse("禁止删除系统核心文件", status_code=403)
+
     p = ROOT / path
-    if p.exists() and p.is_file():
+    if p.exists() and p.is_file() and p.suffix == ".md":
         p.unlink()
+
     return RedirectResponse(url="/", status_code=303)
