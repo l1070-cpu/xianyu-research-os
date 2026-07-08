@@ -752,3 +752,87 @@ def md_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/admet", response_class=HTMLResponse)
+def admet_index():
+    files = list_md("02_项目管理/ADMET")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("admet/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/admet/new")
+def admet_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "ADMET"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# ADMET评价任务｜{title}
+
+## 日期
+{today}
+
+## 评价目的
+
+## 化合物信息
+- 化合物名称：
+- PubChem CID：
+- SMILES：
+- 分子式：
+- 分子量：
+
+## 使用平台
+- SwissADME：
+- pkCSM：
+- ADMETlab：
+- ProTox-II：
+- 其他：
+
+## 药物相似性
+- Lipinski：
+- Veber：
+- Ghose：
+- Egan：
+- Muegge：
+
+## 吸收 Absorption
+- GI absorption：
+- Caco-2 permeability：
+- P-gp substrate：
+- Bioavailability：
+
+## 分布 Distribution
+- BBB permeability：
+- Plasma protein binding：
+- VDss：
+
+## 代谢 Metabolism
+- CYP450 inhibition：
+- CYP450 substrate：
+
+## 排泄 Excretion
+- Total clearance：
+- Renal OCT2 substrate：
+
+## 毒性 Toxicity
+- AMES：
+- hERG：
+- Hepatotoxicity：
+- LD50：
+- Skin sensitization：
+
+## 综合评价
+- 是否建议进入分子对接：
+- 是否建议进入细胞实验：
+- 主要优势：
+- 主要风险：
+
+## 论文可用表述
+
+## 下一步
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
