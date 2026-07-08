@@ -17,6 +17,7 @@ MODULES = {
     "today": ("01_今日打工", "📋 今日打工"),
     "project": ("02_项目管理", "📁 项目管理"),
     "literature": ("04_文献笔记", "📚 文献中心"),
+    "natural_product": ("02_项目管理/天然产物", "🌿 天然产物"),
     "network": ("02_项目管理/网络药理学", "🌐 网络药理"),
     "docking": ("02_项目管理/分子对接", "🧲 分子对接"),
     "experiment": ("03_实验记录", "🧪 实验中心"),
@@ -883,6 +884,98 @@ def memory_new(title: str = Form(...)):
 
 ## 标签
 - 
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/natural-product", response_class=HTMLResponse)
+def natural_product_index():
+    files = list_md("02_项目管理/天然产物")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("natural_product/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/natural-product/new")
+def natural_product_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "天然产物"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 天然产物 / UPLC-QTOF-MS 成分分析｜{title}
+
+## 日期
+{today}
+
+## 样品信息
+- 样品名称：
+- 来源：
+- 处理方式：
+- 批次：
+- 保存条件：
+
+## 提取方法
+- 提取溶剂：
+- 料液比：
+- 温度：
+- 时间：
+- 超声 / 回流 / 浸提：
+- 浓缩方式：
+
+## UPLC-QTOF/MS 条件
+- 仪器：
+- 色谱柱：
+- 流动相：
+- 梯度：
+- 流速：
+- 柱温：
+- 进样量：
+- 电离模式：
+- 扫描范围：
+
+## 原始数据位置
+
+## 数据处理
+- Peak picking：
+- 去噪：
+- 对齐：
+- 归一化：
+- 数据库匹配：
+
+## 数据库比对
+- PubChem：
+- MassBank：
+- GNPS：
+- HMDB：
+- ChemSpider：
+- 文献比对：
+
+## 候选成分表
+| 序号 | 成分名称 | 分子式 | m/z | RT | MS/MS特征 | 匹配来源 | 可信度 |
+|---|---|---|---|---|---|---|---|
+
+## 成分类别
+- 黄酮类：
+- 酚酸类：
+- 三萜类：
+- 其他：
+
+## 拟进入后续分析的成分
+
+## 与网络药理学衔接
+- 是否有结构：
+- 是否有 SMILES：
+- 是否可进行靶点预测：
+
+## 风险点
+- 是否同分异构体混淆：
+- 是否需要标准品验证：
+- 是否定性过度：
+
+## 下一步
 """
         file_path.write_text(content, encoding="utf-8")
 
