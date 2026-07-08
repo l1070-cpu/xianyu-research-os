@@ -1130,3 +1130,17 @@ def delete_file(path: str = Form(...)):
         p.unlink()
 
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/snapshot")
+def git_snapshot():
+    import subprocess
+    from datetime import datetime
+
+    msg = "web snapshot " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    subprocess.run(["git", "add", "."], cwd=ROOT)
+    subprocess.run(["git", "commit", "-m", msg], cwd=ROOT)
+    subprocess.run(["git", "push"], cwd=ROOT)
+
+    return RedirectResponse(url="/", status_code=303)

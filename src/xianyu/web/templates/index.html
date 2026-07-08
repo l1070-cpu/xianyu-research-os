@@ -11,6 +11,9 @@
 <a href="/new">＋ 新建记录</a>
 <a href="/project">📌 项目中心</a>
 <a href="/search">🔍 全局搜索</a>
+<form method="post" action="/snapshot" style="margin:10px 0;">
+  <button type="submit">保存Git快照</button>
+</form>
 {% for key, item in modules.items() %}
 <a href="/module/{{ key }}">{{ item[1] }}</a>
 {% endfor %}
