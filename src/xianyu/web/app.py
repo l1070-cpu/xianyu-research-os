@@ -1325,3 +1325,45 @@ def pdf_extract_note(path: str = Form(...)):
 
     note_path.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/literature-ai-prompt")
+def literature_ai_prompt(path: str = Form(...)):
+    p = ROOT / path
+    source_text = read(p)
+
+    today = date.today().isoformat()
+    folder = ROOT / "04_文献笔记"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    file_path = folder / f"{today}_{safe_name(p.stem)}_AI整理提示词.md"
+
+    content = f"""# 文献AI整理提示词｜{p.stem}
+
+请根据以下 PDF 提取文本，帮我整理成高质量文献笔记。
+
+## 我的课题背景
+我正在研究金毛狗脊治疗缺血性脑卒中的作用机制，研究路线包括：
+UPLC-QTOF/MS 成分分析、网络药理学、虚拟筛选、分子对接、H/R细胞模型、WB、RT-qPCR 和论文写作。
+
+## 请按以下结构输出
+1. 一句话总结
+2. 研究背景
+3. 研究目的
+4. 实验设计 / 方法
+5. 主要结果
+6. 创新点
+7. 不足与局限
+8. Research Gap
+9. 与我的课题关系
+10. 可用于 Introduction 的内容
+11. 可用于 Discussion 的内容
+12. 值得追踪的关键词
+13. 可引用的关键句子
+
+## PDF提取文本
+{source_text[:12000]}
+"""
+
+    file_path.write_text(content, encoding="utf-8")
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
