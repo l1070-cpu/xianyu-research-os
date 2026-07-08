@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import date
 from fastapi import FastAPI, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 
@@ -1215,3 +1215,11 @@ def pdf_library():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT))} for f in files]
     template = env.get_template("pdf_library.html")
     return template.render(items=items, modules=MODULES)
+
+
+@app.get("/pdf")
+def open_pdf(path: str):
+    p = ROOT / path
+    if p.exists() and p.is_file() and p.suffix.lower() == ".pdf":
+        return FileResponse(p, media_type="application/pdf", filename=p.name)
+    return HTMLResponse("PDF 不存在", status_code=404)

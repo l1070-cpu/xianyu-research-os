@@ -26,7 +26,7 @@
 {% if items %}
   {% for item in items %}
   <div class="file-card">
-    <h3>{{ item.name }}</h3>
+    <h3><a href="/pdf?path={{ item.path }}" target="_blank">{{ item.name }}</a></h3>
     <p>{{ item.path }}</p>
   </div>
   {% endfor %}
