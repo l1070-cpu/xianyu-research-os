@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>项目中心</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside>
+<h1><a href="/">🐟 咸鱼 OS</a></h1>
+<a href="/new">＋ 新建记录</a>
+<a href="/project">📌 项目中心</a>
+{% for key, item in modules.items() %}
+<a href="/module/{{ key }}">{{ item[1] }}</a>
+{% endfor %}
+</aside>
+
+<main>
+<h2>📌 项目中心</h2>
+
+<section>
+<h3>金毛狗脊治疗缺血性脑卒中项目</h3>
+<p><strong>当前阶段：</strong>课题规划与方法搭建阶段</p>
+
+<h3>项目进度</h3>
+<div class="progress"><div style="width: {{ progress }}%"></div></div>
+<p>{{ progress }}%</p>
+</section>
+
+<section>
+<h3>项目总览</h3>
+<pre>{{ overview }}</pre>
+</section>
+
+<section>
+<h3>快速入口</h3>
+<div class="quick-grid">
+<a href="/module/literature">📚 文献中心</a>
+<a href="/module/network">🌐 网络药理</a>
+<a href="/module/docking">🧲 分子对接</a>
+<a href="/module/experiment">🧪 实验记录</a>
+<a href="/module/data">📊 数据分析</a>
+<a href="/module/figure">🎨 科研作图</a>
+<a href="/module/writing">✍️ 论文写作</a>
+<a href="/module/memory">🧠 失败经验</a>
+</div>
+</section>
+</main>
+</body>
+</html>
