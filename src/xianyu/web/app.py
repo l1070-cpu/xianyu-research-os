@@ -1034,3 +1034,11 @@ def sop_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/capability", response_class=HTMLResponse)
+def capability_index():
+    files = list_md("capabilities")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:50]]
+    template = env.get_template("capability/index.html")
+    return template.render(items=items, modules=MODULES)
