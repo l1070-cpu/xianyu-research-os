@@ -1223,3 +1223,58 @@ def open_pdf(path: str):
     if p.exists() and p.is_file() and p.suffix.lower() == ".pdf":
         return FileResponse(p, media_type="application/pdf", filename=p.name)
     return HTMLResponse("PDF 不存在", status_code=404)
+
+
+@app.post("/pdf-to-note")
+def pdf_to_note(path: str = Form(...)):
+    today = date.today().isoformat()
+    pdf_path = ROOT / path
+    title = pdf_path.stem if pdf_path.exists() else "未命名PDF"
+
+    folder = ROOT / "04_文献笔记"
+    folder.mkdir(parents=True, exist_ok=True)
+    note_path = folder / f"{today}_{safe_name(title)}_文献笔记.md"
+
+    if not note_path.exists():
+        content = f"""# 文献笔记｜{title}
+
+## 日期
+{today}
+
+## 来源PDF
+{path}
+
+## 文献信息
+- 标题：
+- 作者：
+- 期刊：
+- 年份：
+- DOI：
+
+## 一句话总结
+
+## 研究背景
+
+## 研究目的
+
+## 实验设计 / 方法
+
+## 主要结果
+
+## 创新点
+
+## 不足与局限
+
+## Research Gap
+
+## 与我的课题关系
+
+## 可用于 Introduction 的内容
+
+## 可用于 Discussion 的内容
+
+## 下一步需要追踪的文献
+"""
+        note_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)

@@ -28,6 +28,10 @@
   <div class="file-card">
     <h3><a href="/pdf?path={{ item.path }}" target="_blank">{{ item.name }}</a></h3>
     <p>{{ item.path }}</p>
+<form method="post" action="/pdf-to-note">
+  <input type="hidden" name="path" value="{{ item.path }}">
+  <button type="submit">生成文献笔记</button>
+</form>
   </div>
   {% endfor %}
 {% else %}
