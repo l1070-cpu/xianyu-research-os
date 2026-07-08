@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>咸鱼日常打工 OS</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside>
+    <h1>🐟 咸鱼 OS</h1>
+    <nav>
+      <a>📋 今日打工</a>
+      <a>📁 项目管理</a>
+      <a>📚 文献中心</a>
+      <a>🌿 天然产物</a>
+      <a>🌐 网络药理</a>
+      <a>🧬 虚拟筛选</a>
+      <a>🧲 分子对接</a>
+      <a>🧪 实验中心</a>
+      <a>📊 数据分析</a>
+      <a>🎨 科研作图</a>
+      <a>✍️ 论文写作</a>
+      <a>🧠 科研记忆</a>
+      <a>🧩 能力包中心</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h2>今天要干啥？</h2>
+      <p>Personal AI Research Workspace</p>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <h3>📌 当前项目</h3>
+        <p>金毛狗脊治疗缺血性脑卒中项目</p>
+      </div>
+
+      <div class="card">
+        <h3>📈 项目进度</h3>
+        <div class="progress">
+          <div style="width: {{ progress }}%"></div>
+        </div>
+        <p>{{ progress }}%</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>📅 今日任务</h3>
+      <pre>{{ today }}</pre>
+    </section>
+
+    <section class="panel">
+      <h3>📁 项目总览</h3>
+      <pre>{{ overview }}</pre>
+    </section>
+  </main>
+</body>
+</html>
