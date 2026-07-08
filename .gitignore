@@ -8,3 +8,7 @@ outputs/
 *.egg-info/
 build/
 dist/
+
+# PDF文献库不上传GitHub，只保存在本地
+04_文献笔记/PDF库/
+99_Archive/
