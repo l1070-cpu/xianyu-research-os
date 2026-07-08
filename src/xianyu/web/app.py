@@ -1055,3 +1055,16 @@ def capability_index():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:50]]
     template = env.get_template("capability/index.html")
     return template.render(items=items, modules=MODULES)
+
+
+@app.get("/edit", response_class=HTMLResponse)
+def edit_file_page(path: str):
+    p = ROOT / path
+    template = env.get_template("edit.html")
+    return template.render(path=path, content=read(p), modules=MODULES)
+
+@app.post("/edit")
+def save_file(path: str = Form(...), content: str = Form(...)):
+    p = ROOT / path
+    p.write_text(content, encoding="utf-8")
+    return RedirectResponse(url=f"/file?path={path}", status_code=303)
