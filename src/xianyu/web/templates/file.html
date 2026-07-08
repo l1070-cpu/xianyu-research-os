@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>咸鱼日常打工 OS</title>
+<title>{{ path }}</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -14,16 +14,9 @@
 </aside>
 
 <main>
-<h2>今天要干啥？</h2>
-
+<h2>{{ path }}</h2>
 <section>
-<h3>📅 今日任务</h3>
-<pre>{{ today }}</pre>
-</section>
-
-<section>
-<h3>📁 项目总览</h3>
-<pre>{{ overview }}</pre>
+<pre>{{ content }}</pre>
 </section>
 </main>
 </body>
