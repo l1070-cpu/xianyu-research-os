@@ -1538,3 +1538,40 @@ def cck8_new(
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/literature-pool", response_class=HTMLResponse)
+def literature_pool():
+    files = list_md("04_文献笔记")
+    pools = {
+        "Introduction": [],
+        "Discussion": [],
+        "Methods": [],
+        "Network Pharmacology": [],
+        "Gene / Omics": [],
+        "Docking / MD": [],
+        "实验设计": []
+    }
+
+    rules = {
+        "Introduction": "Introduction 可用",
+        "Discussion": "Discussion 可用",
+        "Methods": "Methods 可借鉴",
+        "Network Pharmacology": "Network Pharmacology 可用",
+        "Gene / Omics": "Gene / Omics 可用",
+        "Docking / MD": "Docking / MD 可用",
+        "实验设计": "实验设计可借鉴"
+    }
+
+    for f in files:
+        content = read(f)
+        for pool, key in rules.items():
+            if f"- [x] {key}" in content:
+                pools[pool].append({
+                    "name": f.name,
+                    "path": str(f.relative_to(ROOT)),
+                    "content": content[:300]
+                })
+
+    template = env.get_template("literature_pool.html")
+    return template.render(pools=pools, modules=MODULES)
