@@ -1396,6 +1396,8 @@ def literature_v2_analyze(path: str = Form(...)):
     doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9]+", raw_text)
     doi = doi_match.group(0).rstrip(".;,") if doi_match else ""
 
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+
     year_match = re.search(r"(20\d{2}|19\d{2})", raw_text)
     year = year_match.group(0) if year_match else ""
 
