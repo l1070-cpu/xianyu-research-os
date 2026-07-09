@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>CCK-8工作台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside>
+<h1><a href="/">🐟 咸鱼 OS</a></h1>
+<a href="/new">＋ 新建记录</a>
+<a href="/project">📌 项目中心</a>
+<a href="/search">🔍 全局搜索</a>
+<a href="/cck8">🧫 CCK-8工作台</a>
+{% for key, item in modules.items() %}
+<a href="/module/{{ key }}">{{ item[1] }}</a>
+{% endfor %}
+</aside>
+
+<main>
+<h2>🧫 CCK-8 工作台</h2>
+
+<section>
+<h3>新建 CCK-8 数据记录</h3>
+<form method="post" action="/cck8/new">
+  <p><label>实验名称</label><br><input name="title" placeholder="HCT116_24h_CCK8" required></p>
+  <p><label>细胞类型</label><br><input name="cell" placeholder="HCT116 / HT29 / HepG2"></p>
+  <p><label>处理时间</label><br><input name="timepoint" placeholder="24h / 48h"></p>
+  <p><label>分组与浓度</label><br><textarea name="groups" rows="5"></textarea></p>
+  <p><label>原始 OD 数据</label><br><textarea name="od_data" rows="10"></textarea></p>
+  <button type="submit">生成 CCK-8 记录</button>
+</form>
+</section>
+
+<section>
+<h3>最近 CCK-8 记录</h3>
+{% if items %}
+  {% for item in items %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.content }}</pre>
+  </div>
+  {% endfor %}
+{% else %}
+  <p>暂无 CCK-8 记录。</p>
+{% endif %}
+</section>
+</main>
+</body>
+</html>

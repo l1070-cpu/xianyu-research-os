@@ -1394,7 +1394,17 @@ def literature_v2_analyze(path: str = Form(...)):
         raw_text = f"PDF解析失败：{e}"
 
     doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9]+", raw_text)
-    doi = doi_match.group(0) if doi_match else ""
+    doi = doi_match.group(0).rstrip(".;,") if doi_match else ""
+
+    year_match = re.search(r"(20\d{2}|19\d{2})", raw_text)
+    year = year_match.group(0) if year_match else ""
+
+    journal_keywords = ["Journal", "Nature", "Science", "Cell", "Frontiers", "Phytomedicine", "Biomedicine", "Molecules", "Pharmacology"]
+    journal = ""
+    for line in lines[:40]:
+        if any(k.lower() in line.lower() for k in journal_keywords):
+            journal = line
+            break
 
     lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
     candidate_title = ""
@@ -1421,8 +1431,8 @@ def literature_v2_analyze(path: str = Form(...)):
 - 标题：{title}
 - DOI：{doi}
 - 作者：
-- 期刊：
-- 年份：
+- 期刊：{journal}
+- 年份：{year}
 - 关键词：
 
 ## 一句话总结
@@ -1461,3 +1471,68 @@ def literature_v2_analyze(path: str = Form(...)):
 """
     note_path.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/cck8", response_class=HTMLResponse)
+def cck8_index():
+    files = list_md("05_数据分析/CCK8")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("cck8/index.html")
+    return template.render(items=items, modules=MODULES)
+
+@app.post("/cck8/new")
+def cck8_new(
+    title: str = Form(...),
+    cell: str = Form(""),
+    timepoint: str = Form(""),
+    groups: str = Form(""),
+    od_data: str = Form("")
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "CCK8"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# CCK-8 数据记录｜{title}
+
+## 日期
+{today}
+
+## 细胞类型
+{cell}
+
+## 处理时间
+{timepoint}
+
+## 分组与浓度
+{groups}
+
+## 原始 OD 数据
+{text_block_start}
+{od_data}
+{text_block_end}
+
+## 数据处理规则
+细胞活率 = (OD处理组 - OD空白) / (OD对照组 - OD空白) × 100%
+
+## 初步结果
+
+## 异常值检查
+- [ ] 是否有边缘孔异常
+- [ ] 是否有气泡
+- [ ] 是否有污染
+- [ ] 是否有 OD 过高/过低
+
+## GraphPad Prism 导入格式
+
+## Figure 计划
+
+## Results 草稿
+
+## 下一步
+""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
