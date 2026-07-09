@@ -1575,3 +1575,24 @@ def literature_pool():
 
     template = env.get_template("literature_pool.html")
     return template.render(pools=pools, modules=MODULES)
+
+
+@app.get("/literature-keywords", response_class=HTMLResponse)
+def literature_keywords():
+    files = list_md("04_文献笔记")
+    keywords = ["PI3K", "AKT", "Nrf2", "MAPK", "NF-κB", "炎症", "氧化应激", "凋亡", "缺血性脑卒中", "天然产物"]
+    pools = {k: [] for k in keywords}
+
+    for f in files:
+        content = read(f)
+        lower = content.lower()
+        for k in keywords:
+            if k.lower() in lower:
+                pools[k].append({
+                    "name": f.name,
+                    "path": str(f.relative_to(ROOT)),
+                    "content": content[:300]
+                })
+
+    template = env.get_template("literature_keywords.html")
+    return template.render(pools=pools, modules=MODULES)

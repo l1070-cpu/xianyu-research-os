@@ -2,47 +2,39 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>能力包中心</title>
+<title>文献机制关键词池</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <aside>
 <h1><a href="/">🐟 咸鱼 OS</a></h1>
-<a href="/new">＋ 新建记录</a>
-<a href="/project">📌 项目中心</a>
-<a href="/search">🔍 全局搜索</a>
-<a href="/upload-pdf">📄 上传PDF</a>
-<a href="/pdf-library">📚 PDF库</a>
 <a href="/literature-v2">📚 文献中心V2</a>
 <a href="/literature-pool">🗂️ 文献用途池</a>
 <a href="/literature-keywords">🧬 机制关键词池</a>
-<a href="/help">❓ 使用说明</a>
+<a href="/search">🔍 全局搜索</a>
 {% for key, item in modules.items() %}
 <a href="/module/{{ key }}">{{ item[1] }}</a>
 {% endfor %}
 </aside>
 
 <main>
-<h2>🧩 能力包中心</h2>
+<h2>🧬 文献机制关键词池</h2>
 
+{% for keyword, items in pools.items() %}
 <section>
-<h3>科研能力包</h3>
-<p>这里集中管理每个科研模块的 Workflow、Checklist、Prompt、SOP 和最佳实践。</p>
-</section>
-
-<section>
+<h3>{{ keyword }}</h3>
 {% if items %}
   {% for item in items %}
   <div class="file-card">
     <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
-    <p>{{ item.path }}</p>
     <pre>{{ item.content }}</pre>
   </div>
   {% endfor %}
 {% else %}
-  <p>暂无能力包。</p>
+  <p>暂无文献。</p>
 {% endif %}
 </section>
+{% endfor %}
 </main>
 </body>
 </html>
