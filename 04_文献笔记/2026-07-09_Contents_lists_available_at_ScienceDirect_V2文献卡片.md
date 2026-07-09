@@ -214,3 +214,29 @@ MTP microsomal triglyceride transfer protein
 Pepck phosphoenolpyruvate carboxykinase
 Pc pyruvate carboxylase
 PGC1α peroxisome proliferator-ac
+
+
+## 文献用途判断
+- [ ] Introduction 可用
+- [ ] Discussion 可用
+- [ ] Methods 可借鉴
+- [ ] Network Pharmacology 可用
+- [ ] Gene / Omics 可用
+- [ ] Docking / MD 可用
+- [ ] 实验设计可借鉴
+
+## 机制关键词
+- 氧化应激：
+- 炎症：
+- 凋亡：
+- PI3K/AKT：
+- Nrf2：
+- MAPK：
+- NF-κB：
+
+## 推荐后续动作
+- [ ] 加入网络药理候选靶点
+- [ ] 加入 Gene/Omics 交集分析
+- [ ] 加入分子对接靶点
+- [ ] 加入 WB/qPCR 验证指标
+- [ ] 加入论文 Discussion 文献池
