@@ -1,4 +1,5 @@
 from pathlib import Path
+from dotenv import load_dotenv
 import re
 from pypdf import PdfReader
 from datetime import date
@@ -9,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 from xianyu.web.literature_v2 import router as literature_v2_router
 
 ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(ROOT / ".env")
 TEMPLATE_DIR = ROOT / "src" / "xianyu" / "web" / "templates"
 STATIC_DIR = ROOT / "src" / "xianyu" / "web" / "static"
 
