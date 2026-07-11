@@ -1600,3 +1600,68 @@ def literature_keywords():
 
     template = env.get_template("literature_keywords.html")
     return template.render(pools=pools, modules=MODULES)
+
+
+def load_projects_v2():
+    import json
+
+    projects_root = ROOT / "projects"
+    projects = []
+
+    for project_file in projects_root.glob("*/project.json"):
+        try:
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            projects.append(data)
+        except Exception:
+            continue
+
+    projects.sort(key=lambda x: x.get("name", ""))
+    return projects
+
+
+def get_current_project_id():
+    import json
+
+    current_file = ROOT / "projects" / "current_project.json"
+    if not current_file.exists():
+        return ""
+
+    try:
+        data = json.loads(current_file.read_text(encoding="utf-8"))
+        return data.get("project_id", "")
+    except Exception:
+        return ""
+
+
+@app.get("/projects-v2", response_class=HTMLResponse)
+def projects_v2_page():
+    projects = load_projects_v2()
+    current_id = get_current_project_id()
+    current = next(
+        (project for project in projects if project.get("project_id") == current_id),
+        None
+    )
+
+    template = env.get_template("projects_v2/index.html")
+    return template.render(
+        projects=projects,
+        current_id=current_id,
+        current=current
+    )
+
+
+@app.post("/projects-v2/switch")
+def projects_v2_switch(project_id: str = Form(...)):
+    import json
+
+    project_file = ROOT / "projects" / project_id / "project.json"
+    if not project_file.exists():
+        return HTMLResponse("项目不存在", status_code=404)
+
+    current_file = ROOT / "projects" / "current_project.json"
+    current_file.write_text(
+        json.dumps({"project_id": project_id}, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+
+    return RedirectResponse(url="/projects-v2", status_code=303)

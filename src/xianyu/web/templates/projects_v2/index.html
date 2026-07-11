@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>项目中心 V2</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside>
+<h1><a href="/">🐟 咸鱼 OS</a></h1>
+<a href="/projects-v2">📁 项目中心 V2</a>
+<a href="/literature-v2">📚 文献中心 V2</a>
+<a href="/network">🌐 网络药理</a>
+<a href="/screen">🧬 虚拟筛选</a>
+<a href="/docking">🧲 分子对接</a>
+</aside>
+
+<main>
+<h2>📁 项目中心 V2</h2>
+
+<section>
+<h3>当前项目</h3>
+{% if current %}
+<p><strong>{{ current.name }}</strong></p>
+<p>{{ current.category }}｜{{ current.stage }}</p>
+{% else %}
+<p>尚未选择当前项目。</p>
+{% endif %}
+</section>
+
+<section>
+<h3>全部项目</h3>
+
+<div class="quick-grid">
+{% for project in projects %}
+<div class="file-card">
+<h3>{{ project.name }}</h3>
+<p><strong>简称：</strong>{{ project.short_name }}</p>
+<p><strong>类型：</strong>{{ project.category }}</p>
+<p><strong>研究对象：</strong>{{ project.research_object }}</p>
+<p><strong>疾病/模型：</strong>{{ project.disease }}</p>
+<p><strong>阶段：</strong>{{ project.stage }}</p>
+
+{% if project.project_id == current_id %}
+<p>✅ 当前项目</p>
+{% else %}
+<form method="post" action="/projects-v2/switch">
+<input type="hidden" name="project_id" value="{{ project.project_id }}">
+<button type="submit">切换到此项目</button>
+</form>
+{% endif %}
+</div>
+{% endfor %}
+</div>
+</section>
+</main>
+</body>
+</html>
