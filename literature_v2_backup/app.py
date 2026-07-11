@@ -6,14 +6,12 @@ from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
-from xianyu.web.literature_v2 import router as literature_v2_router
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE_DIR = ROOT / "src" / "xianyu" / "web" / "templates"
 STATIC_DIR = ROOT / "src" / "xianyu" / "web" / "static"
 
 app = FastAPI(title="咸鱼日常打工 OS")
-app.include_router(literature_v2_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
