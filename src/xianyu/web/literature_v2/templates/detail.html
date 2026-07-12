@@ -1,1 +1,122 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>{{record.title}}</title><link rel="stylesheet" href="/static/style.css"><style>.tag{display:inline-block;background:#eef2ff;padding:4px 9px;border-radius:999px;margin:2px;font-size:12px}</style></head><body><aside><h1><a href="/">🐟 咸鱼 OS</a></h1><a href="/literature-v2">返回文献中心V2</a></aside><main><h2>{{record.title}}</h2><section><p>作者：{{record.authors|join('; ')}}</p><p>期刊：{{record.journal}}｜年份：{{record.year}}</p><p>DOI：{{record.doi}}｜PMID：{{record.pmid}}</p>{% for t in record.mechanism_tags %}<span class="tag">{{t}}</span>{% endfor %}{% for t in record.usage_tags %}<span class="tag">{{t}}</span>{% endfor %}<p><a href="/literature-v2/pdf?path={{record.source_pdf}}" target="_blank">预览PDF</a>　<a href="/literature-v2/export/bibtex?path={{record.source_pdf}}">导出BibTeX</a>　<a href="/literature-v2/export/ris?path={{record.source_pdf}}">导出RIS</a></p><form method="post" action="/literature-v2/ai-read"><input type="hidden" name="path" value="{{record.source_pdf}}"><button>AI阅读</button></form></section><section><h3>AI阅读结果</h3>{% if record.ai_summary %}{% if record.ai_summary.status=='not_configured' %}<p>未配置AI，复制以下提示词使用：</p><pre>{{record.ai_summary.prompt}}</pre>{% else %}{% for k,v in record.ai_summary.items() %}<h4>{{k}}</h4><pre>{{v}}</pre>{% endfor %}{% endif %}{% else %}<p>尚未AI阅读。</p>{% endif %}</section><section><h3>原文文本预览</h3><pre>{{record.raw_text_preview}}</pre></section></main></body></html>
+{% extends "base.html" %}
+
+{% block title %}{{ record.title }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>{{ record.title }}</h2>
+  <p>结构化文献卡片与 AI 阅读结果</p>
+</header>
+
+<section>
+  <h3>基础信息</h3>
+
+  <div class="metadata-grid">
+    <div>
+      <strong>作者</strong>
+      <p>{{ record.authors | join("; ") or "未识别" }}</p>
+    </div>
+
+    <div>
+      <strong>期刊</strong>
+      <p>{{ record.journal or "未识别" }}</p>
+    </div>
+
+    <div>
+      <strong>年份</strong>
+      <p>{{ record.year or "未识别" }}</p>
+    </div>
+
+    <div>
+      <strong>DOI</strong>
+      <p>{{ record.doi or "未识别" }}</p>
+    </div>
+
+    <div>
+      <strong>PMID</strong>
+      <p>{{ record.pmid or "未识别" }}</p>
+    </div>
+
+    <div>
+      <strong>来源 PDF</strong>
+      <p>{{ record.source_pdf }}</p>
+    </div>
+  </div>
+
+  <div class="tag-list">
+    {% for tag in record.mechanism_tags %}
+    <span class="tag">{{ tag }}</span>
+    {% endfor %}
+
+    {% for tag in record.usage_tags %}
+    <span class="tag">{{ tag }}</span>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <h3>文献操作</h3>
+
+  <div class="record-actions">
+    <a
+      href="/literature-v2/pdf?path={{ record.source_pdf }}"
+      target="_blank"
+    >
+      预览 PDF
+    </a>
+
+    <a href="/literature-v2/export/bibtex?path={{ record.source_pdf }}">
+      导出 BibTeX
+    </a>
+
+    <a href="/literature-v2/export/ris?path={{ record.source_pdf }}">
+      导出 RIS
+    </a>
+
+    <form method="post" action="/literature-v2/ai-read">
+      <input
+        type="hidden"
+        name="path"
+        value="{{ record.source_pdf }}"
+      >
+      <button type="submit">AI 阅读</button>
+    </form>
+  </div>
+</section>
+
+<section>
+  <h3>AI 阅读结果</h3>
+
+  {% if record.ai_summary %}
+    {% if record.ai_summary.status == "not_configured" %}
+      <p>尚未配置 AI API，以下内容可复制到其他模型中使用：</p>
+      <pre>{{ record.ai_summary.prompt }}</pre>
+    {% else %}
+      {% for key, value in record.ai_summary.items() %}
+      <article class="analysis-block">
+        <h4>{{ key }}</h4>
+
+        {% if value is iterable and value is not string %}
+          <ul>
+            {% for item in value %}
+            <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>{{ value }}</p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    {% endif %}
+  {% else %}
+    <p>尚未进行 AI 阅读。</p>
+  {% endif %}
+</section>
+
+<section>
+  <details>
+    <summary>查看 PDF 文本提取预览</summary>
+    <pre>{{ record.raw_text_preview }}</pre>
+  </details>
+</section>
+{% endblock %}

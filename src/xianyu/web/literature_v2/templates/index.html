@@ -1,1 +1,86 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>文献中心V2</title><link rel="stylesheet" href="/static/style.css"><style>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 18px #0001}.tag{display:inline-block;background:#eef2ff;padding:4px 9px;border-radius:999px;margin:2px;font-size:12px}</style></head><body><aside><h1><a href="/">🐟 咸鱼 OS</a></h1><a href="/literature-v2">📚 文献中心V2</a><a href="/search">全局搜索</a><a href="/project">项目中心</a></aside><main><h2>📚 文献中心 V2</h2><section><form method="post" action="/literature-v2/upload" enctype="multipart/form-data"><input type="file" name="file" accept=".pdf" required><button>上传PDF</button></form></section><section><div class="grid">{% for item in items %}<div class="card"><h3>{{ item.name }}</h3>{% if item.record %}<p><b>{{ item.record.title }}</b></p><p>{{ item.record.journal }} {{ item.record.year }}</p>{% for t in item.record.mechanism_tags %}<span class="tag">{{t}}</span>{% endfor %}<p><a href="/literature-v2/item?path={{item.path}}">打开文献卡片</a></p>{% else %}<form method="post" action="/literature-v2/analyze"><input type="hidden" name="path" value="{{item.path}}"><button>解析元数据并生成卡片</button></form>{% endif %}<p><a href="/literature-v2/pdf?path={{item.path}}" target="_blank">预览PDF</a></p></div>{% endfor %}</div></section></main></body></html>
+{% extends "base.html" %}
+
+{% block title %}文献中心 V2{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>📚 文献中心 V2</h2>
+  <p>上传、解析、管理和 AI 阅读科研文献</p>
+</header>
+
+<section>
+  <h3>上传 PDF</h3>
+
+  <form
+    method="post"
+    action="/literature-v2/upload"
+    enctype="multipart/form-data"
+    class="toolbar"
+  >
+    <input type="file" name="file" accept=".pdf" required>
+    <button type="submit">上传 PDF</button>
+  </form>
+</section>
+
+<section>
+  <h3>PDF 文献库</h3>
+
+  {% if items %}
+  <div class="literature-grid">
+    {% for item in items %}
+    <article class="file-card">
+      <h3>{{ item.name }}</h3>
+
+      {% if item.record %}
+        <p><strong>{{ item.record.title }}</strong></p>
+
+        <p>
+          {{ item.record.journal }}
+          {% if item.record.year %}
+            ｜{{ item.record.year }}
+          {% endif %}
+        </p>
+
+        <div class="tag-list">
+          {% for tag in item.record.mechanism_tags %}
+          <span class="tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="record-actions">
+          <a href="/literature-v2/item?path={{ item.path }}">
+            打开文献卡片
+          </a>
+
+          <a
+            href="/literature-v2/pdf?path={{ item.path }}"
+            target="_blank"
+          >
+            预览 PDF
+          </a>
+        </div>
+      {% else %}
+        <p>尚未解析元数据。</p>
+
+        <form method="post" action="/literature-v2/analyze">
+          <input type="hidden" name="path" value="{{ item.path }}">
+          <button type="submit">解析并生成文献卡片</button>
+        </form>
+
+        <p>
+          <a
+            href="/literature-v2/pdf?path={{ item.path }}"
+            target="_blank"
+          >
+            预览 PDF
+          </a>
+        </p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p>暂无 PDF，请先上传文献。</p>
+  {% endif %}
+</section>
+{% endblock %}
