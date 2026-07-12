@@ -1,89 +1,60 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>咸鱼日常打工 OS</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<aside>
-<h1><a href="/">🐟 咸鱼 OS</a></h1>
-<a href="/new">＋ 新建记录</a>
-<a href="/project">📌 项目中心</a>
-<a href="/search">🔍 全局搜索</a>
-<a href="/upload-pdf">📄 上传PDF</a>
-<a href="/pdf-library">📚 PDF库</a>
-<a href="/literature-v2">📚 文献中心V2</a>
-<a href="/literature-pool">🗂️ 文献用途池</a>
-<a href="/literature-keywords">🧬 机制关键词池</a>
-<a href="/help">❓ 使用说明</a>
-<form method="post" action="/snapshot" style="margin:10px 0;">
-  <button type="submit">保存Git快照</button>
-</form>
-<form method="post" action="/backup" style="margin:10px 0;">
-  <button type="submit">一键备份</button>
-</form>
-{% for key, item in modules.items() %}
-<a href="/module/{{ key }}">{{ item[1] }}</a>
-{% endfor %}
-</aside>
+{% extends "base.html" %}
 
-<main>
-<h2>今天要干啥？</h2>
+{% block title %}咸鱼 Research OS{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>今天要干啥？</h2>
+  <p>当前科研任务、项目进度和最近记录</p>
+</header>
 
 <section>
-<h3>🚀 快速入口</h3>
-<div class="quick-grid">
-<a href="/project">📌 项目中心</a>
-<a href="/literature">📚 文献中心</a>
-<a href="/natural-product">🌿 天然产物</a>
-<a href="/network">🌐 网络药理</a>
-<a href="/screen">🧬 虚拟筛选</a>
-<a href="/docking">🧲 分子对接</a>
-<a href="/md">🧪 分子动力学</a>
-<a href="/admet">🧪 ADMET</a>
-<a href="/experiment">🧪 实验中心</a>
-<a href="/data">📊 数据分析</a>
-<a href="/figure">🎨 科研作图</a>
-<a href="/writing">✍️ 论文写作</a>
-<a href="/memory">🧠 科研记忆</a>
-<a href="/sop">📖 SOP中心</a>
-<a href="/capability">🧩 能力包中心</a>
-</div>
-</section>
+  <h3>🚀 快速入口</h3>
 
-
-<section>
-<h3>🕘 最近记录</h3>
-{% if recent %}
-  {% for item in recent %}
-  <div class="file-card">
-    <h3><a href="/file?path={{ item.path }}">{{ item.title }}｜{{ item.name }}</a></h3>
-    <pre>{{ item.content }}</pre>
+  <div class="quick-grid">
+    <a href="/projects-v2">📁 项目中心</a>
+    <a href="/literature-v2">📚 文献中心</a>
+    <a href="/natural-product">🌿 天然产物</a>
+    <a href="/network">🌐 网络药理</a>
+    <a href="/screen">虚拟筛选</a>
+    <a href="/docking">分子对接</a>
+    <a href="/md">分子动力学</a>
+    <a href="/experiment">实验中心</a>
+    <a href="/data">📊 数据分析</a>
+    <a href="/figure">🎨 科研作图</a>
+    <a href="/writing">✍️ 论文写作</a>
+    <a href="/search">🔍 全局搜索</a>
   </div>
-  {% endfor %}
-{% else %}
-  <p>暂无最近记录。</p>
+</section>
+
+{% if recent is defined %}
+<section>
+  <h3>🕘 最近记录</h3>
+
+  {% if recent %}
+    {% for item in recent %}
+    <div class="file-card">
+      <h3>
+        <a href="/file?path={{ item.path }}">
+          {{ item.title }}｜{{ item.name }}
+        </a>
+      </h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近记录。</p>
+  {% endif %}
+</section>
 {% endif %}
-</section>
-
 
 <section>
-<h3>🌙 下班复盘</h3>
-<form method="post" action="/end">
-  <button type="submit">生成今日下班复盘</button>
-</form>
+  <h3>📅 今日任务</h3>
+  <pre>{{ today }}</pre>
 </section>
 
 <section>
-<h3>📅 今日任务</h3>
-<pre>{{ today }}</pre>
+  <h3>📁 项目总览</h3>
+  <pre>{{ overview }}</pre>
 </section>
-
-<section>
-<h3>📁 项目总览</h3>
-<pre>{{ overview }}</pre>
-</section>
-</main>
-</body>
-</html>
+{% endblock %}

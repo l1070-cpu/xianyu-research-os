@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}咸鱼 OS{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+{% include "shared/sidebar.html" %}
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

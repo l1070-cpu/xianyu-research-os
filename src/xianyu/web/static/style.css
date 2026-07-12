@@ -60,3 +60,53 @@ pre {
 .quick-grid a:hover {
   background: #eef2ff;
 }
+
+.nav-title {
+  margin: 18px 8px 8px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+aside nav a {
+  display: block;
+  padding: 9px 10px;
+  margin-bottom: 3px;
+  border-radius: 8px;
+  color: #e5e7eb;
+  text-decoration: none;
+}
+
+aside nav a:hover {
+  background: #374151;
+}
+
+.page-header {
+  margin-bottom: 22px;
+}
+
+.page-header h2 {
+  margin-bottom: 6px;
+}
+
+.page-header p {
+  color: #6b7280;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.status-current {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .project-grid,
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+}
