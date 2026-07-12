@@ -6,7 +6,10 @@ from .core import *
 router=APIRouter(prefix='/literature-v2',tags=['literature-v2'])
 ROOT=Path(__file__).resolve().parents[4]
 PDF=ROOT/'04_文献笔记'/'PDF库';PDF.mkdir(parents=True,exist_ok=True)
-templates=Jinja2Templates(directory=str(Path(__file__).resolve().parent/'templates'))
+templates = Jinja2Templates(directory=[
+    str(Path(__file__).resolve().parent / "templates"),
+    str(Path(__file__).resolve().parents[1] / "templates"),
+])
 CTX='金毛狗脊治疗缺血性脑卒中；UPLC-QTOF/MS、网络药理、Gene/Omics、虚拟筛选、分子对接、MD、ADMET、H/R细胞模型、WB、RT-qPCR。'
 def valid(path):
  p=(ROOT/path).resolve()
