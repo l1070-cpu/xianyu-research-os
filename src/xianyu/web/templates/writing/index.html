@@ -53,6 +53,30 @@
   </form>
 </section>
 
+{% if recent_figures %}
+<section>
+  <h3>最近 Figure 记录</h3>
+  {% for item in recent_figures %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if recent_network %}
+<section>
+  <h3>最近网络药理记录</h3>
+  {% for item in recent_network %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <section>
   <h3>最近论文写作记录</h3>
   {% if items %}
