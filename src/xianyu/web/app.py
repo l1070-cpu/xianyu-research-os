@@ -222,13 +222,26 @@ def get_table_preview(path: Path, max_rows: int = 5):
 def infer_column_checks(path: Path, headers: list[str]):
     normalized_headers = [h.strip().lower() for h in headers if h is not None]
 
+    def find_match(candidates: list[str]):
+        for candidate in candidates:
+            if candidate.lower() in normalized_headers:
+                return candidate
+        return ""
+
     def has_any(*candidates: str):
-        return any(candidate.lower() in normalized_headers for candidate in candidates)
+        return bool(find_match(list(candidates)))
 
     folder_hint = "/".join(path.parts[-3:]).lower()
     checks = []
+    mapping_rules = {}
 
     if "gene_omics" in folder_hint:
+        mapping_rules = {
+            "gene": ["gene", "symbol", "gene_symbol", "gene symbol"],
+            "log2fc": ["log2fc", "logfc", "log2_fc", "log2 fold change"],
+            "pvalue": ["pvalue", "p_value", "p.value", "p val"],
+            "padj": ["padj", "fdr", "adj_p", "adj_pval", "adj.p.val"],
+        }
         checks = [
             ("gene", has_any("gene", "symbol", "gene_symbol")),
             ("log2fc", has_any("log2fc", "logfc", "log2_fc")),
@@ -236,30 +249,54 @@ def infer_column_checks(path: Path, headers: list[str]):
             ("padj", has_any("padj", "fdr", "adj_p", "adj_pval")),
         ]
     elif "targets" in folder_hint:
+        mapping_rules = {
+            "compound_name": ["compound_name", "compound", "ingredient", "compound name"],
+            "target": ["target", "gene", "symbol", "gene_symbol"],
+            "probability": ["probability", "score", "confidence"],
+        }
         checks = [
             ("compound_name", has_any("compound_name", "compound", "ingredient")),
             ("target", has_any("target", "gene", "symbol")),
             ("probability", has_any("probability", "score", "confidence")),
         ]
     elif "disease" in folder_hint:
+        mapping_rules = {
+            "gene": ["gene", "symbol", "gene_symbol", "gene symbol"],
+            "score": ["score", "relevance", "confidence"],
+            "disease": ["disease", "phenotype"],
+        }
         checks = [
             ("gene", has_any("gene", "symbol", "gene_symbol")),
             ("score", has_any("score", "relevance", "confidence")),
             ("disease", has_any("disease", "phenotype")),
         ]
     elif "enrichment" in folder_hint:
+        mapping_rules = {
+            "term": ["term", "description", "pathway"],
+            "pvalue": ["pvalue", "p_value", "p.adjust", "padj", "adj.p.val"],
+            "count": ["count", "gene_count", "genes"],
+        }
         checks = [
             ("term", has_any("term", "description", "pathway")),
             ("pvalue", has_any("pvalue", "p_value", "p.adjust", "padj")),
             ("count", has_any("count", "gene_count", "genes")),
         ]
     elif "network" in folder_hint:
+        mapping_rules = {
+            "gene": ["gene", "symbol", "target"],
+            "source": ["source", "from"],
+            "target": ["target", "to"],
+        }
         checks = [
             ("gene", has_any("gene", "symbol", "target")),
             ("source", has_any("source", "from")),
             ("target", has_any("target", "to")),
         ]
     else:
+        mapping_rules = {
+            "gene/target": ["gene", "symbol", "target"],
+            "score/pvalue": ["score", "pvalue", "p_value", "padj"],
+        }
         checks = [
             ("gene/target", has_any("gene", "symbol", "target")),
             ("score/pvalue", has_any("score", "pvalue", "p_value", "padj")),
@@ -267,10 +304,17 @@ def infer_column_checks(path: Path, headers: list[str]):
 
     found = [name for name, ok in checks if ok]
     missing = [name for name, ok in checks if not ok]
+    suggested_mappings = []
+    for canonical, candidates in mapping_rules.items():
+        matched = find_match(candidates)
+        if matched:
+            suggested_mappings.append({"from": matched, "to": canonical})
+
     return {
         "found": found,
         "missing": missing,
         "folder_hint": folder_hint,
+        "suggested_mappings": suggested_mappings,
     }
 
 

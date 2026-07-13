@@ -67,6 +67,17 @@
     </p>
   </div>
 </section>
+
+{% if column_checks.suggested_mappings %}
+<section>
+  <h3>列名建议映射</h3>
+  <div class="file-card">
+    {% for item in column_checks.suggested_mappings %}
+    <p><strong>{{ item.from }}</strong> → {{ item.to }}</p>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endif %}
 
 <section>
