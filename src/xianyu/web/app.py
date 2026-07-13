@@ -164,6 +164,61 @@ def get_recent_project_imports(limit_per_folder: int = 5):
     return result
 
 
+def build_network_intersection_context():
+    current_project = get_current_project() or {}
+    recent_imports = get_recent_project_imports()
+    deg_path = recent_imports.get("gene_omics", [{}])[0].get("path", "") if recent_imports.get("gene_omics") else ""
+    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
+    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
+    network_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
+
+    import_summary = []
+    if deg_path:
+        import_summary.append(f"- DEG / Gene：{deg_path}")
+    if target_path:
+        import_summary.append(f"- 成分靶点：{target_path}")
+    if disease_path:
+        import_summary.append(f"- 疾病靶点：{disease_path}")
+    if network_path:
+        import_summary.append(f"- 交集 / 网络：{network_path}")
+
+    project_name = current_project.get("short_name") or current_project.get("name") or "当前项目"
+    disease_name = current_project.get("disease") or "模型"
+    object_name = current_project.get("research_object") or "研究对象"
+
+    auto_title = f"{project_name}_{disease_name}_DEG交集分析"
+    if not deg_path and (target_path or disease_path):
+        auto_title = f"{project_name}_{object_name}_网络药理交集分析"
+
+    readiness = {
+        "has_deg": bool(deg_path),
+        "has_target": bool(target_path),
+        "has_disease": bool(disease_path),
+        "has_network": bool(network_path),
+    }
+    readiness["can_auto_create"] = readiness["has_deg"] or (
+        readiness["has_target"] and readiness["has_disease"]
+    )
+
+    if readiness["can_auto_create"]:
+        auto_hint = "系统会自动引用当前项目最近导入的 DEG、成分靶点和疾病靶点表。"
+    else:
+        auto_hint = "当前还缺少可用输入，建议先在“数据入口”上传 DEG、成分靶点或疾病靶点表。"
+
+    return {
+        "current_project": current_project,
+        "recent_imports": recent_imports,
+        "deg_path": deg_path,
+        "target_path": target_path,
+        "disease_path": disease_path,
+        "network_path": network_path,
+        "import_summary_text": "\n".join(import_summary) if import_summary else "- 当前还没有可自动引用的输入表，请先去“数据入口”上传。",
+        "auto_title": auto_title,
+        "auto_hint": auto_hint,
+        "readiness": readiness,
+    }
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1228,8 +1283,15 @@ def network_index():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     current_project = get_current_project()
     recent_imports = get_recent_project_imports()
+    intersection_context = build_network_intersection_context()
     template = env.get_template("network/index.html")
-    return template.render(items=items, modules=MODULES, active_project=current_project, recent_imports=recent_imports)
+    return template.render(
+        items=items,
+        modules=MODULES,
+        active_project=current_project,
+        recent_imports=recent_imports,
+        intersection_context=intersection_context,
+    )
 
 @app.post("/network/new")
 def network_new(title: str = Form(...)):
@@ -1307,22 +1369,13 @@ def network_intersection_new(title: str = Form(...)):
     folder = ROOT / "02_项目管理" / "网络药理学"
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}_DEG_交集分析.md"
-    current_project = get_current_project() or {}
-    recent_imports = get_recent_project_imports()
-    deg_path = recent_imports.get("gene_omics", [{}])[0].get("path", "") if recent_imports.get("gene_omics") else ""
-    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
-    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
-    network_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
-    import_summary = []
-    if deg_path:
-        import_summary.append(f"- DEG / Gene：{deg_path}")
-    if target_path:
-        import_summary.append(f"- 成分靶点：{target_path}")
-    if disease_path:
-        import_summary.append(f"- 疾病靶点：{disease_path}")
-    if network_path:
-        import_summary.append(f"- 交集 / 网络：{network_path}")
-    import_summary_text = "\n".join(import_summary) if import_summary else "- 当前还没有可自动引用的输入表，请先去“数据入口”上传。"
+    context = build_network_intersection_context()
+    current_project = context["current_project"]
+    deg_path = context["deg_path"]
+    target_path = context["target_path"]
+    disease_path = context["disease_path"]
+    network_path = context["network_path"]
+    import_summary_text = context["import_summary_text"]
 
     if not file_path.exists():
         content = f"""# DEG ∩ 网络药理靶点交集分析｜{title}
@@ -1392,6 +1445,14 @@ def network_intersection_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/network/intersection/auto")
+def network_intersection_auto():
+    context = build_network_intersection_context()
+    if not context["readiness"]["can_auto_create"]:
+        return RedirectResponse(url="/network", status_code=303)
+    return network_intersection_new(title=context["auto_title"])
 
 
 @app.post("/network/visualization/new")

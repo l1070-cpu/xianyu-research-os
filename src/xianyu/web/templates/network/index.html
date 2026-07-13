@@ -74,6 +74,21 @@
 <section>
   <h3>🧬 Gene / Omics 联动</h3>
   <p>如果已经完成 GEO 或 RNA-seq 差异分析，可以从这里直接生成 “DEG ∩ 网络药理靶点” 的交集分析记录。</p>
+  {% if intersection_context %}
+  <div class="file-card">
+    <h3>⚡ 自动交集分析</h3>
+    <p><strong>建议标题：</strong>{{ intersection_context.auto_title }}</p>
+    <p>{{ intersection_context.auto_hint }}</p>
+    <pre>{{ intersection_context.import_summary_text }}</pre>
+    {% if intersection_context.readiness.can_auto_create %}
+    <form method="post" action="/network/intersection/auto">
+      <button type="submit">一键生成交集分析记录</button>
+    </form>
+    {% else %}
+    <p>请先上传 DEG、成分靶点或疾病靶点表，再回来一键生成。</p>
+    {% endif %}
+  </div>
+  {% endif %}
   <form method="post" action="/network/intersection/new">
     <p>
       <label>交集任务名称</label><br>
