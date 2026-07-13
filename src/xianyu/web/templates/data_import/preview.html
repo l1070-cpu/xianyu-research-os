@@ -19,10 +19,24 @@
 <section>
   <h3>文件信息</h3>
   <p><strong>路径：</strong>{{ path }}</p>
+  {% if selected_type_label %}
+  <p><strong>上传时选择的类型：</strong>{{ selected_type_label }}</p>
+  {% endif %}
   {% if note %}
   <p><a href="/file?path={{ note }}">打开这次导入记录</a></p>
   {% endif %}
 </section>
+
+{% if type_mismatch and type_suggestion %}
+<section>
+  <h3>类型不一致提醒</h3>
+  <div class="file-card">
+    <p><strong>你选择的是：</strong>{{ selected_type_label }}</p>
+    <p><strong>系统更像建议为：</strong>{{ type_suggestion.type }}</p>
+    <p>如果你只是临时放在这个分类里，可以继续；如果想让后续交集分析和可视化更顺，建议下次按推荐类型导入。</p>
+  </div>
+</section>
+{% endif %}
 
 <section>
   <h3>预览结果</h3>

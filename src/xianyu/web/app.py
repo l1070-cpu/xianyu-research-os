@@ -539,11 +539,25 @@ def data_import_page():
 
 
 @app.get("/data-import/preview", response_class=HTMLResponse)
-def data_import_preview(path: str, note: str = ""):
+def data_import_preview(path: str, note: str = "", selected_type: str = ""):
     file_path = ROOT / path
     preview = get_table_preview(file_path)
     column_checks = infer_column_checks(file_path, preview.get("headers", [])) if not preview.get("error") else None
     type_suggestion = suggest_dataset_type(file_path, preview.get("headers", [])) if not preview.get("error") else None
+    selected_type_labels = {
+        "deg": "DEG / Gene 表",
+        "compound_targets": "成分靶点表",
+        "disease_targets": "疾病靶点表",
+        "intersection": "交集基因 / 交集靶点表",
+        "enrichment": "GO / KEGG / 富集结果表",
+        "general": "通用数据表",
+    }
+    selected_type_label = selected_type_labels.get(selected_type, "")
+    type_mismatch = bool(
+        selected_type_label
+        and type_suggestion
+        and selected_type_label != type_suggestion.get("type", "")
+    )
     template = env.get_template("data_import/preview.html")
     return template.render(
         modules=MODULES,
@@ -553,6 +567,9 @@ def data_import_preview(path: str, note: str = ""):
         preview=preview,
         column_checks=column_checks,
         type_suggestion=type_suggestion,
+        selected_type=selected_type,
+        selected_type_label=selected_type_label,
+        type_mismatch=type_mismatch,
     )
 
 
@@ -620,7 +637,11 @@ def data_import_upload(
         )
 
     return RedirectResponse(
-        url=f"/data-import/preview?path={file_path.relative_to(ROOT)}&note={note_path.relative_to(ROOT)}",
+        url=(
+            f"/data-import/preview?path={file_path.relative_to(ROOT)}"
+            f"&note={note_path.relative_to(ROOT)}"
+            f"&selected_type={data_type}"
+        ),
         status_code=303,
     )
 
