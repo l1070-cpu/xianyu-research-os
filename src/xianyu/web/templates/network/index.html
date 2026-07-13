@@ -57,6 +57,18 @@
 </section>
 
 <section>
+  <h3>🎨 进入 Figure Center</h3>
+  <p>如果已经准备开始统一整理网络药理图表，可以直接生成一个“网络药理图表包”。</p>
+  <form method="post" action="/figure/network-package/new">
+    <p>
+      <label>图表包名称</label><br>
+      <input name="title" placeholder="例如：缺血性脑卒中网络药理图表包" required>
+    </p>
+    <button type="submit">生成网络药理图表包</button>
+  </form>
+</section>
+
+<section>
   <h3>最近网络药理记录</h3>
   {% if items %}
     {% for item in items %}

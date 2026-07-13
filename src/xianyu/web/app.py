@@ -468,6 +468,7 @@ def data_new(title: str = Form(...), data_type: str = Form("general")):
 @app.get("/figure", response_class=HTMLResponse)
 def figure_index():
     files = list_md("05_数据分析/科研作图")
+    current_project = get_current_project()
     items = []
     for file in files[:30]:
         items.append({
@@ -476,7 +477,7 @@ def figure_index():
             "content": read(file)[:500]
         })
     template = env.get_template("figure/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/figure/new")
 def figure_new(title: str = Form(...), figure_type: str = Form("general")):
@@ -542,6 +543,77 @@ def figure_new(title: str = Form(...), figure_type: str = Form("general")):
 ## 是否可进入论文
 - [ ] 是
 - [ ] 否
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/figure/network-package/new")
+def figure_network_package_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "科研作图"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_网络药理图表包.md"
+    current_project = get_current_project() or {}
+
+    if not file_path.exists():
+        content = f"""# 网络药理图表包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 图表任务清单
+- [ ] Venn 图
+- [ ] UpSet 图
+- [ ] 成分-靶点网络图
+- [ ] PPI 网络图
+- [ ] GO 气泡图
+- [ ] KEGG 气泡图
+- [ ] 核心靶点柱状图
+- [ ] Figure legend 草稿
+
+## 输入文件
+- 成分表：
+- 成分-靶点边表：
+- 疾病靶点表：
+- 交集基因表：
+- PPI 文件：
+- GO 结果：
+- KEGG 结果：
+
+## 输出文件位置
+- PNG：
+- SVG / PDF：
+- CSV：
+
+## 图风格说明
+- 用途（汇报 / 论文 / 投稿）：
+- 颜色方案：
+- 字体要求：
+- 是否需要 Cytoscape 精修：
+
+## 图注草稿
+- Figure 1：
+- Figure 2：
+- Supplementary：
+
+## 后续衔接
+- [ ] 进入 Docking 候选筛选
+- [ ] 进入 Results 写作
+- [ ] 进入 Discussion 写作
+
+## 风险点
+- 图表是否信息过载：
+- 标签是否重叠：
+- 输入数据是否已去重：
+- 是否需要只保留 Top 10 / 20：
 """
         file_path.write_text(content, encoding="utf-8")
 
