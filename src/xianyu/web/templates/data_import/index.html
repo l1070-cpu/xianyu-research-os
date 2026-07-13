@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}数据入口{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🗃️ 数据入口</h2>
+  <p>把 DEG、靶点表、交集表和富集结果按当前项目统一收进系统</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% else %}
+<section>
+  <p>请先在项目中心选择当前项目。</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>上传表格文件</h3>
+  <form method="post" action="/data-import/upload" enctype="multipart/form-data">
+    <p>
+      <label>数据名称</label><br>
+      <input name="dataset_name" placeholder="例如：GSE差异基因表 / 金毛狗脊成分靶点表" required>
+    </p>
+
+    <p>
+      <label>数据类型</label><br>
+      <select name="data_type">
+        <option value="deg">DEG / Gene 表</option>
+        <option value="compound_targets">成分靶点表</option>
+        <option value="disease_targets">疾病靶点表</option>
+        <option value="intersection">交集基因 / 交集靶点表</option>
+        <option value="enrichment">GO / KEGG / 富集结果表</option>
+        <option value="general">通用数据表</option>
+      </select>
+    </p>
+
+    <p>
+      <label>选择文件</label><br>
+      <input type="file" name="file" accept=".csv,.xlsx,.xls,.tsv,.txt" required>
+    </p>
+
+    <button type="submit">上传到当前项目</button>
+  </form>
+</section>
+
+<section>
+  <h3>推荐使用顺序</h3>
+  <pre>DEG 表 / 靶点表上传 → 交集分析 → Venn / UpSet / PPI / GO / KEGG → Figure Legend / Results 草稿</pre>
+</section>
+
+<section>
+  <h3>最近导入文件</h3>
+  {% if imported_files %}
+    {% for item in imported_files %}
+    <div class="file-card">
+      <h3>{{ item.name }}</h3>
+      <p><strong>目录：</strong>{{ item.folder }}</p>
+      <p>{{ item.path }}</p>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>当前项目暂无已导入表格。</p>
+  {% endif %}
+</section>
+{% endblock %}

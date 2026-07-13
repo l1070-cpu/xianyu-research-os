@@ -122,6 +122,14 @@ def get_current_project():
     return None
 
 
+def get_current_project_root():
+    current_id = get_current_project_id()
+    if not current_id:
+        return None
+    project_root = ROOT / "projects" / current_id
+    return project_root if project_root.exists() else None
+
+
 env.globals["current_project"] = get_current_project
 
 @app.get("/", response_class=HTMLResponse)
@@ -238,6 +246,99 @@ def search_page(q: str = ""):
 
     template = env.get_template("search.html")
     return template.render(q=q, results=results, modules=MODULES)
+
+
+@app.get("/data-import", response_class=HTMLResponse)
+def data_import_page():
+    current_project = get_current_project()
+    project_root = get_current_project_root()
+    imported_files = []
+
+    if project_root:
+        for folder in ["gene_omics", "targets", "disease", "network", "enrichment", "data"]:
+            target_dir = project_root / folder
+            if not target_dir.exists():
+                continue
+            for file in sorted(target_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
+                if file.is_file():
+                    imported_files.append({
+                        "name": file.name,
+                        "folder": folder,
+                        "path": str(file.relative_to(ROOT)),
+                    })
+
+    template = env.get_template("data_import/index.html")
+    return template.render(
+        modules=MODULES,
+        active_project=current_project,
+        imported_files=imported_files[:20],
+    )
+
+
+@app.post("/data-import/upload")
+def data_import_upload(
+    dataset_name: str = Form(...),
+    data_type: str = Form(...),
+    file: UploadFile = File(...),
+):
+    current_project = get_current_project()
+    project_root = get_current_project_root()
+    if not current_project or not project_root:
+        return HTMLResponse("请先在项目中心选择当前项目。", status_code=400)
+
+    folder_map = {
+        "deg": "gene_omics",
+        "compound_targets": "targets",
+        "disease_targets": "disease",
+        "intersection": "network",
+        "enrichment": "enrichment",
+        "general": "data",
+    }
+    target_folder = folder_map.get(data_type, "data")
+    out_dir = project_root / target_folder
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    suffix = Path(file.filename or "").suffix
+    if suffix.lower() not in {".csv", ".xlsx", ".xls", ".tsv", ".txt"}:
+        return HTMLResponse("仅支持 csv、xlsx、xls、tsv、txt 文件。", status_code=400)
+
+    filename = f"{date.today().isoformat()}_{safe_name(dataset_name)}{suffix.lower()}"
+    file_path = out_dir / filename
+    file_path.write_bytes(file.file.read())
+
+    note_dir = ROOT / "05_数据分析" / "科研作图"
+    note_dir.mkdir(parents=True, exist_ok=True)
+    note_path = note_dir / f"{date.today().isoformat()}_{safe_name(dataset_name)}_数据导入记录.md"
+    if not note_path.exists():
+        note_path.write_text(
+            f"""# 数据导入记录｜{dataset_name}
+
+## 日期
+{date.today().isoformat()}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 项目编号：{current_project.get('project_id', '')}
+
+## 数据类型
+- 类型：{data_type}
+- 保存目录：projects/{current_project.get('project_id', '')}/{target_folder}
+
+## 原始文件
+- 文件名：{file.filename}
+- 保存后文件：{filename}
+
+## 后续建议
+- [ ] 检查列名是否标准化
+- [ ] 检查基因名 / 靶点名是否去重
+- [ ] 进入交集分析
+- [ ] 进入可视化
+- [ ] 进入 Results 写作
+""",
+            encoding="utf-8",
+        )
+
+    return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
 
 
 @app.get("/literature", response_class=HTMLResponse)
