@@ -33,6 +33,18 @@
 </section>
 
 <section>
+  <h3>🧬 Gene / Omics 联动</h3>
+  <p>如果已经完成 GEO 或 RNA-seq 差异分析，可以从这里直接生成 “DEG ∩ 网络药理靶点” 的交集分析记录。</p>
+  <form method="post" action="/network/intersection/new">
+    <p>
+      <label>交集任务名称</label><br>
+      <input name="title" placeholder="例如：缺血性脑卒中DEG交集分析" required>
+    </p>
+    <button type="submit">生成交集分析记录</button>
+  </form>
+</section>
+
+<section>
   <h3>最近网络药理记录</h3>
   {% if items %}
     {% for item in items %}

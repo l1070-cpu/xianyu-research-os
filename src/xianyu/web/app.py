@@ -692,6 +692,81 @@ def network_new(title: str = Form(...)):
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/network/intersection/new")
+def network_intersection_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "网络药理学"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_DEG_交集分析.md"
+    current_project = get_current_project() or {}
+
+    if not file_path.exists():
+        content = f"""# DEG ∩ 网络药理靶点交集分析｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 输入文件
+- 差异基因表（DEG）：
+- 成分靶点表：
+- 疾病靶点表：
+- 网络药理交集靶点表：
+
+## DEG 筛选条件
+- |log2FC|：
+- P value：
+- Padj / FDR：
+- 数据集编号：
+
+## 网络药理靶点来源
+- SwissTargetPrediction：
+- GeneCards：
+- OMIM：
+- DisGeNET：
+- 其他：
+
+## 交集分析
+- DEG 数量：
+- 网络药理候选靶点数量：
+- 交集基因数：
+- 核心交集基因：
+
+## 后续分析计划
+- [ ] PPI 网络
+- [ ] GO 富集
+- [ ] KEGG 富集
+- [ ] Cytoscape 可视化
+- [ ] Docking 候选组合
+- [ ] WB / qPCR 验证
+
+## 结果文件位置
+- 交集表：
+- Venn / UpSet 图：
+- PPI：
+- GO：
+- KEGG：
+
+## 结果解释
+
+## Results 草稿
+
+## 风险点
+- DEG 数据集是否匹配疾病模型：
+- 交集是否过少：
+- 是否需要放宽 / 收紧阈值：
+- 是否存在基因名标准化问题：
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/screen", response_class=HTMLResponse)
 def screen_index():
     files = list_md("02_项目管理/虚拟筛选")

@@ -33,6 +33,17 @@
 </section>
 
 <section>
+  <h3>🔗 快速进入交集分析</h3>
+  <form method="post" action="/network/intersection/new">
+    <p>
+      <label>交集任务名称</label><br>
+      <input name="title" placeholder="例如：脑卒中DEG与金毛狗脊靶点交集" required>
+    </p>
+    <button type="submit">生成 DEG ∩ 网络药理交集记录</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 Gene / Omics 记录</h3>
   {% if items %}
     {% for item in items %}
