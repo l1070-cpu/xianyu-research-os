@@ -617,8 +617,9 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 def network_index():
     files = list_md("02_项目管理/网络药理学")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project()
     template = env.get_template("network/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/network/new")
 def network_new(title: str = Form(...)):
