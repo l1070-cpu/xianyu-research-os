@@ -69,6 +69,28 @@ pre {
   letter-spacing: 0.08em;
 }
 
+.sidebar-current-project {
+  margin: 0 0 14px;
+  padding: 10px 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+  line-height: 1.4;
+}
+
+.sidebar-project-stage {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
 aside nav a {
   display: block;
   padding: 9px 10px;

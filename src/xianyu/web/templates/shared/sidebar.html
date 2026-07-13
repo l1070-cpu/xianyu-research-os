@@ -1,6 +1,15 @@
 <aside>
   <h1><a href="/">🐟 咸鱼 OS</a></h1>
 
+  {% set cp = current_project() %}
+  {% if cp %}
+  <div class="sidebar-current-project">
+    <div class="nav-title">当前项目</div>
+    <div class="sidebar-project-name">{{ cp.short_name or cp.name }}</div>
+    <div class="sidebar-project-stage">{{ cp.stage }}</div>
+  </div>
+  {% endif %}
+
   <nav>
     <a href="/">🏠 首页</a>
     <a href="/projects-v2">📁 项目中心 V2</a>

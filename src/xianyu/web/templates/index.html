@@ -8,6 +8,14 @@
   <p>当前科研任务、项目进度和最近记录</p>
 </header>
 
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
 <section>
   <h3>🚀 快速入口</h3>
 

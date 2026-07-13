@@ -78,10 +78,69 @@ def list_md(folder):
 def safe_name(name):
     return name.replace(" ", "_").replace("/", "_")
 
+
+def load_projects_v2():
+    import json
+
+    projects_root = ROOT / "projects"
+    projects = []
+
+    for project_file in projects_root.glob("*/project.json"):
+        try:
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            projects.append(data)
+        except Exception:
+            continue
+
+    projects.sort(key=lambda x: x.get("name", ""))
+    return projects
+
+
+def get_current_project_id():
+    import json
+
+    current_file = ROOT / "projects" / "current_project.json"
+    if not current_file.exists():
+        return ""
+
+    try:
+        data = json.loads(current_file.read_text(encoding="utf-8"))
+        return data.get("project_id", "")
+    except Exception:
+        return ""
+
+
+def get_current_project():
+    current_id = get_current_project_id()
+    if not current_id:
+        return None
+
+    for project in load_projects_v2():
+        if project.get("project_id") == current_id:
+            return project
+    return None
+
+
+env.globals["current_project"] = get_current_project
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     today = read(ROOT / "01_今日打工" / "今日任务.md")
-    overview = read(ROOT / "02_项目管理" / "金毛狗脊_IS_项目总览.md")
+    current_project = get_current_project()
+    if current_project:
+        overview = "\n".join(
+            [
+                f"项目名称：{current_project.get('name', '')}",
+                f"项目简称：{current_project.get('short_name', '')}",
+                f"研究类型：{current_project.get('category', '')}",
+                f"研究对象：{current_project.get('research_object', '')}",
+                f"疾病 / 模型：{current_project.get('disease', '')}",
+                f"当前阶段：{current_project.get('stage', '')}",
+                f"项目状态：{current_project.get('status', '')}",
+            ]
+        )
+    else:
+        overview = "尚未选择当前项目。"
     recent = []
     for key, item in MODULES.items():
         folder, title = item
@@ -96,7 +155,13 @@ def index():
             })
 
     template = env.get_template("index.html")
-    return template.render(today=today, overview=overview, modules=MODULES, recent=recent)
+    return template.render(
+        today=today,
+        overview=overview,
+        modules=MODULES,
+        recent=recent,
+        active_project=current_project,
+    )
 
 @app.get("/module/{key}", response_class=HTMLResponse)
 def module_page(key: str):
@@ -1602,45 +1667,11 @@ def literature_keywords():
     return template.render(pools=pools, modules=MODULES)
 
 
-def load_projects_v2():
-    import json
-
-    projects_root = ROOT / "projects"
-    projects = []
-
-    for project_file in projects_root.glob("*/project.json"):
-        try:
-            data = json.loads(project_file.read_text(encoding="utf-8"))
-            projects.append(data)
-        except Exception:
-            continue
-
-    projects.sort(key=lambda x: x.get("name", ""))
-    return projects
-
-
-def get_current_project_id():
-    import json
-
-    current_file = ROOT / "projects" / "current_project.json"
-    if not current_file.exists():
-        return ""
-
-    try:
-        data = json.loads(current_file.read_text(encoding="utf-8"))
-        return data.get("project_id", "")
-    except Exception:
-        return ""
-
-
 @app.get("/projects-v2", response_class=HTMLResponse)
 def projects_v2_page():
     projects = load_projects_v2()
     current_id = get_current_project_id()
-    current = next(
-        (project for project in projects if project.get("project_id") == current_id),
-        None
-    )
+    current = get_current_project()
 
     template = env.get_template("projects_v2/index.html")
     return template.render(

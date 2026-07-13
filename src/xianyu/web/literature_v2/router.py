@@ -11,6 +11,27 @@ templates = Jinja2Templates(directory=[
     str(Path(__file__).resolve().parents[1] / "templates"),
 ])
 CTX='金毛狗脊治疗缺血性脑卒中；UPLC-QTOF/MS、网络药理、Gene/Omics、虚拟筛选、分子对接、MD、ADMET、H/R细胞模型、WB、RT-qPCR。'
+
+
+def current_project():
+ import json
+ current_file=ROOT/'projects'/'current_project.json'
+ if not current_file.exists():return None
+ try:
+  current_id=json.loads(current_file.read_text(encoding='utf-8')).get('project_id','')
+ except Exception:
+  return None
+ if not current_id:return None
+ project_file=ROOT/'projects'/current_id/'project.json'
+ if not project_file.exists():return None
+ try:
+  return json.loads(project_file.read_text(encoding='utf-8'))
+ except Exception:
+  return None
+
+
+templates.env.globals["current_project"]=current_project
+
 def valid(path):
  p=(ROOT/path).resolve()
  if PDF.resolve() not in p.parents: raise HTTPException(403,'非法路径')
