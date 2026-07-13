@@ -25,6 +25,7 @@ MODULES = {
     "literature": ("04_文献笔记", "📚 文献中心"),
     "natural_product": ("02_项目管理/天然产物", "🌿 天然产物"),
     "network": ("02_项目管理/网络药理学", "🌐 网络药理"),
+    "gene": ("02_项目管理/Gene_Omics", "🧬 Gene / Omics"),
     "docking": ("02_项目管理/分子对接", "🧲 分子对接"),
     "experiment": ("03_实验记录", "🧪 实验中心"),
     "data": ("05_数据分析", "📊 数据分析"),
@@ -924,9 +925,10 @@ def md_new(title: str = Form(...)):
 @app.get("/admet", response_class=HTMLResponse)
 def admet_index():
     files = list_md("02_项目管理/ADMET")
+    current_project = get_current_project()
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     template = env.get_template("admet/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/admet/new")
 def admet_new(title: str = Form(...)):
@@ -1059,9 +1061,10 @@ def memory_new(title: str = Form(...)):
 @app.get("/natural-product", response_class=HTMLResponse)
 def natural_product_index():
     files = list_md("02_项目管理/天然产物")
+    current_project = get_current_project()
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     template = env.get_template("natural_product/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/natural-product/new")
 def natural_product_new(title: str = Form(...)):
@@ -1142,6 +1145,91 @@ def natural_product_new(title: str = Form(...)):
 - 是否定性过度：
 
 ## 下一步
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/gene", response_class=HTMLResponse)
+def gene_index():
+    files = list_md("02_项目管理/Gene_Omics")
+    current_project = get_current_project()
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    template = env.get_template("gene/index.html")
+    return template.render(items=items, modules=MODULES, active_project=current_project)
+
+
+@app.post("/gene/new")
+def gene_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "Gene_Omics"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# Gene / Omics 分析任务｜{title}
+
+## 日期
+{today}
+
+## 项目背景
+- 项目名称：
+- 疾病 / 模型：
+- 数据来源（GEO / RNA-seq / TCGA / 自测序）：
+- 数据集编号：
+
+## 样本信息
+- 实验组：
+- 对照组：
+- 样本量：
+- 平台：
+
+## 数据处理流程
+- 原始数据下载：
+- 质控：
+- 标准化：
+- 差异分析：
+- 富集分析：
+- 可视化：
+
+## 差异基因筛选阈值
+- |log2FC|：
+- P value：
+- Padj / FDR：
+
+## 候选基因
+- 
+
+## 与网络药理交集
+- 交集基因数：
+- 核心基因：
+- 后续靶点：
+
+## 推荐后续动作
+- [ ] GO / KEGG 富集
+- [ ] PPI 网络
+- [ ] 与成分靶点交集
+- [ ] 进入 Docking
+- [ ] 进入 WB / qPCR 验证
+
+## 结果文件位置
+
+## 图表位置
+- Volcano：
+- Heatmap：
+- PCA：
+- Enrichment：
+
+## 结果解释
+
+## Results 草稿
+
+## 风险点
+- 样本量是否足够：
+- 批次效应是否处理：
+- 阈值是否过严 / 过宽：
+- 是否存在过度解释：
 """
         file_path.write_text(content, encoding="utf-8")
 

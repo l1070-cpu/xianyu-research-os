@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}ADMET 评价中心{% endblock %}
+{% block title %}Gene / Omics Center{% endblock %}
 
 {% block content %}
 <header class="page-header">
-  <h2>🧪 ADMET 评价中心</h2>
-  <p>围绕当前项目管理候选成分的药物相似性、毒性和成药性评估</p>
+  <h2>🧬 Gene / Omics Center</h2>
+  <p>围绕当前项目管理 GEO、RNA-seq、差异基因和与网络药理的交集分析</p>
 </header>
 
 {% if active_project %}
@@ -17,23 +17,23 @@
 {% endif %}
 
 <section>
-  <h3>＋ 新建 ADMET 任务</h3>
-  <form method="post" action="/admet/new">
+  <h3>＋ 新建 Gene / Omics 任务</h3>
+  <form method="post" action="/gene/new">
     <p>
-      <label>化合物 / 任务名称</label><br>
-      <input name="title" placeholder="例如：槲皮素_ADMET / 金毛狗脊候选成分ADMET" required>
+      <label>任务名称</label><br>
+      <input name="title" placeholder="例如：GSE差异基因分析 / 脑卒中DEG交集分析" required>
     </p>
-    <button type="submit">生成 ADMET 记录</button>
+    <button type="submit">生成 Gene / Omics 记录</button>
   </form>
 </section>
 
 <section>
   <h3>推荐工作流</h3>
-  <pre>候选成分整理 → SMILES / CID 准备 → SwissADME / pkCSM / ADMETlab → 成药性评估 → 毒性风险筛选 → 输出优先对接候选</pre>
+  <pre>数据集检索 → 原始数据下载 → 差异分析 → DEG筛选 → GO/KEGG → 与网络药理交集 → 核心基因 → Docking / WB / qPCR</pre>
 </section>
 
 <section>
-  <h3>最近 ADMET 记录</h3>
+  <h3>最近 Gene / Omics 记录</h3>
   {% if items %}
     {% for item in items %}
     <div class="file-card">
@@ -43,7 +43,7 @@
     </div>
     {% endfor %}
   {% else %}
-    <p>暂无 ADMET 记录。</p>
+    <p>暂无 Gene / Omics 记录。</p>
   {% endif %}
 </section>
 {% endblock %}
