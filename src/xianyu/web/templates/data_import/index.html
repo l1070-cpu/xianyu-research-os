@@ -62,6 +62,7 @@
       <h3>{{ item.name }}</h3>
       <p><strong>目录：</strong>{{ item.folder }}</p>
       <p>{{ item.path }}</p>
+      <p><a href="/data-import/preview?path={{ item.path }}">预览表格</a></p>
     </div>
     {% endfor %}
   {% else %}
@@ -79,6 +80,7 @@
       {% for item in items %}
       <p>{{ item.name }}</p>
       <pre>{{ item.path }}</pre>
+      <p><a href="/data-import/preview?path={{ item.path }}">预览表格</a></p>
       {% endfor %}
     </div>
     {% endif %}

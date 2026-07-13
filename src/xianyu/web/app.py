@@ -1,6 +1,7 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import re
+import csv
 from pypdf import PdfReader
 from datetime import date
 from fastapi import FastAPI, Form, UploadFile, File
@@ -175,6 +176,49 @@ def get_recent_notes(folder: str, limit: int = 5):
     return items
 
 
+def get_table_preview(path: Path, max_rows: int = 5):
+    suffix = path.suffix.lower()
+    result = {
+        "headers": [],
+        "rows": [],
+        "error": "",
+        "suffix": suffix,
+    }
+
+    if not path.exists() or not path.is_file():
+        result["error"] = "文件不存在。"
+        return result
+
+    try:
+        if suffix in {".csv", ".tsv", ".txt"}:
+            delimiter = "\t" if suffix == ".tsv" else ","
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                sample = f.read(2048)
+                f.seek(0)
+                if suffix in {".csv", ".txt"}:
+                    try:
+                        dialect = csv.Sniffer().sniff(sample, delimiters=",\t;")
+                        delimiter = dialect.delimiter
+                    except Exception:
+                        delimiter = "," if "," in sample else "\t"
+                reader = csv.reader(f, delimiter=delimiter)
+                rows = list(reader)
+            if rows:
+                result["headers"] = rows[0]
+                result["rows"] = rows[1:1 + max_rows]
+            return result
+
+        if suffix in {".xlsx", ".xls"}:
+            result["error"] = "当前环境未启用 Excel 预览，请先转成 CSV/TSV，或后续再补 Excel 解析。"
+            return result
+
+        result["error"] = "当前文件类型暂不支持预览。"
+        return result
+    except Exception as e:
+        result["error"] = f"预览失败：{e}"
+        return result
+
+
 env.globals["current_project"] = get_current_project
 
 @app.get("/", response_class=HTMLResponse)
@@ -310,6 +354,20 @@ def data_import_page():
     )
 
 
+@app.get("/data-import/preview", response_class=HTMLResponse)
+def data_import_preview(path: str, note: str = ""):
+    file_path = ROOT / path
+    preview = get_table_preview(file_path)
+    template = env.get_template("data_import/preview.html")
+    return template.render(
+        modules=MODULES,
+        active_project=get_current_project(),
+        path=path,
+        note=note,
+        preview=preview,
+    )
+
+
 @app.post("/data-import/upload")
 def data_import_upload(
     dataset_name: str = Form(...),
@@ -373,7 +431,10 @@ def data_import_upload(
             encoding="utf-8",
         )
 
-    return RedirectResponse(url=f"/file?path={note_path.relative_to(ROOT)}", status_code=303)
+    return RedirectResponse(
+        url=f"/data-import/preview?path={file_path.relative_to(ROOT)}&note={note_path.relative_to(ROOT)}",
+        status_code=303,
+    )
 
 
 @app.get("/literature", response_class=HTMLResponse)

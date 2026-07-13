@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}表格预览{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🗃️ 表格预览</h2>
+  <p>查看表头和前几行，确认上传的数据能不能直接进入后续流程</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>文件信息</h3>
+  <p><strong>路径：</strong>{{ path }}</p>
+  {% if note %}
+  <p><a href="/file?path={{ note }}">打开这次导入记录</a></p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>预览结果</h3>
+  {% if preview.error %}
+    <p>{{ preview.error }}</p>
+  {% else %}
+    <div class="file-card">
+      <h3>表头</h3>
+      <pre>{{ preview.headers | join(" | ") }}</pre>
+    </div>
+
+    <div class="file-card">
+      <h3>前几行</h3>
+      {% for row in preview.rows %}
+      <pre>{{ row | join(" | ") }}</pre>
+      {% endfor %}
+      {% if not preview.rows %}
+      <p>没有检测到数据行。</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<section>
+  <h3>后续建议</h3>
+  <pre>检查列名 → 检查基因/靶点是否标准化 → 进入交集分析 → 进入可视化 → 进入 Results 写作</pre>
+</section>
+{% endblock %}
