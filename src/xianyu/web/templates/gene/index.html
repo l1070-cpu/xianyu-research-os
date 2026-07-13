@@ -32,6 +32,18 @@
   <p><a href="/data-import">进入数据入口</a>，上传 DEG、GEO 导出表或其他组学结果文件。</p>
 </section>
 
+{% if recent_imports and recent_imports.get("gene_omics") %}
+<section>
+  <h3>最近 DEG / Gene 表</h3>
+  {% for item in recent_imports.get("gene_omics", [])[:3] %}
+  <div class="file-card">
+    <h3>{{ item.name }}</h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <section>
   <h3>推荐工作流</h3>
   <pre>数据集检索 → 原始数据下载 → 差异分析 → DEG筛选 → GO/KEGG → 与网络药理交集 → 核心基因 → Docking / WB / qPCR</pre>

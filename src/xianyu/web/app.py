@@ -130,6 +130,39 @@ def get_current_project_root():
     return project_root if project_root.exists() else None
 
 
+def get_recent_project_imports(limit_per_folder: int = 5):
+    project_root = get_current_project_root()
+    if not project_root:
+        return {}
+
+    folder_labels = {
+        "gene_omics": "DEG / Gene",
+        "targets": "成分靶点",
+        "disease": "疾病靶点",
+        "network": "交集 / 网络",
+        "enrichment": "富集结果",
+        "data": "通用数据",
+    }
+
+    result = {}
+    for folder, label in folder_labels.items():
+        target_dir = project_root / folder
+        items = []
+        if target_dir.exists():
+            for file in sorted(target_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+                if file.is_file():
+                    items.append({
+                        "name": file.name,
+                        "folder": folder,
+                        "label": label,
+                        "path": str(file.relative_to(ROOT)),
+                    })
+                if len(items) >= limit_per_folder:
+                    break
+        result[folder] = items
+    return result
+
+
 env.globals["current_project"] = get_current_project
 
 @app.get("/", response_class=HTMLResponse)
@@ -251,27 +284,17 @@ def search_page(q: str = ""):
 @app.get("/data-import", response_class=HTMLResponse)
 def data_import_page():
     current_project = get_current_project()
-    project_root = get_current_project_root()
+    recent_imports = get_recent_project_imports()
     imported_files = []
-
-    if project_root:
-        for folder in ["gene_omics", "targets", "disease", "network", "enrichment", "data"]:
-            target_dir = project_root / folder
-            if not target_dir.exists():
-                continue
-            for file in sorted(target_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
-                if file.is_file():
-                    imported_files.append({
-                        "name": file.name,
-                        "folder": folder,
-                        "path": str(file.relative_to(ROOT)),
-                    })
+    for items in recent_imports.values():
+        imported_files.extend(items)
 
     template = env.get_template("data_import/index.html")
     return template.render(
         modules=MODULES,
         active_project=current_project,
         imported_files=imported_files[:20],
+        recent_imports=recent_imports,
     )
 
 
@@ -860,8 +883,9 @@ def network_index():
     files = list_md("02_项目管理/网络药理学")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     current_project = get_current_project()
+    recent_imports = get_recent_project_imports()
     template = env.get_template("network/index.html")
-    return template.render(items=items, modules=MODULES, active_project=current_project)
+    return template.render(items=items, modules=MODULES, active_project=current_project, recent_imports=recent_imports)
 
 @app.post("/network/new")
 def network_new(title: str = Form(...)):
@@ -940,6 +964,11 @@ def network_intersection_new(title: str = Form(...)):
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}_DEG_交集分析.md"
     current_project = get_current_project() or {}
+    recent_imports = get_recent_project_imports()
+    deg_path = recent_imports.get("gene_omics", [{}])[0].get("path", "") if recent_imports.get("gene_omics") else ""
+    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
+    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
+    network_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
 
     if not file_path.exists():
         content = f"""# DEG ∩ 网络药理靶点交集分析｜{title}
@@ -954,10 +983,10 @@ def network_intersection_new(title: str = Form(...)):
 - 当前阶段：{current_project.get('stage', '')}
 
 ## 输入文件
-- 差异基因表（DEG）：
-- 成分靶点表：
-- 疾病靶点表：
-- 网络药理交集靶点表：
+- 差异基因表（DEG）：{deg_path}
+- 成分靶点表：{target_path}
+- 疾病靶点表：{disease_path}
+- 网络药理交集靶点表：{network_path}
 
 ## DEG 筛选条件
 - |log2FC|：
@@ -1533,9 +1562,10 @@ def natural_product_new(title: str = Form(...)):
 def gene_index():
     files = list_md("02_项目管理/Gene_Omics")
     current_project = get_current_project()
+    recent_imports = get_recent_project_imports()
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     template = env.get_template("gene/index.html")
-    return template.render(items=items, modules=MODULES, active_project=current_project)
+    return template.render(items=items, modules=MODULES, active_project=current_project, recent_imports=recent_imports)
 
 
 @app.post("/gene/new")

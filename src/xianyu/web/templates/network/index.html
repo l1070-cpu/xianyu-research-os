@@ -32,6 +32,20 @@
   <p><a href="/data-import">进入数据入口</a>，上传成分靶点表、疾病靶点表或交集基因表。</p>
 </section>
 
+{% if recent_imports and (recent_imports.get("targets") or recent_imports.get("disease") or recent_imports.get("network")) %}
+<section>
+  <h3>最近可用输入表</h3>
+  {% for bucket in ["targets", "disease", "network"] %}
+    {% for item in recent_imports.get(bucket, [])[:2] %}
+    <div class="file-card">
+      <h3>{{ item.label }}｜{{ item.name }}</h3>
+      <pre>{{ item.path }}</pre>
+    </div>
+    {% endfor %}
+  {% endfor %}
+</section>
+{% endif %}
+
 <section>
   <h3>推荐工作流</h3>
   <pre>成分整理 → 靶点预测 → 疾病靶点 → 交集靶点 → STRING → GO/KEGG → Cytoscape → 对接候选</pre>
