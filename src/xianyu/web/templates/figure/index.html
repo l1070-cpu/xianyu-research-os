@@ -54,6 +54,18 @@
 </section>
 
 <section>
+  <h3>✍️ 进入图注与结果写作</h3>
+  <p>图完成后，可以直接生成 Figure Legend 和 Results 草稿，减少后面来回整理。</p>
+  <form method="post" action="/writing/figure-draft/new">
+    <p>
+      <label>草稿名称</label><br>
+      <input name="title" placeholder="例如：Figure3_GO_KEGG结果段" required>
+    </p>
+    <button type="submit">生成 Figure Legend / Results 草稿</button>
+  </form>
+</section>
+
+<section>
   <h3>推荐工作流</h3>
   <pre>交集分析 → Venn / UpSet → PPI → GO / KEGG → Cytoscape → Figure legend → Results 写作</pre>
 </section>

@@ -623,6 +623,7 @@ def figure_network_package_new(title: str = Form(...)):
 @app.get("/writing", response_class=HTMLResponse)
 def writing_index():
     files = list_md("06_论文写作")
+    current_project = get_current_project()
     items = []
     for file in files[:30]:
         items.append({
@@ -631,7 +632,7 @@ def writing_index():
             "content": read(file)[:500]
         })
     template = env.get_template("writing/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/writing/new")
 def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
@@ -680,6 +681,73 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 修改意见
 
 ## 最终版本
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/figure-draft/new")
+def writing_figure_draft_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Figure_Legend_Results.md"
+    current_project = get_current_project() or {}
+
+    if not file_path.exists():
+        content = f"""# Figure Legend + Results 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 对应图号
+- Figure：
+- Supplementary Figure：
+
+## 对应数据来源
+- 原始数据：
+- 统计结果：
+- 图像文件：
+
+## Figure Legend 草稿
+
+### Figure 标题
+
+### Legend 正文
+
+### 缩写说明
+
+## Results 草稿
+
+### 结果段标题
+
+### 结果正文
+
+### 关键结论
+- 
+
+## 逻辑检查
+- [ ] 图号与正文一致
+- [ ] 统计方法已说明
+- [ ] 显著性标注已说明
+- [ ] 预测结果与验证结果区分清楚
+- [ ] 没有超出图中数据的过度解释
+
+## 可接入后续写作
+- [ ] Discussion
+- [ ] Abstract
+- [ ] Cover Letter
+
+## 待补充内容
+
+## 修改记录
 """
         file_path.write_text(content, encoding="utf-8")
 
