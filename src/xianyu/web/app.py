@@ -219,6 +219,61 @@ def get_table_preview(path: Path, max_rows: int = 5):
         return result
 
 
+def infer_column_checks(path: Path, headers: list[str]):
+    normalized_headers = [h.strip().lower() for h in headers if h is not None]
+
+    def has_any(*candidates: str):
+        return any(candidate.lower() in normalized_headers for candidate in candidates)
+
+    folder_hint = "/".join(path.parts[-3:]).lower()
+    checks = []
+
+    if "gene_omics" in folder_hint:
+        checks = [
+            ("gene", has_any("gene", "symbol", "gene_symbol")),
+            ("log2fc", has_any("log2fc", "logfc", "log2_fc")),
+            ("pvalue", has_any("pvalue", "p_value", "p.value")),
+            ("padj", has_any("padj", "fdr", "adj_p", "adj_pval")),
+        ]
+    elif "targets" in folder_hint:
+        checks = [
+            ("compound_name", has_any("compound_name", "compound", "ingredient")),
+            ("target", has_any("target", "gene", "symbol")),
+            ("probability", has_any("probability", "score", "confidence")),
+        ]
+    elif "disease" in folder_hint:
+        checks = [
+            ("gene", has_any("gene", "symbol", "gene_symbol")),
+            ("score", has_any("score", "relevance", "confidence")),
+            ("disease", has_any("disease", "phenotype")),
+        ]
+    elif "enrichment" in folder_hint:
+        checks = [
+            ("term", has_any("term", "description", "pathway")),
+            ("pvalue", has_any("pvalue", "p_value", "p.adjust", "padj")),
+            ("count", has_any("count", "gene_count", "genes")),
+        ]
+    elif "network" in folder_hint:
+        checks = [
+            ("gene", has_any("gene", "symbol", "target")),
+            ("source", has_any("source", "from")),
+            ("target", has_any("target", "to")),
+        ]
+    else:
+        checks = [
+            ("gene/target", has_any("gene", "symbol", "target")),
+            ("score/pvalue", has_any("score", "pvalue", "p_value", "padj")),
+        ]
+
+    found = [name for name, ok in checks if ok]
+    missing = [name for name, ok in checks if not ok]
+    return {
+        "found": found,
+        "missing": missing,
+        "folder_hint": folder_hint,
+    }
+
+
 env.globals["current_project"] = get_current_project
 
 @app.get("/", response_class=HTMLResponse)
@@ -358,6 +413,7 @@ def data_import_page():
 def data_import_preview(path: str, note: str = ""):
     file_path = ROOT / path
     preview = get_table_preview(file_path)
+    column_checks = infer_column_checks(file_path, preview.get("headers", [])) if not preview.get("error") else None
     template = env.get_template("data_import/preview.html")
     return template.render(
         modules=MODULES,
@@ -365,6 +421,7 @@ def data_import_preview(path: str, note: str = ""):
         path=path,
         note=note,
         preview=preview,
+        column_checks=column_checks,
     )
 
 

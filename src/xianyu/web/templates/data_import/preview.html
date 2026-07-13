@@ -46,6 +46,29 @@
   {% endif %}
 </section>
 
+{% if column_checks %}
+<section>
+  <h3>关键列检查</h3>
+  <div class="file-card">
+    <p><strong>识别路径：</strong>{{ column_checks.folder_hint }}</p>
+    <p><strong>已找到：</strong>
+      {% if column_checks.found %}
+        {{ column_checks.found | join("、") }}
+      {% else %}
+        暂无
+      {% endif %}
+    </p>
+    <p><strong>可能缺少：</strong>
+      {% if column_checks.missing %}
+        {{ column_checks.missing | join("、") }}
+      {% else %}
+        暂无
+      {% endif %}
+    </p>
+  </div>
+</section>
+{% endif %}
+
 <section>
   <h3>后续建议</h3>
   <pre>检查列名 → 检查基因/靶点是否标准化 → 进入交集分析 → 进入可视化 → 进入 Results 写作</pre>
