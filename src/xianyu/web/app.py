@@ -969,6 +969,16 @@ def network_intersection_new(title: str = Form(...)):
     target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
     disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
     network_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
+    import_summary = []
+    if deg_path:
+        import_summary.append(f"- DEG / Gene：{deg_path}")
+    if target_path:
+        import_summary.append(f"- 成分靶点：{target_path}")
+    if disease_path:
+        import_summary.append(f"- 疾病靶点：{disease_path}")
+    if network_path:
+        import_summary.append(f"- 交集 / 网络：{network_path}")
+    import_summary_text = "\n".join(import_summary) if import_summary else "- 当前还没有可自动引用的输入表，请先去“数据入口”上传。"
 
     if not file_path.exists():
         content = f"""# DEG ∩ 网络药理靶点交集分析｜{title}
@@ -987,6 +997,9 @@ def network_intersection_new(title: str = Form(...)):
 - 成分靶点表：{target_path}
 - 疾病靶点表：{disease_path}
 - 网络药理交集靶点表：{network_path}
+
+## 最近输入摘要
+{import_summary_text}
 
 ## DEG 筛选条件
 - |log2FC|：

@@ -47,6 +47,26 @@
 {% endif %}
 
 <section>
+  <h3>交集分析将优先使用</h3>
+  {% if recent_imports.get("gene_omics") or recent_imports.get("targets") or recent_imports.get("disease") or recent_imports.get("network") %}
+    {% if recent_imports.get("gene_omics") %}
+    <p><strong>DEG / Gene：</strong>{{ recent_imports.get("gene_omics")[0].name }}</p>
+    {% endif %}
+    {% if recent_imports.get("targets") %}
+    <p><strong>成分靶点：</strong>{{ recent_imports.get("targets")[0].name }}</p>
+    {% endif %}
+    {% if recent_imports.get("disease") %}
+    <p><strong>疾病靶点：</strong>{{ recent_imports.get("disease")[0].name }}</p>
+    {% endif %}
+    {% if recent_imports.get("network") %}
+    <p><strong>交集 / 网络：</strong>{{ recent_imports.get("network")[0].name }}</p>
+    {% endif %}
+  {% else %}
+    <p>暂无可自动引用的输入表，请先去数据入口上传。</p>
+  {% endif %}
+</section>
+
+<section>
   <h3>推荐工作流</h3>
   <pre>成分整理 → 靶点预测 → 疾病靶点 → 交集靶点 → STRING → GO/KEGG → Cytoscape → 对接候选</pre>
 </section>
