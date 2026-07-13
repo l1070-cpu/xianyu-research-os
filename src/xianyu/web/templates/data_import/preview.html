@@ -46,6 +46,22 @@
   {% endif %}
 </section>
 
+{% if type_suggestion %}
+<section>
+  <h3>数据类型判断建议</h3>
+  <div class="file-card">
+    <p><strong>建议类型：</strong>{{ type_suggestion.type }}</p>
+    <p><strong>匹配分数：</strong>{{ type_suggestion.score }}</p>
+    {% if type_suggestion.reasons %}
+    <p><strong>判断依据：</strong></p>
+    {% for reason in type_suggestion.reasons %}
+    <p>{{ reason }}</p>
+    {% endfor %}
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if column_checks %}
 <section>
   <h3>关键列检查</h3>

@@ -318,6 +318,91 @@ def infer_column_checks(path: Path, headers: list[str]):
     }
 
 
+def suggest_dataset_type(path: Path, headers: list[str]):
+    normalized_headers = {h.strip().lower() for h in headers if h is not None}
+    folder_hint = "/".join(path.parts[-3:]).lower()
+
+    candidates = [
+        {
+            "type": "DEG / Gene 表",
+            "score": 0,
+            "reasons": [],
+        },
+        {
+            "type": "成分靶点表",
+            "score": 0,
+            "reasons": [],
+        },
+        {
+            "type": "疾病靶点表",
+            "score": 0,
+            "reasons": [],
+        },
+        {
+            "type": "交集 / 网络表",
+            "score": 0,
+            "reasons": [],
+        },
+        {
+            "type": "富集结果表",
+            "score": 0,
+            "reasons": [],
+        },
+    ]
+
+    def add_score(type_name: str, points: int, reason: str):
+        for item in candidates:
+            if item["type"] == type_name:
+                item["score"] += points
+                item["reasons"].append(reason)
+                break
+
+    if "gene_omics" in folder_hint:
+        add_score("DEG / Gene 表", 2, "文件位于 gene_omics 目录")
+    if "targets" in folder_hint:
+        add_score("成分靶点表", 2, "文件位于 targets 目录")
+    if "disease" in folder_hint:
+        add_score("疾病靶点表", 2, "文件位于 disease 目录")
+    if "network" in folder_hint:
+        add_score("交集 / 网络表", 2, "文件位于 network 目录")
+    if "enrichment" in folder_hint:
+        add_score("富集结果表", 2, "文件位于 enrichment 目录")
+
+    if {"gene", "symbol", "gene_symbol"} & normalized_headers:
+        add_score("DEG / Gene 表", 1, "存在 gene/symbol 类列名")
+        add_score("疾病靶点表", 1, "存在 gene/symbol 类列名")
+        add_score("交集 / 网络表", 1, "存在 gene/symbol 类列名")
+    if {"log2fc", "logfc", "log2_fc"} & normalized_headers:
+        add_score("DEG / Gene 表", 2, "存在 log2FC 类列名")
+    if {"pvalue", "p_value", "p.value", "padj", "adj.p.val", "fdr"} & normalized_headers:
+        add_score("DEG / Gene 表", 1, "存在 P 值 / 校正 P 值类列名")
+        add_score("富集结果表", 1, "存在 P 值 / 校正 P 值类列名")
+    if {"compound_name", "compound", "ingredient"} & normalized_headers:
+        add_score("成分靶点表", 2, "存在 compound/ingredient 类列名")
+    if {"target", "targets"} & normalized_headers:
+        add_score("成分靶点表", 1, "存在 target 类列名")
+        add_score("交集 / 网络表", 1, "存在 target 类列名")
+    if {"score", "confidence", "relevance"} & normalized_headers:
+        add_score("疾病靶点表", 1, "存在 score/confidence 类列名")
+        add_score("成分靶点表", 1, "存在 score/confidence 类列名")
+    if {"term", "description", "pathway"} & normalized_headers:
+        add_score("富集结果表", 2, "存在 term/pathway 类列名")
+    if {"count", "gene_count", "genes"} & normalized_headers:
+        add_score("富集结果表", 1, "存在 count/genes 类列名")
+    if {"source", "from"} & normalized_headers:
+        add_score("交集 / 网络表", 1, "存在 source/from 类列名")
+    if {"to"} & normalized_headers:
+        add_score("交集 / 网络表", 1, "存在 to 类列名")
+
+    candidates.sort(key=lambda x: x["score"], reverse=True)
+    best = candidates[0]
+    return {
+        "type": best["type"],
+        "score": best["score"],
+        "reasons": best["reasons"][:4],
+    }
+
+
 env.globals["current_project"] = get_current_project
 
 @app.get("/", response_class=HTMLResponse)
@@ -458,6 +543,7 @@ def data_import_preview(path: str, note: str = ""):
     file_path = ROOT / path
     preview = get_table_preview(file_path)
     column_checks = infer_column_checks(file_path, preview.get("headers", [])) if not preview.get("error") else None
+    type_suggestion = suggest_dataset_type(file_path, preview.get("headers", [])) if not preview.get("error") else None
     template = env.get_template("data_import/preview.html")
     return template.render(
         modules=MODULES,
@@ -466,6 +552,7 @@ def data_import_preview(path: str, note: str = ""):
         note=note,
         preview=preview,
         column_checks=column_checks,
+        type_suggestion=type_suggestion,
     )
 
 
