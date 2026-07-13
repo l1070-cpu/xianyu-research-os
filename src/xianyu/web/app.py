@@ -695,8 +695,9 @@ def network_new(title: str = Form(...)):
 def screen_index():
     files = list_md("02_项目管理/虚拟筛选")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project()
     template = env.get_template("screen/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/screen/new")
 def screen_new(title: str = Form(...)):
@@ -758,12 +759,92 @@ def screen_new(title: str = Form(...)):
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.get("/docking", response_class=HTMLResponse)
+def docking_index():
+    files = list_md("02_项目管理/分子对接")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project()
+    template = env.get_template("docking/index.html")
+    return template.render(items=items, modules=MODULES, active_project=current_project)
+
+
+@app.post("/docking/new")
+def docking_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "02_项目管理" / "分子对接"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+
+    if not file_path.exists():
+        content = f"""# 分子对接任务｜{title}
+
+## 日期
+{today}
+
+## 对接目的
+
+## 配体信息
+- 化合物名称：
+- PubChem CID：
+- SMILES：
+- SDF / MOL2 文件位置：
+
+## 蛋白信息
+- 靶点名称：
+- UniProt ID：
+- PDB ID：
+- 蛋白来源：
+
+## 软件与工具
+- AutoDock Vina：
+- OpenBabel：
+- PyMOL：
+- Discovery Studio：
+
+## 对接参数
+- Grid center：
+- Grid size：
+- Exhaustiveness：
+- Number of modes：
+
+## 对接结果
+| 配体 | 靶点 | Binding Energy kcal/mol | 主要相互作用 | 备注 |
+|---|---|---|---|---|
+
+## 相互作用分析
+- 氢键：
+- 疏水作用：
+- π-π：
+- 关键氨基酸：
+
+## 图片位置
+- 2D interaction：
+- 3D pose：
+- Surface pocket：
+
+## 是否进入 MD
+- [ ] 是
+- [ ] 否
+
+## 论文 Results 草稿
+
+## 风险点
+- 蛋白结构质量：
+- 配体构象：
+- 对接盒设置：
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/md", response_class=HTMLResponse)
 def md_index():
     files = list_md("02_项目管理/分子动力学")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project()
     template = env.get_template("md/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, modules=MODULES, active_project=current_project)
 
 @app.post("/md/new")
 def md_new(title: str = Form(...)):

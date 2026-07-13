@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}虚拟筛选中心{% endblock %}
+{% block title %}分子对接中心{% endblock %}
 
 {% block content %}
 <header class="page-header">
-  <h2>🧬 虚拟筛选中心</h2>
-  <p>围绕当前项目整理候选成分、药物相似性、ADMET 初筛和对接候选组合</p>
+  <h2>🧲 分子对接中心</h2>
+  <p>围绕当前项目管理配体、蛋白、对接参数、结合能和相互作用分析</p>
 </header>
 
 {% if active_project %}
@@ -17,23 +17,23 @@
 {% endif %}
 
 <section>
-  <h3>＋ 新建虚拟筛选任务</h3>
-  <form method="post" action="/screen/new">
+  <h3>＋ 新建分子对接任务</h3>
+  <form method="post" action="/docking/new">
     <p>
       <label>任务名称</label><br>
-      <input name="title" placeholder="例如：金毛狗脊候选成分虚拟筛选" required>
+      <input name="title" placeholder="例如：槲皮素_AKT1 / 核心成分_MAPK1" required>
     </p>
-    <button type="submit">生成虚拟筛选任务</button>
+    <button type="submit">生成分子对接任务</button>
   </form>
 </section>
 
 <section>
   <h3>推荐工作流</h3>
-  <pre>成分整理 → Lipinski / PAINS / QED → ADMET 初筛 → Top 候选成分 → 推荐进入分子对接的组合</pre>
+  <pre>PubChem 配体 → PDB 蛋白 → OpenBabel 转换 → AutoDock Vina → 结合能整理 → PyMOL / Discovery Studio 相互作用图</pre>
 </section>
 
 <section>
-  <h3>最近虚拟筛选记录</h3>
+  <h3>最近分子对接记录</h3>
   {% if items %}
     {% for item in items %}
     <div class="file-card">
@@ -43,7 +43,7 @@
     </div>
     {% endfor %}
   {% else %}
-    <p>暂无虚拟筛选记录。</p>
+    <p>暂无分子对接记录。</p>
   {% endif %}
 </section>
 {% endblock %}
