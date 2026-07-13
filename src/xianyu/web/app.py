@@ -593,6 +593,7 @@ def data_new(title: str = Form(...), data_type: str = Form("general")):
 def figure_index():
     files = list_md("05_数据分析/科研作图")
     current_project = get_current_project()
+    recent_imports = get_recent_project_imports()
     items = []
     for file in files[:30]:
         items.append({
@@ -601,7 +602,7 @@ def figure_index():
             "content": read(file)[:500]
         })
     template = env.get_template("figure/index.html")
-    return template.render(items=items, modules=MODULES, active_project=current_project)
+    return template.render(items=items, modules=MODULES, active_project=current_project, recent_imports=recent_imports)
 
 @app.post("/figure/new")
 def figure_new(title: str = Form(...), figure_type: str = Form("general")):
@@ -680,6 +681,21 @@ def figure_network_package_new(title: str = Form(...)):
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}_网络药理图表包.md"
     current_project = get_current_project() or {}
+    recent_imports = get_recent_project_imports()
+    intersection_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
+    enrichment_path = recent_imports.get("enrichment", [{}])[0].get("path", "") if recent_imports.get("enrichment") else ""
+    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
+    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
+    figure_input_summary = []
+    if intersection_path:
+        figure_input_summary.append(f"- 交集 / 网络：{intersection_path}")
+    if enrichment_path:
+        figure_input_summary.append(f"- 富集结果：{enrichment_path}")
+    if target_path:
+        figure_input_summary.append(f"- 成分靶点：{target_path}")
+    if disease_path:
+        figure_input_summary.append(f"- 疾病靶点：{disease_path}")
+    figure_input_summary_text = "\n".join(figure_input_summary) if figure_input_summary else "- 当前还没有可自动引用的网络药理输入表。"
 
     if not file_path.exists():
         content = f"""# 网络药理图表包｜{title}
@@ -705,12 +721,15 @@ def figure_network_package_new(title: str = Form(...)):
 
 ## 输入文件
 - 成分表：
-- 成分-靶点边表：
-- 疾病靶点表：
-- 交集基因表：
+- 成分-靶点边表：{target_path}
+- 疾病靶点表：{disease_path}
+- 交集基因表：{intersection_path}
 - PPI 文件：
-- GO 结果：
-- KEGG 结果：
+- GO 结果：{enrichment_path}
+- KEGG 结果：{enrichment_path}
+
+## 最近输入摘要
+{figure_input_summary_text}
 
 ## 输出文件位置
 - PNG：

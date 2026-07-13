@@ -53,6 +53,24 @@
   </form>
 </section>
 
+{% if recent_imports and (recent_imports.get("network") or recent_imports.get("enrichment") or recent_imports.get("targets") or recent_imports.get("disease")) %}
+<section>
+  <h3>图表包将优先使用</h3>
+  {% if recent_imports.get("network") %}
+  <p><strong>交集 / 网络：</strong>{{ recent_imports.get("network")[0].name }}</p>
+  {% endif %}
+  {% if recent_imports.get("enrichment") %}
+  <p><strong>富集结果：</strong>{{ recent_imports.get("enrichment")[0].name }}</p>
+  {% endif %}
+  {% if recent_imports.get("targets") %}
+  <p><strong>成分靶点：</strong>{{ recent_imports.get("targets")[0].name }}</p>
+  {% endif %}
+  {% if recent_imports.get("disease") %}
+  <p><strong>疾病靶点：</strong>{{ recent_imports.get("disease")[0].name }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
 <section>
   <h3>✍️ 进入图注与结果写作</h3>
   <p>图完成后，可以直接生成 Figure Legend 和 Results 草稿，减少后面来回整理。</p>
