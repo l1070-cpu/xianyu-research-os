@@ -44,6 +44,17 @@
 </section>
 
 <section>
+  <h3>📊 快速进入交集可视化</h3>
+  <form method="post" action="/network/visualization/new">
+    <p>
+      <label>可视化任务名称</label><br>
+      <input name="title" placeholder="例如：脑卒中DEG交集Venn和UpSet图" required>
+    </p>
+    <button type="submit">生成 Venn / UpSet / 交集表记录</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 Gene / Omics 记录</h3>
   {% if items %}
     {% for item in items %}

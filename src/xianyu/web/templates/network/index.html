@@ -45,6 +45,18 @@
 </section>
 
 <section>
+  <h3>📊 一键生成交集可视化任务</h3>
+  <p>适合整理 Venn、UpSet、交集表，以及后续 PPI / GO / KEGG 图表输出。</p>
+  <form method="post" action="/network/visualization/new">
+    <p>
+      <label>可视化任务名称</label><br>
+      <input name="title" placeholder="例如：金毛狗脊脑卒中交集图表输出" required>
+    </p>
+    <button type="submit">生成可视化记录</button>
+  </form>
+</section>
+
+<section>
   <h3>最近网络药理记录</h3>
   {% if items %}
     {% for item in items %}

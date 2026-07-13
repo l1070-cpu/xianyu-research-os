@@ -767,6 +767,68 @@ def network_intersection_new(title: str = Form(...)):
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/network/visualization/new")
+def network_visualization_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "科研作图"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_网络药理可视化.md"
+    current_project = get_current_project() or {}
+
+    if not file_path.exists():
+        content = f"""# 网络药理可视化任务｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 输入文件
+- DEG 表：
+- 网络药理交集表：
+- 成分-靶点边表：
+- PPI 数据：
+- GO 结果：
+- KEGG 结果：
+
+## 本次需要生成的图
+- [ ] Venn 图
+- [ ] UpSet 图
+- [ ] 交集基因表
+- [ ] PPI 网络图
+- [ ] GO 气泡图
+- [ ] KEGG 气泡图
+- [ ] 成分-靶点网络图
+
+## 图表输出位置
+- PNG：
+- SVG / PDF：
+- 原始 CSV：
+
+## 图注草稿
+- Figure title：
+- Figure legend：
+
+## 与后续流程衔接
+- [ ] 进入 Cytoscape 精修
+- [ ] 进入 Docking 候选筛选
+- [ ] 进入 Results 写作
+
+## 风险点
+- 基因名是否标准化：
+- 输入表是否去重：
+- 图中标签是否过密：
+- 是否需要 Top N 筛选：
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/screen", response_class=HTMLResponse)
 def screen_index():
     files = list_md("02_项目管理/虚拟筛选")
