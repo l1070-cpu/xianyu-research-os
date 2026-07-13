@@ -73,21 +73,103 @@ def ai_read(text,context):
   try:return json.loads(c)
   except:return {'status':'raw','raw':c}
  except Exception as e:return {'status':'error','error':str(e),'prompt':prompt}
+def storage_dirs(root):
+ base=root/'04_文献笔记'
+ runtime_root=Path(os.getenv('XIANYU_RUNTIME_DIR','/tmp/xianyu_research_os_runtime'))
+ runtime_base=runtime_root/'04_文献笔记'
+ return {
+  'pdf':base/'PDF库',
+  'db':base/'文献数据库',
+  'cards':base/'V2卡片',
+  'runtime_db':runtime_base/'文献数据库',
+  'runtime_cards':runtime_base/'V2卡片',
+ }
 def save(root,rec):
- pdf=root/'04_文献笔记'/'PDF库';db=root/'04_文献笔记'/'文献数据库';cards=root/'04_文献笔记'/'V2卡片'
- for d in (pdf,db,cards):d.mkdir(parents=True,exist_ok=True)
+ dirs=storage_dirs(root)
+ for key in ('pdf','db','cards','runtime_db','runtime_cards'):
+  dirs[key].mkdir(parents=True,exist_ok=True)
  stem=safe_name(Path(rec['source_pdf']).stem)
- (db/f'{stem}.json').write_text(json.dumps(rec,ensure_ascii=False,indent=2),encoding='utf-8')
  title=safe_name(rec.get('title') or stem)
  ai=rec.get('ai_summary') or {}
  def f(k):
-  v=ai.get(k,''); return '\n'.join('- '+str(x) for x in v) if isinstance(v,list) else str(v)
- md=f"""# 文献卡片 V2｜{rec.get('title','')}\n\n## 基础信息\n- 作者：{'; '.join(rec.get('authors',[]))}\n- 期刊：{rec.get('journal','')}\n- 年份：{rec.get('year','')}\n- DOI：{rec.get('doi','')}\n- PMID：{rec.get('pmid','')}\n- 来源 PDF：{rec.get('source_pdf','')}\n\n## 机制标签\n{', '.join(rec.get('mechanism_tags',[]))}\n\n## 推荐用途\n{', '.join(rec.get('usage_tags',[]))}\n\n## 一句话总结\n{f('one_sentence_summary')}\n\n## 研究背景\n{f('background')}\n\n## 研究目的\n{f('objective')}\n\n## 方法\n{f('methods')}\n\n## 主要结果\n{f('main_results')}\n\n## 创新点\n{f('innovation')}\n\n## 局限性\n{f('limitations')}\n\n## Research Gap\n{f('research_gap')}\n\n## 与当前课题关系\n{f('project_relevance')}\n\n## Introduction 素材\n{f('introduction_material')}\n\n## Discussion 素材\n{f('discussion_material')}\n\n## 推荐靶点\n{f('recommended_targets')}\n\n## 推荐通路\n{f('recommended_pathways')}\n\n## 推荐实验\n{f('recommended_experiments')}\n\n## 可信度与注意事项\n{f('confidence_notes')}\n"""
- (cards/f'{title}.md').write_text(md,encoding='utf-8')
- return db/f'{stem}.json'
+  v=ai.get(k,''); return '\\n'.join('- '+str(x) for x in v) if isinstance(v,list) else str(v)
+ data=json.dumps(rec,ensure_ascii=False,indent=2)
+ md=f"""# 文献卡片 V2｜{rec.get('title','')}
+
+## 基础信息
+- 作者：{'; '.join(rec.get('authors',[]))}
+- 期刊：{rec.get('journal','')}
+- 年份：{rec.get('year','')}
+- DOI：{rec.get('doi','')}
+- PMID：{rec.get('pmid','')}
+- 来源 PDF：{rec.get('source_pdf','')}
+
+## 机制标签
+{', '.join(rec.get('mechanism_tags',[]))}
+
+## 推荐用途
+{', '.join(rec.get('usage_tags',[]))}
+
+## 一句话总结
+{f('one_sentence_summary')}
+
+## 研究背景
+{f('background')}
+
+## 研究目的
+{f('objective')}
+
+## 方法
+{f('methods')}
+
+## 主要结果
+{f('main_results')}
+
+## 创新点
+{f('innovation')}
+
+## 局限性
+{f('limitations')}
+
+## Research Gap
+{f('research_gap')}
+
+## 与当前课题关系
+{f('project_relevance')}
+
+## Introduction 素材
+{f('introduction_material')}
+
+## Discussion 素材
+{f('discussion_material')}
+
+## 推荐靶点
+{f('recommended_targets')}
+
+## 推荐通路
+{f('recommended_pathways')}
+
+## 推荐实验
+{f('recommended_experiments')}
+
+## 可信度与注意事项
+{f('confidence_notes')}
+"""
+ primary=[(dirs['db']/f'{stem}.json',data),(dirs['cards']/f'{title}.md',md)]
+ try:
+  for path,content in primary:path.write_text(content,encoding='utf-8')
+  return dirs['db']/f'{stem}.json'
+ except PermissionError:
+  fallback=[(dirs['runtime_db']/f'{stem}.json',data),(dirs['runtime_cards']/f'{title}.md',md)]
+  for path,content in fallback:path.write_text(content,encoding='utf-8')
+  return dirs['runtime_db']/f'{stem}.json'
 def load(root,source_pdf):
- p=root/'04_文献笔记'/'文献数据库'/f'{safe_name(Path(source_pdf).stem)}.json'
- return json.loads(p.read_text(encoding='utf-8')) if p.exists() else None
+ dirs=storage_dirs(root)
+ name=f'{safe_name(Path(source_pdf).stem)}.json'
+ for p in (dirs['db']/name,dirs['runtime_db']/name):
+  if p.exists():
+   return json.loads(p.read_text(encoding='utf-8'))
+ return None
 def bibtex(rec):
  key=f"{rec.get('year') or 'nd'}_{(rec.get('authors') or ['unknown'])[0].split()[-1]}";authors=' and '.join(rec.get('authors',[]))
  return f"@article{{{key},\n  title = {{{rec.get('title','')}}},\n  author = {{{authors}}},\n  journal = {{{rec.get('journal','')}}},\n  year = {{{rec.get('year','')}}},\n  doi = {{{rec.get('doi','')}}},\n  pmid = {{{rec.get('pmid','')}}}\n}}"
