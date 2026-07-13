@@ -803,6 +803,12 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}.md"
+    recent_figures = get_recent_notes("05_数据分析/科研作图", limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figures]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_summary = "\n".join(figure_summary_lines) if figure_summary_lines else "- 当前暂无最近 Figure 记录。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
 
     section_map = {
         "introduction": "Introduction",
@@ -815,6 +821,22 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     }
 
     if not file_path.exists():
+        extra_results_context = ""
+        if section_type == "results":
+            extra_results_context = f"""
+
+## 最近 Figure 记录
+{figure_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+## 推荐写作顺序
+- 先描述图中观察到的结果
+- 再说明统计差异
+- 最后点出与机制相关的结论
+"""
+
         content = f"""# 论文写作｜{title}
 
 ## 日期
@@ -830,6 +852,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 核心结论
 
 ## 需要引用的文献
+{extra_results_context}
 
 ## 初稿
 

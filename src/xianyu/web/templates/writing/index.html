@@ -53,6 +53,19 @@
   </form>
 </section>
 
+<section>
+  <h3>🧾 Results 草稿</h3>
+  <p>适合把最近的 Figure 和网络药理记录直接带入 Results 初稿。</p>
+  <form method="post" action="/writing/new">
+    <input type="hidden" name="section_type" value="results">
+    <p>
+      <label>Results 标题</label><br>
+      <input name="title" placeholder="例如：Results_金毛狗脊网络药理与交集分析" required>
+    </p>
+    <button type="submit">生成 Results 草稿</button>
+  </form>
+</section>
+
 {% if recent_figures %}
 <section>
   <h3>最近 Figure 记录</h3>
