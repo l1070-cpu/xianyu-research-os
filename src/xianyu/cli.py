@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from .main import main as show_main
 from .engines.project_engine import ProjectEngine
 from .engines.review_engine import ReviewEngine
@@ -318,7 +319,19 @@ def main():
 
     if command == "web":
         import subprocess
-        subprocess.run(["uvicorn", "xianyu.web.app:app", "--reload", "--port", "8001"])
+        project_root = Path(__file__).resolve().parents[2]
+        subprocess.run(
+            [
+                "uvicorn",
+                "xianyu.web.app:app",
+                "--reload",
+                "--port",
+                "8001",
+                "--reload-dir",
+                str(project_root / "src"),
+            ],
+            cwd=project_root,
+        )
     elif command == "today":
         print(ProjectEngine().today())
     elif command == "end":

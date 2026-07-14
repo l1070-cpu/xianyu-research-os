@@ -13,5 +13,11 @@
   {% block content %}{% endblock %}
 </main>
 
+{% set rs = runtime_status() %}
+<footer class="runtime-status">
+  <span>运行目录：{{ rs.project_root }}</span>
+  <span>源码目录：{{ rs.source_root }}</span>
+</footer>
+
 </body>
 </html>

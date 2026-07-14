@@ -2,6 +2,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import re
 import csv
+import os
 from pypdf import PdfReader
 from datetime import date
 from fastapi import FastAPI, Form, UploadFile, File
@@ -19,6 +20,15 @@ app = FastAPI(title="咸鱼日常打工 OS")
 app.include_router(literature_v2_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+
+def get_runtime_status():
+    runtime_dir = os.getenv("XIANYU_RUNTIME_DIR", "/tmp/xianyu_research_os_runtime")
+    return {
+        "project_root": str(ROOT),
+        "source_root": str(ROOT / "src"),
+        "runtime_dir": runtime_dir,
+    }
 
 MODULES = {
     "today": ("01_今日打工", "📋 今日打工"),
@@ -459,6 +469,7 @@ def suggest_dataset_type(path: Path, headers: list[str]):
 
 
 env.globals["current_project"] = get_current_project
+env.globals["runtime_status"] = get_runtime_status
 
 @app.get("/", response_class=HTMLResponse)
 def index():
