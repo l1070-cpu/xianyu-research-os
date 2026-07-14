@@ -170,6 +170,37 @@ def load(root,source_pdf):
   if p.exists():
    return json.loads(p.read_text(encoding='utf-8'))
  return None
+def storage_status(root,source_pdf):
+ dirs=storage_dirs(root)
+ stem=safe_name(Path(source_pdf).stem)
+ title=''
+ rec=load(root,source_pdf)
+ if rec:
+  title=safe_name(rec.get('title') or stem)
+ main_json=dirs['db']/f'{stem}.json'
+ fallback_json=dirs['runtime_db']/f'{stem}.json'
+ main_card=dirs['cards']/f'{title or stem}.md'
+ fallback_card=dirs['runtime_cards']/f'{title or stem}.md'
+ if main_json.exists():
+  return {
+   'location':'主目录',
+   'json_path':str(main_json),
+   'card_path':str(main_card),
+   'is_fallback':False,
+  }
+ if fallback_json.exists():
+  return {
+   'location':'备用目录',
+   'json_path':str(fallback_json),
+   'card_path':str(fallback_card),
+   'is_fallback':True,
+  }
+ return {
+  'location':'未保存',
+  'json_path':'',
+  'card_path':'',
+  'is_fallback':False,
+ }
 def bibtex(rec):
  key=f"{rec.get('year') or 'nd'}_{(rec.get('authors') or ['unknown'])[0].split()[-1]}";authors=' and '.join(rec.get('authors',[]))
  return f"@article{{{key},\n  title = {{{rec.get('title','')}}},\n  author = {{{authors}}},\n  journal = {{{rec.get('journal','')}}},\n  year = {{{rec.get('year','')}}},\n  doi = {{{rec.get('doi','')}}},\n  pmid = {{{rec.get('pmid','')}}}\n}}"

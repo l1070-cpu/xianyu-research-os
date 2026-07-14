@@ -55,6 +55,28 @@
 </section>
 
 <section>
+  <h3>保存位置</h3>
+  <div class="metadata-grid">
+    <div>
+      <strong>当前保存位置</strong>
+      <p>{{ storage.location }}</p>
+    </div>
+    <div>
+      <strong>JSON 记录</strong>
+      <p>{{ storage.json_path or "暂无" }}</p>
+    </div>
+    <div>
+      <strong>文献卡片</strong>
+      <p>{{ storage.card_path or "暂无" }}</p>
+    </div>
+    <div>
+      <strong>备用目录模式</strong>
+      <p>{{ "是" if storage.is_fallback else "否" }}</p>
+    </div>
+  </div>
+</section>
+
+<section>
   <h3>文献操作</h3>
 
   <div class="record-actions">

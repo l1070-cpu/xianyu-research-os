@@ -183,6 +183,12 @@ aside nav a:hover {
   margin: 0;
 }
 
+.storage-note {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
 .analysis-block {
   padding: 14px 0;
   border-bottom: 1px solid #e5e7eb;

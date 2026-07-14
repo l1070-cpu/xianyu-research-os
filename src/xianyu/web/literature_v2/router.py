@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from fastapi import APIRouter,Form,UploadFile,File,HTTPException,Request
 from fastapi.responses import HTMLResponse,RedirectResponse,FileResponse,PlainTextResponse
 from fastapi.templating import Jinja2Templates
@@ -30,7 +31,16 @@ def current_project():
   return None
 
 
+def runtime_status():
+ return {
+  "project_root": str(ROOT),
+  "source_root": str(ROOT / "src"),
+  "runtime_dir": os.getenv("XIANYU_RUNTIME_DIR", "/tmp/xianyu_research_os_runtime"),
+ }
+
+
 templates.env.globals["current_project"]=current_project
+templates.env.globals["runtime_status"]=runtime_status
 
 def valid(path):
  p=(ROOT/path).resolve()
@@ -40,7 +50,7 @@ def valid(path):
 def index(request:Request):
  items=[]
  for p in sorted(PDF.glob('*.pdf'),key=lambda x:x.stat().st_mtime,reverse=True):
-  rel=str(p.relative_to(ROOT));items.append({'name':p.name,'path':rel,'record':load(ROOT,rel)})
+  rel=str(p.relative_to(ROOT));items.append({'name':p.name,'path':rel,'record':load(ROOT,rel),'storage':storage_status(ROOT,rel)})
  return templates.TemplateResponse(request=request,name='index.html',context={'items':items})
 @router.post('/upload')
 async def upload(file:UploadFile=File(...)):
@@ -63,7 +73,7 @@ def analyze(path:str=Form(...)):
 def item(request:Request,path:str):
  rec=load(ROOT,path)
  if not rec:raise HTTPException(404,'尚未分析')
- return templates.TemplateResponse(request=request,name='detail.html',context={'record':rec})
+ return templates.TemplateResponse(request=request,name='detail.html',context={'record':rec,'storage':storage_status(ROOT,path)})
 @router.post('/ai-read')
 def ai(path:str=Form(...)):
  rec=load(ROOT,path)
