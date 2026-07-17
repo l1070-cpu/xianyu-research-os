@@ -53,6 +53,18 @@
   </form>
 </section>
 
+{% if recent_figure_packages %}
+<section>
+  <h3>最近网络药理图表包</h3>
+  {% for item in recent_figure_packages %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <section>
   <h3>🧾 Results 草稿</h3>
   <p>适合把最近的 Figure 和网络药理记录直接带入 Results 初稿。</p>

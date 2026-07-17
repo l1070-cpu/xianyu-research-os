@@ -294,6 +294,22 @@ def get_recent_notes(folder: str, limit: int = 5):
     return items
 
 
+def get_recent_figure_packages(limit: int = 5):
+    files = list_md("05_数据分析/科研作图")
+    items = []
+    for file in files:
+        if "网络药理图表包" not in file.name:
+            continue
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:300],
+        })
+        if len(items) >= limit:
+            break
+    return items
+
+
 def get_table_preview(path: Path, max_rows: int = 5):
     suffix = path.suffix.lower()
     result = {
@@ -1175,6 +1191,7 @@ def writing_index():
     files = list_md("06_论文写作")
     current_project = get_current_project()
     recent_figures = get_recent_notes("05_数据分析/科研作图", limit=5)
+    recent_figure_packages = get_recent_figure_packages(limit=5)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
     items = []
     for file in files[:30]:
@@ -1189,6 +1206,7 @@ def writing_index():
         modules=MODULES,
         active_project=current_project,
         recent_figures=recent_figures,
+        recent_figure_packages=recent_figure_packages,
         recent_network=recent_network,
     )
 
@@ -1199,10 +1217,13 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}.md"
     recent_figures = get_recent_notes("05_数据分析/科研作图", limit=3)
+    recent_figure_packages = get_recent_figure_packages(limit=3)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
     figure_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figures]
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
     network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
     figure_summary = "\n".join(figure_summary_lines) if figure_summary_lines else "- 当前暂无最近 Figure 记录。"
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
     network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
 
     section_map = {
@@ -1222,6 +1243,9 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 
 ## 最近 Figure 记录
 {figure_summary}
+
+## 最近网络药理图表包
+{figure_package_summary}
 
 ## 最近网络药理记录
 {network_summary}
@@ -1276,10 +1300,13 @@ def writing_figure_draft_new(title: str = Form(...)):
     file_path = folder / f"{today}_{safe_name(title)}_Figure_Legend_Results.md"
     current_project = get_current_project() or {}
     recent_figures = get_recent_notes("05_数据分析/科研作图", limit=3)
+    recent_figure_packages = get_recent_figure_packages(limit=3)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
     figure_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figures]
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
     network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
     figure_summary = "\n".join(figure_summary_lines) if figure_summary_lines else "- 当前暂无最近 Figure 记录。"
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
     network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
 
     if not file_path.exists():
@@ -1302,9 +1329,13 @@ def writing_figure_draft_new(title: str = Form(...)):
 - 原始数据：
 - 统计结果：
 - 图像文件：
+- 对应图表包：
 
 ## 最近 Figure 记录
 {figure_summary}
+
+## 最近网络药理图表包
+{figure_package_summary}
 
 ## 最近网络药理记录
 {network_summary}
