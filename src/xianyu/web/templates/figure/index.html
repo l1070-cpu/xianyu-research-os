@@ -44,6 +44,21 @@
 <section>
   <h3>🌐 网络药理图表包</h3>
   <p>适合把 Venn、UpSet、PPI、GO、KEGG 和成分-靶点网络图统一收口管理。</p>
+  {% if figure_context %}
+  <div class="file-card">
+    <h3>⚡ 自动图表包</h3>
+    <p><strong>建议标题：</strong>{{ figure_context.auto_title }}</p>
+    <p>{{ figure_context.auto_hint }}</p>
+    <pre>{{ figure_context.input_summary_text }}</pre>
+    {% if figure_context.readiness.can_auto_create %}
+    <form method="post" action="/figure/network-package/auto">
+      <button type="submit">一键生成网络药理图表包</button>
+    </form>
+    {% else %}
+    <p>请先完成交集分析，或导入富集结果和靶点表，再回来一键生成。</p>
+    {% endif %}
+  </div>
+  {% endif %}
   <form method="post" action="/figure/network-package/new">
     <p>
       <label>图表包名称</label><br>

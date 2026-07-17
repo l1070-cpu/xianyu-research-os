@@ -229,6 +229,59 @@ def build_network_intersection_context():
     }
 
 
+def build_network_figure_context():
+    current_project = get_current_project() or {}
+    recent_imports = get_recent_project_imports()
+    intersection_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
+    enrichment_path = recent_imports.get("enrichment", [{}])[0].get("path", "") if recent_imports.get("enrichment") else ""
+    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
+    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
+
+    summary = []
+    if intersection_path:
+        summary.append(f"- 交集 / 网络：{intersection_path}")
+    if enrichment_path:
+        summary.append(f"- 富集结果：{enrichment_path}")
+    if target_path:
+        summary.append(f"- 成分靶点：{target_path}")
+    if disease_path:
+        summary.append(f"- 疾病靶点：{disease_path}")
+
+    project_name = current_project.get("short_name") or current_project.get("name") or "当前项目"
+    disease_name = current_project.get("disease") or "模型"
+    auto_title = f"{project_name}_{disease_name}_网络药理图表包"
+
+    readiness = {
+        "has_network": bool(intersection_path),
+        "has_enrichment": bool(enrichment_path),
+        "has_targets": bool(target_path),
+        "has_disease": bool(disease_path),
+    }
+    readiness["can_auto_create"] = (
+        readiness["has_network"]
+        or readiness["has_enrichment"]
+        or (readiness["has_targets"] and readiness["has_disease"])
+    )
+
+    if readiness["can_auto_create"]:
+        auto_hint = "系统会自动引用当前项目最近的交集表、富集结果和靶点输入。"
+    else:
+        auto_hint = "当前还缺少可用图表输入，建议先完成交集分析或导入富集结果。"
+
+    return {
+        "current_project": current_project,
+        "recent_imports": recent_imports,
+        "intersection_path": intersection_path,
+        "enrichment_path": enrichment_path,
+        "target_path": target_path,
+        "disease_path": disease_path,
+        "input_summary_text": "\n".join(summary) if summary else "- 当前还没有可自动引用的网络药理输入表。",
+        "auto_title": auto_title,
+        "auto_hint": auto_hint,
+        "readiness": readiness,
+    }
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -942,6 +995,7 @@ def figure_index():
     files = list_md("05_数据分析/科研作图")
     current_project = get_current_project()
     recent_imports = get_recent_project_imports()
+    figure_context = build_network_figure_context()
     items = []
     for file in files[:30]:
         items.append({
@@ -950,7 +1004,13 @@ def figure_index():
             "content": read(file)[:500]
         })
     template = env.get_template("figure/index.html")
-    return template.render(items=items, modules=MODULES, active_project=current_project, recent_imports=recent_imports)
+    return template.render(
+        items=items,
+        modules=MODULES,
+        active_project=current_project,
+        recent_imports=recent_imports,
+        figure_context=figure_context,
+    )
 
 @app.post("/figure/new")
 def figure_new(title: str = Form(...), figure_type: str = Form("general")):
@@ -1028,22 +1088,13 @@ def figure_network_package_new(title: str = Form(...)):
     folder = ROOT / "05_数据分析" / "科研作图"
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}_网络药理图表包.md"
-    current_project = get_current_project() or {}
-    recent_imports = get_recent_project_imports()
-    intersection_path = recent_imports.get("network", [{}])[0].get("path", "") if recent_imports.get("network") else ""
-    enrichment_path = recent_imports.get("enrichment", [{}])[0].get("path", "") if recent_imports.get("enrichment") else ""
-    target_path = recent_imports.get("targets", [{}])[0].get("path", "") if recent_imports.get("targets") else ""
-    disease_path = recent_imports.get("disease", [{}])[0].get("path", "") if recent_imports.get("disease") else ""
-    figure_input_summary = []
-    if intersection_path:
-        figure_input_summary.append(f"- 交集 / 网络：{intersection_path}")
-    if enrichment_path:
-        figure_input_summary.append(f"- 富集结果：{enrichment_path}")
-    if target_path:
-        figure_input_summary.append(f"- 成分靶点：{target_path}")
-    if disease_path:
-        figure_input_summary.append(f"- 疾病靶点：{disease_path}")
-    figure_input_summary_text = "\n".join(figure_input_summary) if figure_input_summary else "- 当前还没有可自动引用的网络药理输入表。"
+    context = build_network_figure_context()
+    current_project = context["current_project"]
+    intersection_path = context["intersection_path"]
+    enrichment_path = context["enrichment_path"]
+    target_path = context["target_path"]
+    disease_path = context["disease_path"]
+    figure_input_summary_text = context["input_summary_text"]
 
     if not file_path.exists():
         content = f"""# 网络药理图表包｜{title}
@@ -1109,6 +1160,14 @@ def figure_network_package_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/figure/network-package/auto")
+def figure_network_package_auto():
+    context = build_network_figure_context()
+    if not context["readiness"]["can_auto_create"]:
+        return RedirectResponse(url="/figure", status_code=303)
+    return figure_network_package_new(title=context["auto_title"])
 
 
 @app.get("/writing", response_class=HTMLResponse)
@@ -1295,6 +1354,7 @@ def network_index():
     current_project = get_current_project()
     recent_imports = get_recent_project_imports()
     intersection_context = build_network_intersection_context()
+    figure_context = build_network_figure_context()
     template = env.get_template("network/index.html")
     return template.render(
         items=items,
@@ -1302,6 +1362,7 @@ def network_index():
         active_project=current_project,
         recent_imports=recent_imports,
         intersection_context=intersection_context,
+        figure_context=figure_context,
     )
 
 @app.post("/network/new")
