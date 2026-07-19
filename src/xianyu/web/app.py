@@ -268,6 +268,49 @@ def build_network_figure_context():
     else:
         auto_hint = "当前还缺少可用图表输入，建议先完成交集分析或导入富集结果。"
 
+    recommendations = []
+    if readiness["has_targets"] and readiness["has_disease"]:
+        recommendations.append({
+            "name": "Venn / UpSet 交集图",
+            "priority": "高优先级",
+            "reason": "已经具备成分靶点和疾病靶点输入，适合先展示交集范围。",
+        })
+    if readiness["has_network"]:
+        recommendations.append({
+            "name": "PPI 网络图",
+            "priority": "高优先级",
+            "reason": "已有交集或网络结果，可直接整理核心靶点关系。",
+        })
+        recommendations.append({
+            "name": "核心靶点柱状图",
+            "priority": "中优先级",
+            "reason": "适合从交集结果中挑出 degree 更高的核心靶点做排序展示。",
+        })
+    if readiness["has_targets"]:
+        recommendations.append({
+            "name": "成分-靶点网络图",
+            "priority": "高优先级",
+            "reason": "已有成分靶点输入，适合展示主要活性成分与候选靶点的连接关系。",
+        })
+    if readiness["has_enrichment"]:
+        recommendations.append({
+            "name": "GO 气泡图",
+            "priority": "高优先级",
+            "reason": "已有富集结果，可直接展示生物过程和功能条目。",
+        })
+        recommendations.append({
+            "name": "KEGG 气泡图",
+            "priority": "高优先级",
+            "reason": "已有富集结果，适合展示关键通路并衔接后续机制讨论。",
+        })
+
+    if not recommendations:
+        recommendations.append({
+            "name": "等待输入数据",
+            "priority": "准备中",
+            "reason": "建议先导入交集分析表、靶点表或富集结果，再自动推荐正式图表。",
+        })
+
     return {
         "current_project": current_project,
         "recent_imports": recent_imports,
@@ -279,6 +322,7 @@ def build_network_figure_context():
         "auto_title": auto_title,
         "auto_hint": auto_hint,
         "readiness": readiness,
+        "recommendations": recommendations,
     }
 
 
@@ -1111,9 +1155,15 @@ def figure_network_package_new(title: str = Form(...)):
     target_path = context["target_path"]
     disease_path = context["disease_path"]
     figure_input_summary_text = context["input_summary_text"]
+    recommendations = context["recommendations"]
+    recommendation_text = "\n".join(
+        [
+            f"- {item['name']}（{item['priority']}）：{item['reason']}"
+            for item in recommendations
+        ]
+    )
 
-    if not file_path.exists():
-        content = f"""# 网络药理图表包｜{title}
+    content = f"""# 网络药理图表包｜{title}
 
 ## 日期
 {today}
@@ -1146,6 +1196,9 @@ def figure_network_package_new(title: str = Form(...)):
 ## 最近输入摘要
 {figure_input_summary_text}
 
+## 推荐优先顺序
+{recommendation_text}
+
 ## 输出文件位置
 - PNG：
 - SVG / PDF：
@@ -1173,7 +1226,17 @@ def figure_network_package_new(title: str = Form(...)):
 - 输入数据是否已去重：
 - 是否需要只保留 Top 10 / 20：
 """
+    if not file_path.exists():
         file_path.write_text(content, encoding="utf-8")
+    else:
+        existing = file_path.read_text(encoding="utf-8")
+        if "## 推荐优先顺序" not in existing:
+            existing = existing.rstrip() + f"""
+
+## 推荐优先顺序
+{recommendation_text}
+"""
+            file_path.write_text(existing + "\n", encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 

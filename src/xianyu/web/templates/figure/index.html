@@ -50,6 +50,14 @@
     <p><strong>建议标题：</strong>{{ figure_context.auto_title }}</p>
     <p>{{ figure_context.auto_hint }}</p>
     <pre>{{ figure_context.input_summary_text }}</pre>
+    {% if figure_context.recommendations %}
+    <h4>推荐优先生成</h4>
+    <ul>
+      {% for item in figure_context.recommendations %}
+      <li><strong>{{ item.name }}</strong>（{{ item.priority }}）：{{ item.reason }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
     {% if figure_context.readiness.can_auto_create %}
     <form method="post" action="/figure/network-package/auto">
       <button type="submit">一键生成网络药理图表包</button>
