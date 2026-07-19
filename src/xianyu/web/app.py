@@ -326,6 +326,68 @@ def build_network_figure_context():
     }
 
 
+def build_network_legend_checklist(recommendations):
+    blocks = []
+    mapping = {
+        "Venn / UpSet 交集图": """### Venn / UpSet 交集图
+- 图号：
+- 图标题：活性成分靶点、疾病靶点与差异基因的交集分析
+- 应写清：比较对象、交集数量、筛选标准、数据库来源
+- 结果句模板：Venn/UpSet analysis identified the shared targets between compound-associated targets, disease-related genes, and differentially expressed genes.
+- 待补充：交集基因数、数据库名称、筛选阈值
+""",
+        "PPI 网络图": """### PPI 网络图
+- 图号：
+- 图标题：交集靶点的蛋白互作网络
+- 应写清：STRING版本、物种、置信度阈值、节点数、边数
+- 结果句模板：A PPI network of the shared targets was constructed to identify densely connected hub genes.
+- 待补充：节点数、边数、核心靶点名称
+""",
+        "核心靶点柱状图": """### 核心靶点柱状图
+- 图号：
+- 图标题：核心靶点排序
+- 应写清：排序指标（degree/betweenness/其他）、Top N、筛选依据
+- 结果句模板：Hub target ranking highlighted several key genes with higher network centrality.
+- 待补充：Top基因列表、排序指标
+""",
+        "成分-靶点网络图": """### 成分-靶点网络图
+- 图号：
+- 图标题：活性成分-潜在靶点网络
+- 应写清：成分数、靶点数、边数、关键成分筛选标准
+- 结果句模板：A component-target network was established to characterize the multi-component and multi-target features of the project.
+- 待补充：核心成分名称、节点和边数量
+""",
+        "GO 气泡图": """### GO 气泡图
+- 图号：
+- 图标题：GO 富集分析
+- 应写清：BP/CC/MF 分类、Top条目数量、显著性标准
+- 结果句模板：GO enrichment analysis indicated that the shared targets were mainly involved in biological processes related to oxidative stress, apoptosis, and inflammation.
+- 待补充：Top条目、p值或FDR阈值
+""",
+        "KEGG 气泡图": """### KEGG 气泡图
+- 图号：
+- 图标题：KEGG 通路富集分析
+- 应写清：Top通路数量、显著性标准、代表性通路
+- 结果句模板：KEGG pathway analysis suggested that the shared targets were enriched in several signaling pathways associated with the disease mechanism.
+- 待补充：代表性通路名称、阈值、Top通路数量
+""",
+        "等待输入数据": """### 图注准备中
+- 当前尚缺少正式输入表。
+- 建议先补交集表、靶点表或富集结果，再自动生成正式图注清单。
+""",
+    }
+
+    for item in recommendations:
+        block = mapping.get(item['name'])
+        if block:
+            blocks.append(block)
+
+    if not blocks:
+        blocks.append(mapping['等待输入数据'])
+
+    return "\n".join(blocks)
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1162,6 +1224,7 @@ def figure_network_package_new(title: str = Form(...)):
             for item in recommendations
         ]
     )
+    legend_checklist = build_network_legend_checklist(recommendations)
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1209,6 +1272,9 @@ def figure_network_package_new(title: str = Form(...)):
 - 颜色方案：
 - 字体要求：
 - 是否需要 Cytoscape 精修：
+
+## 标准图注清单
+{legend_checklist}
 
 ## 图注草稿
 - Figure 1：

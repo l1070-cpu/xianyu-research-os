@@ -112,7 +112,7 @@
 
 <section>
   <h3>🎨 进入 Figure Center</h3>
-  <p>如果已经准备开始统一整理网络药理图表，可以直接生成一个“网络药理图表包”。</p>
+  <p>如果已经准备开始统一整理网络药理图表，可以直接生成一个“网络药理图表包”，并自动附带标准图注清单。</p>
   {% if figure_context %}
   <div class="file-card">
     <h3>⚡ 自动图表包</h3>
@@ -121,7 +121,7 @@
     <pre>{{ figure_context.input_summary_text }}</pre>
     {% if figure_context.readiness.can_auto_create %}
     <form method="post" action="/figure/network-package/auto">
-      <button type="submit">一键生成网络药理图表包</button>
+      <button type="submit">一键生成网络药理图表包（含图注清单）</button>
     </form>
     {% else %}
     <p>请先完成交集分析，或导入富集结果和靶点表，再回来一键生成。</p>
