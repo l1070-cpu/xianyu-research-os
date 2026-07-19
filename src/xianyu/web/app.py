@@ -388,6 +388,75 @@ def build_network_legend_checklist(recommendations):
     return "\n".join(blocks)
 
 
+def build_network_legend_bundle(recommendations, project_name: str):
+    figure_1_items = []
+    figure_2_items = []
+    supplementary_items = []
+
+    for item in recommendations:
+        name = item["name"]
+        if name == "Venn / UpSet 交集图":
+            figure_1_items.append(
+                "- Panel A：Venn / UpSet plot showing the overlap among compound-associated targets, disease-related targets, and differentially expressed genes."
+            )
+        elif name == "成分-靶点网络图":
+            figure_1_items.append(
+                f"- Panel B：Component-target network illustrating the multi-component and multi-target characteristics of {project_name}."
+            )
+        elif name == "PPI 网络图":
+            figure_2_items.append(
+                "- Panel A：Protein-protein interaction network constructed from the shared targets to identify hub genes."
+            )
+        elif name == "核心靶点柱状图":
+            figure_2_items.append(
+                "- Panel B：Ranking plot of hub targets based on network centrality metrics."
+            )
+        elif name == "GO 气泡图":
+            supplementary_items.append(
+                "- Supplementary Panel A：GO enrichment bubble plot showing the major biological processes, cellular components, or molecular functions."
+            )
+        elif name == "KEGG 气泡图":
+            supplementary_items.append(
+                "- Supplementary Panel B：KEGG enrichment bubble plot highlighting the representative signaling pathways."
+            )
+
+    if not figure_1_items:
+        figure_1_items.append("- Panel A：待补充网络药理主图。")
+    if not figure_2_items:
+        figure_2_items.append("- Panel A：待补充核心网络关系图。")
+    if not supplementary_items:
+        supplementary_items.append("- Supplementary Panel A：待补充富集分析或附加网络图。")
+
+    return f"""## 建议图号分配
+- Figure 1：交集分析 + 成分-靶点网络主图
+- Figure 2：PPI + 核心靶点排序主图
+- Supplementary Figure 1：GO / KEGG 富集结果
+
+## Figure Legend 初稿
+
+### Figure 1
+**Title**
+Integrated network pharmacology overview of {project_name}.
+
+**Legend Draft**
+{chr(10).join(figure_1_items)}
+
+### Figure 2
+**Title**
+Hub target interaction landscape derived from shared targets.
+
+**Legend Draft**
+{chr(10).join(figure_2_items)}
+
+### Supplementary Figure 1
+**Title**
+Functional enrichment profiles of the shared targets.
+
+**Legend Draft**
+{chr(10).join(supplementary_items)}
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1225,6 +1294,10 @@ def figure_network_package_new(title: str = Form(...)):
         ]
     )
     legend_checklist = build_network_legend_checklist(recommendations)
+    legend_bundle = build_network_legend_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1276,6 +1349,8 @@ def figure_network_package_new(title: str = Form(...)):
 ## 标准图注清单
 {legend_checklist}
 
+{legend_bundle}
+
 ## 图注草稿
 - Figure 1：
 - Figure 2：
@@ -1296,12 +1371,28 @@ def figure_network_package_new(title: str = Form(...)):
         file_path.write_text(content, encoding="utf-8")
     else:
         existing = file_path.read_text(encoding="utf-8")
+        changed = False
         if "## 推荐优先顺序" not in existing:
             existing = existing.rstrip() + f"""
 
 ## 推荐优先顺序
 {recommendation_text}
 """
+            changed = True
+        if "## 标准图注清单" not in existing:
+            existing = existing.rstrip() + f"""
+
+## 标准图注清单
+{legend_checklist}
+"""
+            changed = True
+        if "## 建议图号分配" not in existing:
+            existing = existing.rstrip() + f"""
+
+{legend_bundle}
+"""
+            changed = True
+        if changed:
             file_path.write_text(existing + "\n", encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
