@@ -457,6 +457,67 @@ Functional enrichment profiles of the shared targets.
 """
 
 
+def build_network_results_bundle(recommendations, project_name: str):
+    figure_1_lines = []
+    figure_2_lines = []
+    supplementary_lines = []
+
+    for item in recommendations:
+        name = item["name"]
+        if name == "Venn / UpSet 交集图":
+            figure_1_lines.append(
+                "- Figure 1A：交代活性成分靶点、疾病靶点和差异基因之间的交集关系，并写清共享靶点数量。"
+            )
+        elif name == "成分-靶点网络图":
+            figure_1_lines.append(
+                f"- Figure 1B：说明 {project_name} 呈现多成分-多靶点作用特征，并指出关键成分或连接度较高的节点。"
+            )
+        elif name == "PPI 网络图":
+            figure_2_lines.append(
+                "- Figure 2A：描述共享靶点构建的 PPI 网络特征，并指出网络中连接度较高的核心靶点。"
+            )
+        elif name == "核心靶点柱状图":
+            figure_2_lines.append(
+                "- Figure 2B：补充核心靶点排序结果，强调排名靠前的候选关键基因。"
+            )
+        elif name == "GO 气泡图":
+            supplementary_lines.append(
+                "- Supplementary Figure 1A：概述 GO 富集主要涉及的生物过程、细胞组分或分子功能。"
+            )
+        elif name == "KEGG 气泡图":
+            supplementary_lines.append(
+                "- Supplementary Figure 1B：总结 KEGG 富集到的代表性信号通路，并衔接后续机制验证。"
+            )
+
+    if not figure_1_lines:
+        figure_1_lines.append("- Figure 1：待补充网络药理主结果。")
+    if not figure_2_lines:
+        figure_2_lines.append("- Figure 2：待补充 PPI 或核心靶点结果。")
+    if not supplementary_lines:
+        supplementary_lines.append("- Supplementary Figure 1：待补充富集分析相关结果。")
+
+    return f"""## Results 段落初稿
+
+### Figure 1 结果段
+{chr(10).join(figure_1_lines)}
+
+**结果段模板**
+Network pharmacology analysis first identified the shared targets among compound-associated targets, disease-related genes, and differentially expressed genes. The component-target network further demonstrated the multi-component and multi-target characteristics of {project_name}.
+
+### Figure 2 结果段
+{chr(10).join(figure_2_lines)}
+
+**结果段模板**
+To further identify the key regulatory targets, a PPI network was constructed based on the shared targets. Several hub genes with higher centrality were highlighted, suggesting their potential importance in the therapeutic mechanism.
+
+### Supplementary Figure 1 结果段
+{chr(10).join(supplementary_lines)}
+
+**结果段模板**
+Functional enrichment analyses revealed that the shared targets were mainly involved in biological processes and signaling pathways associated with the disease mechanism, providing a basis for subsequent validation experiments.
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1298,6 +1359,10 @@ def figure_network_package_new(title: str = Form(...)):
         recommendations,
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
     )
+    results_bundle = build_network_results_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1351,6 +1416,8 @@ def figure_network_package_new(title: str = Form(...)):
 
 {legend_bundle}
 
+{results_bundle}
+
 ## 图注草稿
 - Figure 1：
 - Figure 2：
@@ -1390,6 +1457,12 @@ def figure_network_package_new(title: str = Form(...)):
             existing = existing.rstrip() + f"""
 
 {legend_bundle}
+"""
+            changed = True
+        if "## Results 段落初稿" not in existing:
+            existing = existing.rstrip() + f"""
+
+{results_bundle}
 """
             changed = True
         if changed:
