@@ -682,6 +682,44 @@ def build_network_experiment_bundle(
 """
 
 
+def build_network_methods_bundle(
+    recommendations,
+    project_name: str,
+    disease_name: str,
+):
+    methods_lines = [
+        f"- Network pharmacology analysis was performed to investigate the potential mechanism of {project_name} against {disease_name}.",
+        "- Compound-associated targets, disease-related targets, and, when available, differentially expressed genes were integrated to identify shared targets.",
+    ]
+
+    if any(item["name"] == "PPI 网络图" for item in recommendations):
+        methods_lines.append("- A protein-protein interaction network was constructed for the shared targets to identify hub genes.")
+    if any(item["name"] == "GO 气泡图" for item in recommendations):
+        methods_lines.append("- GO enrichment analysis was used to characterize the biological functions of the shared targets.")
+    if any(item["name"] == "KEGG 气泡图" for item in recommendations):
+        methods_lines.append("- KEGG pathway enrichment analysis was conducted to identify representative signaling pathways.")
+    if any(item["name"] == "成分-靶点网络图" for item in recommendations):
+        methods_lines.append("- A component-target network was established to illustrate the multi-component and multi-target characteristics of the project.")
+
+    return f"""## Methods 初稿
+
+### 网络药理学方法骨架
+{chr(10).join(methods_lines)}
+
+### 可直接扩写的小标题
+- Active compound collection and target prediction
+- Disease target collection
+- Intersection target identification
+- Protein-protein interaction network construction
+- GO and KEGG enrichment analyses
+- Network visualization and hub target screening
+- Experimental validation strategy
+
+### Methods 英文模板
+Network pharmacology analysis was conducted to explore the potential therapeutic mechanism of {project_name} against {disease_name}. Compound-associated targets, disease-related targets, and differentially expressed genes were integrated to identify shared targets. The shared targets were then subjected to protein-protein interaction analysis, functional enrichment analysis, and network visualization to identify hub genes and representative pathways. The resulting targets and pathways were further used to guide downstream docking and experimental validation.
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1542,6 +1580,11 @@ def figure_network_package_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    methods_bundle = build_network_methods_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1602,6 +1645,8 @@ def figure_network_package_new(title: str = Form(...)):
 {validation_bundle}
 
 {experiment_bundle}
+
+{methods_bundle}
 
 ## 图注草稿
 - Figure 1：
@@ -1668,6 +1713,12 @@ def figure_network_package_new(title: str = Form(...)):
 {experiment_bundle}
 """
             changed = True
+        if "## Methods 初稿" not in existing:
+            existing = existing.rstrip() + f"""
+
+{methods_bundle}
+"""
+            changed = True
         if changed:
             file_path.write_text(existing + "\n", encoding="utf-8")
 
@@ -1722,8 +1773,14 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     figure_summary = "\n".join(figure_summary_lines) if figure_summary_lines else "- 当前暂无最近 Figure 记录。"
     figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
     network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    figure_context = build_network_figure_context()
     discussion_bundle = build_network_discussion_bundle(
-        build_network_figure_context()["recommendations"],
+        figure_context["recommendations"],
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+    methods_bundle = build_network_methods_bundle(
+        figure_context["recommendations"],
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
@@ -1769,6 +1826,18 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 
 {discussion_bundle}
 """
+        extra_methods_context = ""
+        if section_type == "methods":
+            extra_methods_context = f"""
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{methods_bundle}
+"""
 
         content = f"""# 论文写作｜{title}
 
@@ -1785,7 +1854,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 核心结论
 
 ## 需要引用的文献
-{extra_results_context}{extra_discussion_context}
+{extra_results_context}{extra_discussion_context}{extra_methods_context}
 
 ## 初稿
 
@@ -2068,6 +2137,67 @@ def writing_network_experiment_new(title: str = Form(...)):
 - 基因 3：
 
 ## 预期结果
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-methods/new")
+def writing_network_methods_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Methods_Draft.md"
+    current_project = get_current_project() or {}
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    methods_bundle = build_network_methods_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+
+    if not file_path.exists():
+        content = f"""# Methods 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{methods_bundle}
+
+## 待补充数据库与参数
+- 靶点数据库：
+- 疾病数据库：
+- PPI 平台：
+- 富集分析平台：
+- 筛选阈值：
+
+## 待补充软件与版本
+- Cytoscape：
+- STRING：
+- R / Python：
+- GraphPad Prism：
 
 ## 修改记录
 """
