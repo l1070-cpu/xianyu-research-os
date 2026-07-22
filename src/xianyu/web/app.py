@@ -1018,6 +1018,49 @@ def build_network_title_bundle(
 """
 
 
+def build_network_submission_package_bundle(
+    project_name: str,
+    disease_name: str,
+):
+    return f"""## Submission Package 总包
+
+### 投稿包组成
+- Title
+- Abstract
+- Keywords
+- Highlights
+- Introduction
+- Methods
+- Results
+- Discussion
+- Conclusion
+- Cover Letter
+- Graphical Abstract
+- Figure Legends
+
+### 投稿前检查清单
+- [ ] 标题与摘要保持一致
+- [ ] 关键词覆盖研究对象、疾病和方法
+- [ ] Highlights 已压缩为 3-4 条短句
+- [ ] Figure legend 与图号完全对应
+- [ ] Results 与 Discussion 的逻辑顺序一致
+- [ ] Methods 已补数据库、软件和筛选阈值
+- [ ] Cover Letter 已补期刊名称和稿件标题
+- [ ] Graphical Abstract 与正文机制主线一致
+- [ ] 结论没有把预测结果写成已完全证实
+
+### 建议投稿主线
+This submission package centers on the potential therapeutic mechanism of {project_name} against {disease_name}, with network pharmacology serving as the main discovery framework and downstream validation as the next evidence step.
+
+### 建议最后人工确认的内容
+- 目标期刊格式要求
+- 作者信息与单位
+- 图表分辨率与命名
+- 缩写首次出现定义
+- 引文格式与参考文献完整性
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -3133,6 +3176,99 @@ def writing_network_title_new(title: str = Form(...)):
 {title_bundle}
 
 ## 最终标题
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-submission-package/new")
+def writing_network_submission_package_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Submission_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get('research_object', '') or current_project.get('name', '') or "the project"
+    disease_name = current_project.get('disease', '') or "the disease model"
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    recent_writing = get_recent_notes("06_论文写作", limit=12)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    writing_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_writing]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    writing_summary = "\n".join(writing_summary_lines) if writing_summary_lines else "- 当前暂无最近论文写作记录。"
+
+    intro_bundle = build_network_introduction_bundle(recommendations, project_name, disease_name)
+    abstract_bundle = build_network_abstract_bundle(recommendations, project_name, disease_name)
+    cover_bundle = build_network_cover_letter_bundle(recommendations, project_name, disease_name)
+    graphical_bundle = build_network_graphical_abstract_bundle(recommendations, project_name, disease_name)
+    highlights_bundle = build_network_highlights_bundle(recommendations, project_name, disease_name)
+    conclusion_bundle = build_network_conclusion_bundle(recommendations, project_name, disease_name)
+    keywords_bundle = build_network_keywords_bundle(recommendations, project_name, disease_name)
+    title_bundle = build_network_title_bundle(recommendations, project_name, disease_name)
+    methods_bundle = build_network_methods_bundle(recommendations, project_name, disease_name)
+    discussion_bundle = build_network_discussion_bundle(recommendations, project_name, disease_name)
+    submission_bundle = build_network_submission_package_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Submission Package｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{submission_bundle}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+## 最近论文写作记录
+{writing_summary}
+
+{title_bundle}
+
+{keywords_bundle}
+
+{highlights_bundle}
+
+{intro_bundle}
+
+{abstract_bundle}
+
+{methods_bundle}
+
+{discussion_bundle}
+
+{conclusion_bundle}
+
+{cover_bundle}
+
+{graphical_bundle}
+
+## 最终投稿前操作
+- [ ] 整理最终题目
+- [ ] 整理最终摘要
+- [ ] 整理最终关键词
+- [ ] 整理最终 Highlights
+- [ ] 核对 Figure Legends
+- [ ] 核对 Cover Letter
+- [ ] 核对图文摘要
+- [ ] 导出投稿清单
 
 ## 修改记录
 """
