@@ -795,6 +795,98 @@ Background: {disease_name} is associated with complex pathological mechanisms an
 """
 
 
+def build_network_cover_letter_bundle(
+    recommendations,
+    project_name: str,
+    disease_name: str,
+):
+    evidence_terms = []
+    if any(item["name"] == "成分-靶点网络图" for item in recommendations):
+        evidence_terms.append("component-target network analysis")
+    if any(item["name"] == "PPI 网络图" for item in recommendations):
+        evidence_terms.append("hub-target identification")
+    if any(item["name"] == "GO 气泡图" for item in recommendations):
+        evidence_terms.append("GO functional enrichment")
+    if any(item["name"] == "KEGG 气泡图" for item in recommendations):
+        evidence_terms.append("KEGG pathway analysis")
+
+    evidence_text = ", ".join(evidence_terms) if evidence_terms else "network pharmacology analysis"
+
+    return f"""## Cover Letter 初稿
+
+### 投稿信结构提示
+- 第一段：说明稿件题目、研究主题和投稿类型。
+- 第二段：概括本研究围绕 {project_name} 与 {disease_name} 的核心发现。
+- 第三段：强调创新性、机制价值和潜在临床意义。
+- 第四段：声明稿件未一稿多投、作者一致同意投稿。
+
+### Cover Letter 英文模板
+Dear Editor,
+
+We are pleased to submit our manuscript entitled "[Manuscript Title]" for consideration for publication in [Journal Name]. In this study, we investigated the potential therapeutic mechanism of {project_name} against {disease_name} using {evidence_text}, together with downstream validation planning.
+
+Our work highlights the multi-component, multi-target, and multi-pathway characteristics of {project_name} and provides a mechanistic framework for understanding its potential therapeutic effects in {disease_name}. We believe that these findings may be of interest to the readership of [Journal Name], particularly those focusing on natural products, pharmacology, and disease mechanism research.
+
+This manuscript is original, has not been published previously, and is not under consideration for publication elsewhere. All authors have approved the manuscript and agree with its submission to your journal.
+
+Thank you for your time and consideration. We look forward to your response.
+
+Sincerely,
+[Corresponding Author]
+
+### 待补充投稿信息
+- 目标期刊：
+- 稿件标题：
+- 研究亮点 3 条：
+- 通讯作者信息：
+"""
+
+
+def build_network_graphical_abstract_bundle(
+    recommendations,
+    project_name: str,
+    disease_name: str,
+):
+    modules = []
+    if any(item["name"] == "成分-靶点网络图" for item in recommendations):
+        modules.append("活性成分")
+        modules.append("潜在靶点")
+    if any(item["name"] == "PPI 网络图" for item in recommendations):
+        modules.append("核心靶点")
+    if any(item["name"] == "GO 气泡图" for item in recommendations):
+        modules.append("生物过程")
+    if any(item["name"] == "KEGG 气泡图" for item in recommendations):
+        modules.append("关键信号通路")
+
+    module_text = " → ".join(dict.fromkeys(modules)) if modules else "成分 → 靶点 → 通路 → 验证"
+
+    return f"""## Graphical Abstract 要点
+
+### 图文摘要主线
+- 推荐主线：{project_name} → {module_text} → {disease_name} 改善
+- 左侧：研究对象 / 提取物 / 代表性活性成分
+- 中间：核心靶点、PPI 或富集到的代表性通路
+- 右侧：疾病表型改善或后续实验验证方向
+
+### 图中建议保留的文字
+- 研究对象：{project_name}
+- 疾病 / 模型：{disease_name}
+- 关键词 1：Multi-component
+- 关键词 2：Multi-target
+- 关键词 3：Multi-pathway
+
+### 图文摘要说明句模板
+The graphical abstract illustrates the potential therapeutic mechanism of {project_name} against {disease_name} from active compounds to hub targets and representative pathways, providing a concise overview of the network pharmacology-guided validation strategy.
+
+### 设计检查清单
+- [ ] 左中右结构是否清晰
+- [ ] 术语是否与正文一致
+- [ ] 关键通路是否只保留 1-2 条
+- [ ] 核心靶点是否控制在 3-5 个
+- [ ] 配色是否适合投稿期刊风格
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1670,6 +1762,16 @@ def figure_network_package_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    cover_letter_bundle = build_network_cover_letter_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+    graphical_abstract_bundle = build_network_graphical_abstract_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1736,6 +1838,10 @@ def figure_network_package_new(title: str = Form(...)):
 {introduction_bundle}
 
 {abstract_bundle}
+
+{cover_letter_bundle}
+
+{graphical_abstract_bundle}
 
 ## 图注草稿
 - Figure 1：
@@ -1820,6 +1926,18 @@ def figure_network_package_new(title: str = Form(...)):
 {abstract_bundle}
 """
             changed = True
+        if "## Cover Letter 初稿" not in existing:
+            existing = existing.rstrip() + f"""
+
+{cover_letter_bundle}
+"""
+            changed = True
+        if "## Graphical Abstract 要点" not in existing:
+            existing = existing.rstrip() + f"""
+
+{graphical_abstract_bundle}
+"""
+            changed = True
         if changed:
             file_path.write_text(existing + "\n", encoding="utf-8")
 
@@ -1891,6 +2009,11 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
         current_project.get('disease', '') or "the disease model",
     )
     abstract_bundle = build_network_abstract_bundle(
+        figure_context["recommendations"],
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+    cover_letter_bundle = build_network_cover_letter_bundle(
         figure_context["recommendations"],
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
@@ -1973,6 +2096,18 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 
 {abstract_bundle}
 """
+        extra_cover_context = ""
+        if section_type == "cover":
+            extra_cover_context = f"""
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{cover_letter_bundle}
+"""
 
         content = f"""# 论文写作｜{title}
 
@@ -1989,7 +2124,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 核心结论
 
 ## 需要引用的文献
-{extra_results_context}{extra_discussion_context}{extra_methods_context}{extra_introduction_context}{extra_abstract_context}
+{extra_results_context}{extra_discussion_context}{extra_methods_context}{extra_introduction_context}{extra_abstract_context}{extra_cover_context}
 
 ## 初稿
 
@@ -2435,6 +2570,114 @@ def writing_network_abstract_new(title: str = Form(...)):
 {abstract_bundle}
 
 ## Abstract 正文草稿
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-cover-letter/new")
+def writing_network_cover_letter_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Cover_Letter_Draft.md"
+    current_project = get_current_project() or {}
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    cover_letter_bundle = build_network_cover_letter_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+
+    if not file_path.exists():
+        content = f"""# Cover Letter 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{cover_letter_bundle}
+
+## Cover Letter 正文
+
+## 待补充期刊信息
+- Journal：
+- Article type：
+- Highlights：
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-graphical-abstract/new")
+def writing_network_graphical_abstract_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Graphical_Abstract_Brief.md"
+    current_project = get_current_project() or {}
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    graphical_abstract_bundle = build_network_graphical_abstract_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+
+    if not file_path.exists():
+        content = f"""# Graphical Abstract 要点｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{graphical_abstract_bundle}
+
+## 画图执行备注
+- 推荐版式：
+- 推荐主色：
+- 需要保留的核心元素：
 
 ## 修改记录
 """
