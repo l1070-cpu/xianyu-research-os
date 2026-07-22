@@ -1129,6 +1129,127 @@ def build_journal_preset_bundle(
 """
 
 
+def build_journal_cover_letter_style_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    if journal == "phytomedicine":
+        return f"""## Cover Letter 期刊风格建议
+
+### Phytomedicine 风格重点
+- 第一段尽快点明 {project_name} 的天然产物 / 植物药研究属性。
+- 第二段强调对 {disease_name} 的机制探索价值和潜在转化意义。
+- 第三段突出多成分、多靶点、多通路特点，但避免过度夸大临床应用。
+
+### Cover Letter 句式建议
+- We believe this work fits the scope of Phytomedicine because it highlights the pharmacological potential of a natural-product-based intervention.
+- The study provides a mechanistic framework linking active compounds, hub targets, and representative pathways relevant to {disease_name}.
+"""
+
+    if journal == "joe":
+        return f"""## Cover Letter 期刊风格建议
+
+### Journal of Ethnopharmacology 风格重点
+- 第一段补足 {project_name} 的传统应用背景或民族药用依据。
+- 第二段解释为何从传统用途中延伸到 {disease_name} 的现代机制研究。
+- 第三段强调天然产物来源、药用依据与网络药理机制分析之间的逻辑桥梁。
+
+### Cover Letter 句式建议
+- We believe this manuscript fits the scope of the Journal of Ethnopharmacology because it connects the traditional medicinal relevance of {project_name} with modern mechanism-oriented pharmacological analysis.
+- The study extends ethnopharmacological knowledge by exploring the potential therapeutic mechanism of {project_name} against {disease_name}.
+"""
+
+    return f"""## Cover Letter 期刊风格建议
+
+### 通用风格重点
+- 简洁说明稿件主题、核心发现和投稿价值。
+- 不要把验证计划写成已经完成的实验结果。
+- 重点说明为什么该稿件适合目标期刊读者。
+"""
+
+
+def build_journal_highlights_style_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    if journal == "phytomedicine":
+        return f"""## Highlights 期刊风格建议
+
+### Phytomedicine 更适合的亮点表达
+- 强调天然产物药理价值。
+- 强调机制主线而不是泛泛背景。
+- 可突出后续验证潜力，但避免直接写成临床结论。
+
+### 推荐表达方向
+- {project_name} showed pharmacological potential against {disease_name}.
+- Network pharmacology revealed representative targets and pathways.
+- The findings support subsequent docking and biological validation.
+"""
+
+    if journal == "joe":
+        return f"""## Highlights 期刊风格建议
+
+### Journal of Ethnopharmacology 更适合的亮点表达
+- 兼顾传统药用背景与现代机制研究。
+- 突出天然来源和研究依据。
+- 机制亮点要与 ethnopharmacology 语境保持一致。
+
+### 推荐表达方向
+- {project_name} was investigated based on its medicinal relevance.
+- The study linked traditional use with modern network pharmacology analysis.
+- Candidate targets and pathways were identified for {disease_name}.
+"""
+
+    return f"""## Highlights 期刊风格建议
+
+### 通用亮点表达
+- 每条短、准、硬。
+- 一条说研究对象，一条说方法发现，一条说后续验证价值。
+"""
+
+
+def build_journal_graphical_abstract_style_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    if journal == "phytomedicine":
+        return f"""## Graphical Abstract 期刊风格建议
+
+### Phytomedicine 图文摘要重点
+- 左侧突出天然产物来源或活性成分。
+- 中间突出核心靶点和关键信号通路。
+- 右侧突出对 {disease_name} 的改善方向或验证路径。
+
+### 版式建议
+- 用 3 段式结构：成分 → 靶点 / 通路 → 疾病相关效应。
+- 颜色尽量清爽，突出药理机制主线。
+"""
+
+    if journal == "joe":
+        return f"""## Graphical Abstract 期刊风格建议
+
+### Journal of Ethnopharmacology 图文摘要重点
+- 起点可加入药材 / 民族药 / 传统用途线索。
+- 中段展示网络药理机制链条。
+- 终点展示与 {disease_name} 相关的现代药理解释。
+
+### 版式建议
+- 用“传统依据 → 机制分析 → 现代验证方向”的叙事顺序。
+- 图中术语尽量兼顾天然产物研究语境。
+"""
+
+    return f"""## Graphical Abstract 期刊风格建议
+
+### 通用图文摘要重点
+- 保留一条清晰主线。
+- 核心靶点和通路不要过多。
+- 与摘要和结果中的主机制保持一致。
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -3285,6 +3406,9 @@ def writing_network_submission_package_new(title: str = Form(...), journal: str 
     discussion_bundle = build_network_discussion_bundle(recommendations, project_name, disease_name)
     submission_bundle = build_network_submission_package_bundle(project_name, disease_name)
     journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
+    journal_cover_style_bundle = build_journal_cover_letter_style_bundle(journal, project_name, disease_name)
+    journal_highlights_style_bundle = build_journal_highlights_style_bundle(journal, project_name, disease_name)
+    journal_graphical_style_bundle = build_journal_graphical_abstract_style_bundle(journal, project_name, disease_name)
 
     if not file_path.exists():
         content = f"""# Submission Package｜{title}
@@ -3304,6 +3428,12 @@ def writing_network_submission_package_new(title: str = Form(...), journal: str 
 {submission_bundle}
 
 {journal_bundle}
+
+{journal_cover_style_bundle}
+
+{journal_highlights_style_bundle}
+
+{journal_graphical_style_bundle}
 
 ## 最近网络药理图表包
 {figure_package_summary}
