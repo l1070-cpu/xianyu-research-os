@@ -555,6 +555,68 @@ def build_network_discussion_bundle(
 """
 
 
+def build_network_validation_bundle(
+    recommendations,
+    project_name: str,
+    disease_name: str,
+):
+    has_ppi = any(item["name"] == "PPI 网络图" for item in recommendations)
+    has_hub = any(item["name"] == "核心靶点柱状图" for item in recommendations)
+    has_kegg = any(item["name"] == "KEGG 气泡图" for item in recommendations)
+    has_go = any(item["name"] == "GO 气泡图" for item in recommendations)
+    has_component = any(item["name"] == "成分-靶点网络图" for item in recommendations)
+
+    docking_lines = []
+    wb_lines = []
+    qpcr_lines = []
+    functional_lines = []
+
+    if has_ppi or has_hub:
+        docking_lines.append("- 优先选择 3-5 个核心靶点进入分子对接，优先考虑 PPI 或中心性排序靠前的候选基因。")
+        wb_lines.append("- WB：建议先验证核心靶点蛋白及其磷酸化状态或上下游蛋白表达变化。")
+        qpcr_lines.append("- qPCR：建议检测核心靶点基因及关键下游效应基因的转录水平。")
+
+    if has_kegg:
+        docking_lines.append("- 若 KEGG 富集到代表性通路，优先选择该通路中的关键靶点作为 docking 候选。")
+        wb_lines.append("- WB：补充代表性通路蛋白，例如通路总蛋白、活化蛋白和终末效应蛋白。")
+        qpcr_lines.append("- qPCR：补充该通路相关基因以及凋亡、炎症或氧化应激相关基因。")
+
+    if has_go:
+        functional_lines.append("- 根据 GO 富集结果，补做与氧化应激、炎症、凋亡或线粒体功能相关的功能实验。")
+
+    if has_component:
+        docking_lines.append(f"- 从 {project_name} 的关键活性成分中挑选 2-3 个代表性化合物，与核心靶点进行对接。")
+
+    if not docking_lines:
+        docking_lines.append("- 当前建议先完成交集靶点和富集结果整理，再筛选 docking 候选。")
+    if not wb_lines:
+        wb_lines.append("- 当前建议先根据核心靶点和通路结果，确定 2-4 个优先验证蛋白。")
+    if not qpcr_lines:
+        qpcr_lines.append("- 当前建议先围绕核心靶点和关键通路，选择 3-6 个候选基因进行 qPCR。")
+    if not functional_lines:
+        functional_lines.append(f"- 围绕 {disease_name} 相关表型，补充 1-2 项功能性验证实验。")
+
+    return f"""## Docking / WB / qPCR 验证建议
+
+### Docking 候选建议
+{chr(10).join(docking_lines)}
+
+### WB 验证建议
+{chr(10).join(wb_lines)}
+
+### qPCR 验证建议
+{chr(10).join(qpcr_lines)}
+
+### 功能实验建议
+{chr(10).join(functional_lines)}
+
+### 推荐验证顺序
+- 先完成 docking 候选筛选
+- 再确定 WB / qPCR 核心指标
+- 最后补功能实验，用于支撑机制解释
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1405,6 +1467,11 @@ def figure_network_package_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    validation_bundle = build_network_validation_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1462,6 +1529,8 @@ def figure_network_package_new(title: str = Form(...)):
 
 {discussion_bundle}
 
+{validation_bundle}
+
 ## 图注草稿
 - Figure 1：
 - Figure 2：
@@ -1513,6 +1582,12 @@ def figure_network_package_new(title: str = Form(...)):
             existing = existing.rstrip() + f"""
 
 {discussion_bundle}
+"""
+            changed = True
+        if "## Docking / WB / qPCR 验证建议" not in existing:
+            existing = existing.rstrip() + f"""
+
+{validation_bundle}
 """
             changed = True
         if changed:
@@ -1791,6 +1866,70 @@ def writing_network_discussion_new(title: str = Form(...)):
 ### 第四段：后续验证与局限
 
 ## 待补充文献
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-validation/new")
+def writing_network_validation_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Validation_Plan.md"
+    current_project = get_current_project() or {}
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    validation_bundle = build_network_validation_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+
+    if not file_path.exists():
+        content = f"""# 验证计划草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{validation_bundle}
+
+## 待确定的核心靶点
+- 靶点 1：
+- 靶点 2：
+- 靶点 3：
+
+## 待确定的关键活性成分
+- 成分 1：
+- 成分 2：
+- 成分 3：
+
+## 实验安排草稿
+- Docking：
+- WB：
+- qPCR：
+- IF / ROS / 凋亡：
 
 ## 修改记录
 """

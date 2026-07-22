@@ -58,6 +58,13 @@
     </p>
     <button type="submit">生成 Discussion 桥接草稿</button>
   </form>
+  <form method="post" action="/writing/network-validation/new">
+    <p>
+      <label>验证计划名称</label><br>
+      <input name="title" placeholder="例如：ValidationPlan_网络药理后续验证" required>
+    </p>
+    <button type="submit">生成 Docking / WB / qPCR 验证计划</button>
+  </form>
 </section>
 
 {% if recent_figure_packages %}
