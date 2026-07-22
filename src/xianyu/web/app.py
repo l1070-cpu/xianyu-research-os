@@ -518,6 +518,43 @@ Functional enrichment analyses revealed that the shared targets were mainly invo
 """
 
 
+def build_network_discussion_bundle(
+    recommendations,
+    project_name: str,
+    disease_name: str,
+):
+    pathway_terms = []
+    if any(item["name"] == "KEGG 气泡图" for item in recommendations):
+        pathway_terms.append("关键信号通路富集结果")
+    if any(item["name"] == "GO 气泡图" for item in recommendations):
+        pathway_terms.append("生物过程富集结果")
+    if any(item["name"] == "PPI 网络图" for item in recommendations):
+        pathway_terms.append("核心靶点互作关系")
+    if any(item["name"] == "成分-靶点网络图" for item in recommendations):
+        pathway_terms.append("多成分-多靶点调控特征")
+
+    mechanism_summary = "、".join(pathway_terms) if pathway_terms else "网络药理分析结果"
+
+    return f"""## Discussion 过渡与机制解释草稿
+
+### Discussion 过渡句
+- The network pharmacology results provided a systems-level overview of the potential therapeutic mechanism of {project_name} against {disease_name}.
+- These findings linked the shared targets, hub genes, and enriched pathways into a coherent mechanistic framework for subsequent validation.
+
+### 机制解释句
+- The identified hub targets and enriched pathways suggest that {project_name} may exert therapeutic effects through {mechanism_summary}.
+- The multi-component and multi-target characteristics are consistent with the pharmacological features commonly observed in complex natural-product interventions.
+
+### 与文献衔接句
+- These observations are broadly in line with previous studies reporting that oxidative stress, inflammation, apoptosis, or related signaling pathways are central to the pathogenesis of {disease_name}.
+- Therefore, the present network pharmacology results offer a reasonable basis for selecting key targets and pathways for downstream docking and experimental validation.
+
+### 实验验证承接句
+- Based on these findings, the next step is to prioritize hub targets and representative pathways for molecular docking and wet-lab verification.
+- The enriched pathways and hub genes can be further examined by WB, RT-qPCR, IF, or other functional assays in the selected disease model.
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -1363,6 +1400,11 @@ def figure_network_package_new(title: str = Form(...)):
         recommendations,
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
     )
+    discussion_bundle = build_network_discussion_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     content = f"""# 网络药理图表包｜{title}
 
@@ -1418,6 +1460,8 @@ def figure_network_package_new(title: str = Form(...)):
 
 {results_bundle}
 
+{discussion_bundle}
+
 ## 图注草稿
 - Figure 1：
 - Figure 2：
@@ -1465,6 +1509,12 @@ def figure_network_package_new(title: str = Form(...)):
 {results_bundle}
 """
             changed = True
+        if "## Discussion 过渡与机制解释草稿" not in existing:
+            existing = existing.rstrip() + f"""
+
+{discussion_bundle}
+"""
+            changed = True
         if changed:
             file_path.write_text(existing + "\n", encoding="utf-8")
 
@@ -1509,6 +1559,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
     file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
     recent_figures = get_recent_notes("05_数据分析/科研作图", limit=3)
     recent_figure_packages = get_recent_figure_packages(limit=3)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
@@ -1518,6 +1569,11 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     figure_summary = "\n".join(figure_summary_lines) if figure_summary_lines else "- 当前暂无最近 Figure 记录。"
     figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
     network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    discussion_bundle = build_network_discussion_bundle(
+        build_network_figure_context()["recommendations"],
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     section_map = {
         "introduction": "Introduction",
@@ -1548,6 +1604,18 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 - 再说明统计差异
 - 最后点出与机制相关的结论
 """
+        extra_discussion_context = ""
+        if section_type == "discussion":
+            extra_discussion_context = f"""
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{discussion_bundle}
+"""
 
         content = f"""# 论文写作｜{title}
 
@@ -1564,7 +1632,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 核心结论
 
 ## 需要引用的文献
-{extra_results_context}
+{extra_results_context}{extra_discussion_context}
 
 ## 初稿
 
@@ -1663,6 +1731,66 @@ def writing_figure_draft_new(title: str = Form(...)):
 - [ ] Cover Letter
 
 ## 待补充内容
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-discussion/new")
+def writing_network_discussion_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Discussion_桥接草稿.md"
+    current_project = get_current_project() or {}
+    context = build_network_figure_context()
+    recommendations = context["recommendations"]
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    discussion_bundle = build_network_discussion_bundle(
+        recommendations,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+
+    if not file_path.exists():
+        content = f"""# Discussion 桥接草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{discussion_bundle}
+
+## Discussion 初稿
+
+### 第一段：承接 Results
+
+### 第二段：机制解释
+
+### 第三段：与既往研究比较
+
+### 第四段：后续验证与局限
+
+## 待补充文献
 
 ## 修改记录
 """
