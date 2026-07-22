@@ -1061,6 +1061,74 @@ This submission package centers on the potential therapeutic mechanism of {proje
 """
 
 
+def build_journal_preset_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    preset_map = {
+        "generic": {
+            "label": "通用投稿模板",
+            "scope": "适合先整理完整投稿材料，再根据目标期刊二次微调。",
+            "focus": [
+                "标题、摘要、关键词、Highlights 先内部统一",
+                "Figure legends 与正文段落逐一对应",
+                "Cover letter 中补齐期刊名称、稿件类型和创新点",
+            ],
+            "checks": [
+                "核对摘要、结论和讨论是否同一口径",
+                "核对缩写首次出现是否定义",
+                "核对参考文献格式与期刊要求是否一致",
+            ],
+        },
+        "phytomedicine": {
+            "label": "Phytomedicine 模板",
+            "scope": "更强调天然产物药理机制、疾病相关性和转化潜力。",
+            "focus": [
+                f"突出 {project_name} 作为天然产物或植物来源干预策略的药理意义",
+                f"强调 {disease_name} 相关机制主线和潜在应用价值",
+                "摘要、Highlights 和 Cover letter 中都要明确创新点与机制证据链",
+            ],
+            "checks": [
+                "检查植物药/天然产物表述是否统一",
+                "检查机制解释是否与图表和验证计划一致",
+                "检查图文摘要是否清晰展示成分—靶点—通路主线",
+            ],
+        },
+        "joe": {
+            "label": "Journal of Ethnopharmacology 模板",
+            "scope": "更强调传统应用背景、药用依据、天然产物来源与机制研究衔接。",
+            "focus": [
+                f"补足 {project_name} 的传统药用背景、来源和研究依据",
+                "说明为何选择该研究对象以及其与现代机制研究的连接",
+                f"在引言和讨论中更自然地连接传统用途与 {disease_name} 的现代研究问题",
+            ],
+            "checks": [
+                "检查研究对象来源、部位、命名是否规范统一",
+                "检查引言中传统应用背景是否交代充分",
+                "检查机制研究结果是否没有脱离天然产物研究语境",
+            ],
+        },
+    }
+
+    selected = preset_map.get(journal, preset_map["generic"])
+    focus_lines = "\n".join([f"- {item}" for item in selected["focus"]])
+    check_lines = "\n".join([f"- [ ] {item}" for item in selected["checks"]])
+
+    return f"""## 期刊模板建议
+
+### 当前模板
+- 目标模板：{selected['label']}
+- 适用说明：{selected['scope']}
+
+### 当前模板写作重点
+{focus_lines}
+
+### 当前模板额外检查
+{check_lines}
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -3185,7 +3253,7 @@ def writing_network_title_new(title: str = Form(...)):
 
 
 @app.post("/writing/network-submission-package/new")
-def writing_network_submission_package_new(title: str = Form(...)):
+def writing_network_submission_package_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -3216,12 +3284,16 @@ def writing_network_submission_package_new(title: str = Form(...)):
     methods_bundle = build_network_methods_bundle(recommendations, project_name, disease_name)
     discussion_bundle = build_network_discussion_bundle(recommendations, project_name, disease_name)
     submission_bundle = build_network_submission_package_bundle(project_name, disease_name)
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
 
     if not file_path.exists():
         content = f"""# Submission Package｜{title}
 
 ## 日期
 {today}
+
+## 目标期刊模板
+- 模板代号：{journal}
 
 ## 当前项目
 - 项目名称：{current_project.get('name', '')}
@@ -3230,6 +3302,8 @@ def writing_network_submission_package_new(title: str = Form(...)):
 - 当前阶段：{current_project.get('stage', '')}
 
 {submission_bundle}
+
+{journal_bundle}
 
 ## 最近网络药理图表包
 {figure_package_summary}
