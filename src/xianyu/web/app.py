@@ -1250,6 +1250,91 @@ def build_journal_graphical_abstract_style_bundle(
 """
 
 
+def build_journal_cover_letter_full_draft_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    if journal == "phytomedicine":
+        return f"""## Cover Letter 成稿版（Phytomedicine）
+
+Dear Editor,
+
+We are pleased to submit our manuscript entitled "[Manuscript Title]" for consideration for publication in Phytomedicine. In this study, we explored the potential therapeutic mechanism of {project_name} against {disease_name} using a network pharmacology-based strategy integrated with downstream validation planning.
+
+Our findings highlight the pharmacological potential of {project_name} as a natural-product-based intervention and reveal a multi-component, multi-target, and multi-pathway mechanism framework relevant to {disease_name}. By connecting active compounds, hub targets, and representative signaling pathways, this work provides a mechanistic basis for subsequent docking and experimental validation.
+
+We believe this manuscript fits the scope of Phytomedicine because it emphasizes the therapeutic relevance of a natural product and provides mechanism-oriented pharmacological insights with potential translational value.
+
+This manuscript is original, has not been published previously, and is not under consideration elsewhere. All authors have approved the manuscript and agree with its submission.
+
+Thank you for your time and consideration.
+
+Sincerely,
+[Corresponding Author]
+"""
+    if journal == "joe":
+        return f"""## Cover Letter 成稿版（Journal of Ethnopharmacology）
+
+Dear Editor,
+
+We are pleased to submit our manuscript entitled "[Manuscript Title]" for consideration for publication in the Journal of Ethnopharmacology. This work investigates the potential therapeutic mechanism of {project_name} against {disease_name} through network pharmacology analysis and downstream validation planning.
+
+The study is particularly relevant to the journal because it helps connect the medicinal relevance of {project_name} with modern mechanism-oriented pharmacological investigation. By linking active compounds, candidate targets, and representative pathways, our work extends the understanding of how a traditional or natural-product-derived intervention may act in the context of {disease_name}.
+
+We believe this manuscript will be of interest to readers in ethnopharmacology, natural product research, and mechanism-based pharmacology.
+
+This manuscript is original, has not been published previously, and is not under consideration elsewhere. All authors have approved the manuscript and agree with its submission.
+
+Thank you for your time and consideration.
+
+Sincerely,
+[Corresponding Author]
+"""
+    return f"""## Cover Letter 成稿版（通用）
+
+Dear Editor,
+
+We are pleased to submit our manuscript entitled "[Manuscript Title]" for consideration for publication in [Journal Name]. This study explored the potential therapeutic mechanism of {project_name} against {disease_name} through network pharmacology analysis and downstream validation planning.
+
+Our work provides a preliminary mechanistic framework linking active compounds, candidate targets, and representative pathways, thereby offering a basis for further validation and interpretation.
+
+This manuscript is original, has not been published previously, and is not under consideration elsewhere. All authors have approved the manuscript and agree with its submission.
+
+Thank you for your consideration.
+
+Sincerely,
+[Corresponding Author]
+"""
+
+
+def build_journal_highlights_full_draft_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    if journal == "phytomedicine":
+        return f"""## Highlights 成稿版（Phytomedicine）
+
+- {project_name} showed pharmacological potential against {disease_name}.
+- Network pharmacology revealed candidate hub targets and representative pathways.
+- The study supports subsequent docking and biological validation of a natural-product-based intervention.
+"""
+    if journal == "joe":
+        return f"""## Highlights 成稿版（Journal of Ethnopharmacology）
+
+- {project_name} was investigated in a natural-product and medicinal-use context.
+- Network pharmacology connected traditional relevance with modern mechanistic analysis.
+- Candidate targets and pathways were identified for follow-up validation in {disease_name}.
+"""
+    return f"""## Highlights 成稿版（通用）
+
+- {project_name} showed potential relevance against {disease_name}.
+- Network pharmacology identified candidate targets and pathways.
+- The findings provide a basis for downstream validation.
+"""
+
+
 def get_recent_notes(folder: str, limit: int = 5):
     files = list_md(folder)
     items = []
@@ -3066,7 +3151,7 @@ def writing_network_abstract_new(title: str = Form(...)):
 
 
 @app.post("/writing/network-cover-letter/new")
-def writing_network_cover_letter_new(title: str = Form(...)):
+def writing_network_cover_letter_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -3085,12 +3170,25 @@ def writing_network_cover_letter_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    journal_cover_style_bundle = build_journal_cover_letter_style_bundle(
+        journal,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+    journal_cover_full_bundle = build_journal_cover_letter_full_draft_bundle(
+        journal,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     if not file_path.exists():
         content = f"""# Cover Letter 草稿｜{title}
 
 ## 日期
 {today}
+
+## 目标期刊模板
+- 模板代号：{journal}
 
 ## 当前项目
 - 项目名称：{current_project.get('name', '')}
@@ -3105,6 +3203,10 @@ def writing_network_cover_letter_new(title: str = Form(...)):
 {network_summary}
 
 {cover_letter_bundle}
+
+{journal_cover_style_bundle}
+
+{journal_cover_full_bundle}
 
 ## Cover Letter 正文
 
@@ -3121,7 +3223,7 @@ def writing_network_cover_letter_new(title: str = Form(...)):
 
 
 @app.post("/writing/network-graphical-abstract/new")
-def writing_network_graphical_abstract_new(title: str = Form(...)):
+def writing_network_graphical_abstract_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -3140,12 +3242,20 @@ def writing_network_graphical_abstract_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    journal_graphical_style_bundle = build_journal_graphical_abstract_style_bundle(
+        journal,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     if not file_path.exists():
         content = f"""# Graphical Abstract 要点｜{title}
 
 ## 日期
 {today}
+
+## 目标期刊模板
+- 模板代号：{journal}
 
 ## 当前项目
 - 项目名称：{current_project.get('name', '')}
@@ -3161,6 +3271,8 @@ def writing_network_graphical_abstract_new(title: str = Form(...)):
 
 {graphical_abstract_bundle}
 
+{journal_graphical_style_bundle}
+
 ## 画图执行备注
 - 推荐版式：
 - 推荐主色：
@@ -3174,7 +3286,7 @@ def writing_network_graphical_abstract_new(title: str = Form(...)):
 
 
 @app.post("/writing/network-highlights/new")
-def writing_network_highlights_new(title: str = Form(...)):
+def writing_network_highlights_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -3193,12 +3305,25 @@ def writing_network_highlights_new(title: str = Form(...)):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    journal_highlights_style_bundle = build_journal_highlights_style_bundle(
+        journal,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
+    journal_highlights_full_bundle = build_journal_highlights_full_draft_bundle(
+        journal,
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     if not file_path.exists():
         content = f"""# Highlights 草稿｜{title}
 
 ## 日期
 {today}
+
+## 目标期刊模板
+- 模板代号：{journal}
 
 ## 当前项目
 - 项目名称：{current_project.get('name', '')}
@@ -3213,6 +3338,10 @@ def writing_network_highlights_new(title: str = Form(...)):
 {network_summary}
 
 {highlights_bundle}
+
+{journal_highlights_style_bundle}
+
+{journal_highlights_full_bundle}
 
 ## 最终 Highlights
 
