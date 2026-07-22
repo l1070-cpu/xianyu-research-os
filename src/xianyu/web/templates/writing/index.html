@@ -28,6 +28,10 @@
         <option value="discussion">Discussion</option>
         <option value="abstract">Abstract</option>
         <option value="cover">Cover Letter</option>
+        <option value="highlights">Highlights</option>
+        <option value="conclusion">Conclusion</option>
+        <option value="keywords">Keywords</option>
+        <option value="title">Title Candidates</option>
         <option value="response">Response Letter</option>
       </select>
     </p>
@@ -66,6 +70,34 @@
       <input name="title" placeholder="例如：GraphicalAbstract_金毛狗脊机制主线" required>
     </p>
     <button type="submit">生成 图文摘要要点</button>
+  </form>
+  <form method="post" action="/writing/network-highlights/new">
+    <p>
+      <label>Highlights 草稿名称</label><br>
+      <input name="title" placeholder="例如：Highlights_金毛狗脊网络药理亮点" required>
+    </p>
+    <button type="submit">生成 Highlights 初稿</button>
+  </form>
+  <form method="post" action="/writing/network-conclusion/new">
+    <p>
+      <label>Conclusion 草稿名称</label><br>
+      <input name="title" placeholder="例如：Conclusion_金毛狗脊机制总结" required>
+    </p>
+    <button type="submit">生成 Conclusion 初稿</button>
+  </form>
+  <form method="post" action="/writing/network-keywords/new">
+    <p>
+      <label>Keywords 草稿名称</label><br>
+      <input name="title" placeholder="例如：Keywords_金毛狗脊脑卒中研究" required>
+    </p>
+    <button type="submit">生成 Keywords 初稿</button>
+  </form>
+  <form method="post" action="/writing/network-title/new">
+    <p>
+      <label>Title 备选名称</label><br>
+      <input name="title" placeholder="例如：Title_金毛狗脊论文标题备选" required>
+    </p>
+    <button type="submit">生成 Title 备选</button>
   </form>
 </section>
 
