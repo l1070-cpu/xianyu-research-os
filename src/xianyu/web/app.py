@@ -1061,6 +1061,72 @@ This submission package centers on the potential therapeutic mechanism of {proje
 """
 
 
+def build_response_letter_bundle(
+    journal: str,
+    project_name: str,
+    disease_name: str,
+):
+    journal_name_map = {
+        "generic": "[Journal Name]",
+        "phytomedicine": "Phytomedicine",
+        "joe": "Journal of Ethnopharmacology",
+    }
+    journal_name = journal_name_map.get(journal, "[Journal Name]")
+
+    if journal == "phytomedicine":
+        tone_hint = "回复语气应专业、简洁，重点强调机制证据链、天然产物药理价值和修改后的增强内容。"
+    elif journal == "joe":
+        tone_hint = "回复语气应兼顾传统应用背景与现代机制解释，突出研究对象来源、研究依据和机制补强。"
+    else:
+        tone_hint = "回复语气应礼貌、明确、逐条对应，避免情绪化或空泛表述。"
+
+    return f"""## Response Letter 草稿
+
+### 回复原则
+- 逐条对应审稿意见。
+- 先感谢，再回答，再说明修改位置。
+- 若无法完全满足，解释原因并给出替代性补充。
+- 避免使用防御性语气。
+
+### 当前期刊回复提示
+- 目标期刊：{journal_name}
+- 风格提示：{tone_hint}
+
+### Response Letter 开头模板
+Dear Editor and Reviewers,
+
+We sincerely thank you for the careful evaluation of our manuscript and for the constructive comments and suggestions. We have carefully revised the manuscript entitled "[Manuscript Title]" and addressed the comments point by point below. We believe that these revisions have improved the clarity and quality of the manuscript.
+
+### 总体回复思路
+- 本研究围绕 {project_name} 与 {disease_name} 的潜在机制展开。
+- 若有新增图表或新增分析，优先说明新增内容。
+- 若有补充实验或补充解释，说明其如何增强原结论。
+
+### 常用句式
+- We thank the reviewer for this insightful comment.
+- We have revised the manuscript accordingly.
+- In response to this concern, we have added...
+- The relevant changes have been incorporated in the revised manuscript.
+- We respectfully clarify that...
+
+### 逐条回复骨架
+#### Editor comments
+- Comment:
+- Response:
+- Changes made in manuscript:
+
+#### Reviewer 1
+- Comment 1:
+- Response 1:
+- Location in revised manuscript:
+
+#### Reviewer 2
+- Comment 1:
+- Response 1:
+- Location in revised manuscript:
+"""
+
+
 def build_journal_preset_bundle(
     journal: str,
     project_name: str,
@@ -2538,6 +2604,11 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
         current_project.get('research_object', '') or current_project.get('name', '') or "the project",
         current_project.get('disease', '') or "the disease model",
     )
+    response_bundle = build_response_letter_bundle(
+        "generic",
+        current_project.get('research_object', '') or current_project.get('name', '') or "the project",
+        current_project.get('disease', '') or "the disease model",
+    )
 
     section_map = {
         "introduction": "Introduction",
@@ -2680,6 +2751,18 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 
 {title_bundle}
 """
+        extra_response_context = ""
+        if section_type == "response":
+            extra_response_context = f"""
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{response_bundle}
+"""
 
         content = f"""# 论文写作｜{title}
 
@@ -2696,7 +2779,7 @@ def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
 ## 核心结论
 
 ## 需要引用的文献
-{extra_results_context}{extra_discussion_context}{extra_methods_context}{extra_introduction_context}{extra_abstract_context}{extra_cover_context}{extra_highlights_context}{extra_conclusion_context}{extra_keywords_context}{extra_title_context}
+{extra_results_context}{extra_discussion_context}{extra_methods_context}{extra_introduction_context}{extra_abstract_context}{extra_cover_context}{extra_highlights_context}{extra_conclusion_context}{extra_keywords_context}{extra_title_context}{extra_response_context}
 
 ## 初稿
 
@@ -3602,6 +3685,68 @@ def writing_network_submission_package_new(title: str = Form(...), journal: str 
 - [ ] 核对 Cover Letter
 - [ ] 核对图文摘要
 - [ ] 导出投稿清单
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-response-letter/new")
+def writing_network_response_letter_new(title: str = Form(...), journal: str = Form("generic")):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Response_Letter_Draft.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get('research_object', '') or current_project.get('name', '') or "the project"
+    disease_name = current_project.get('disease', '') or "the disease model"
+    recent_figure_packages = get_recent_figure_packages(limit=3)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=3)
+    recent_writing = get_recent_notes("06_论文写作", limit=12)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    writing_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_writing]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    writing_summary = "\n".join(writing_summary_lines) if writing_summary_lines else "- 当前暂无最近论文写作记录。"
+    response_bundle = build_response_letter_bundle(journal, project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Response Letter 草稿｜{title}
+
+## 日期
+{today}
+
+## 目标期刊模板
+- 模板代号：{journal}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+## 最近论文写作记录
+{writing_summary}
+
+{response_bundle}
+
+## Reviewer Comment 追踪表
+| Reviewer | Comment Summary | Action Taken | Manuscript Location |
+|---|---|---|---|
+| Editor |  |  |  |
+| Reviewer 1 |  |  |  |
+| Reviewer 2 |  |  |  |
+
+## 最终 Response Letter 正文
 
 ## 修改记录
 """

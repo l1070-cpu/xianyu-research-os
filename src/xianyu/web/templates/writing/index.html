@@ -138,6 +138,21 @@
     </p>
     <button type="submit">一键生成 Submission Package</button>
   </form>
+  <form method="post" action="/writing/network-response-letter/new">
+    <p>
+      <label>Response Letter 名称</label><br>
+      <input name="title" placeholder="例如：ResponseLetter_金毛狗脊返修回复" required>
+    </p>
+    <p>
+      <label>目标期刊模板</label><br>
+      <select name="journal">
+        <option value="generic">通用投稿模板</option>
+        <option value="phytomedicine">Phytomedicine</option>
+        <option value="joe">Journal of Ethnopharmacology</option>
+      </select>
+    </p>
+    <button type="submit">生成 Response Letter 草稿</button>
+  </form>
 </section>
 
 <section>
