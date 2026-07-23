@@ -1127,6 +1127,42 @@ We sincerely thank you for the careful evaluation of our manuscript and for the 
 """
 
 
+def build_reviewer_comment_split_bundle(raw_comments: str):
+    lines = [line.strip() for line in raw_comments.splitlines() if line.strip()]
+    comments = []
+
+    for line in lines:
+        if line[:3].lower() in {"1. ", "2. ", "3. ", "4. ", "5. "}:
+            comments.append(line[3:].strip())
+        elif line.startswith(("-", "•", "*")):
+            comments.append(line[1:].strip())
+        else:
+            comments.append(line)
+
+    if not comments:
+        comments = ["[请粘贴审稿意见后重新生成]"]
+
+    blocks = []
+    for idx, comment in enumerate(comments, start=1):
+        blocks.append(
+            f"""### Comment {idx}
+{comment}
+
+### Response {idx}
+We thank the reviewer for this valuable comment.
+
+### Changes made
+- 
+
+### Location in revised manuscript
+- Page:
+- Line:
+"""
+        )
+
+    return "## Reviewer Comment 拆分结果\n\n" + "\n".join(blocks)
+
+
 def build_journal_preset_bundle(
     journal: str,
     project_name: str,
@@ -3747,6 +3783,44 @@ def writing_network_response_letter_new(title: str = Form(...), journal: str = F
 | Reviewer 2 |  |  |  |
 
 ## 最终 Response Letter 正文
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/reviewer-split/new")
+def writing_reviewer_split_new(
+    title: str = Form(...),
+    reviewer_name: str = Form("Reviewer 1"),
+    raw_comments: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Reviewer_Split.md"
+    split_bundle = build_reviewer_comment_split_bundle(raw_comments)
+
+    if not file_path.exists():
+        content = f"""# 审稿意见拆分｜{title}
+
+## 日期
+{today}
+
+## 审稿人
+{reviewer_name}
+
+## 原始审稿意见
+{raw_comments or "[尚未粘贴原始审稿意见]"}
+
+{split_bundle}
+
+## 汇总说明
+- [ ] 是否每条意见都已回复
+- [ ] 是否说明具体修改位置
+- [ ] 是否需要补实验 / 补分析 / 补文献
 
 ## 修改记录
 """

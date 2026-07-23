@@ -153,6 +153,25 @@
     </p>
     <button type="submit">生成 Response Letter 草稿</button>
   </form>
+  <form method="post" action="/writing/reviewer-split/new">
+    <p>
+      <label>审稿意见拆分名称</label><br>
+      <input name="title" placeholder="例如：Reviewer1_返修意见拆分" required>
+    </p>
+    <p>
+      <label>审稿人名称</label><br>
+      <input name="reviewer_name" placeholder="例如：Reviewer 1">
+    </p>
+    <p>
+      <label>原始审稿意见</label><br>
+      <textarea
+        name="raw_comments"
+        rows="10"
+        placeholder="把 Reviewer comments 整段粘贴到这里"
+      ></textarea>
+    </p>
+    <button type="submit">生成 审稿意见拆分稿</button>
+  </form>
 </section>
 
 <section>
