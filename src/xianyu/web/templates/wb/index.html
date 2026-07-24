@@ -30,6 +30,16 @@
 </section>
 
 <section>
+  <h3>生成 WB 结果分析稿</h3>
+  <form method="post" action="/wb/results/new">
+    <p><label>结果稿名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB结果分析" required></p>
+    <p><label>目标蛋白</label><br><textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea></p>
+    <p><label>归一化灰度数据</label><br><textarea name="normalized_data" rows="8" placeholder="例如：Protein\tControl\tModel\tLow\tHigh&#10;AKT\t1.00\t0.62\t0.78\t0.95"></textarea></p>
+    <button type="submit">生成 WB 结果分析稿</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 WB 记录</h3>
   {% if items %}
     {% for item in items %}

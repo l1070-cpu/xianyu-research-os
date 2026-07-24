@@ -30,6 +30,16 @@
 </section>
 
 <section>
+  <h3>生成 qPCR 结果分析稿</h3>
+  <form method="post" action="/qpcr/results/new">
+    <p><label>结果稿名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR结果分析" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="8" placeholder="例如：Gene\tControl\tModel\tLow\tHigh&#10;AKT1\t1.00\t0.54\t0.77\t0.96"></textarea></p>
+    <button type="submit">生成 qPCR 结果分析稿</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 qPCR 记录</h3>
   {% if items %}
     {% for item in items %}
