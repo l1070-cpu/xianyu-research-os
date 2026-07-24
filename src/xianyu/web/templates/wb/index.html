@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}WB 工作台{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🧬 WB 工作台</h2>
+  <p>自动生成实验记录、灰度分析模板、Figure Legend 和 Methods 骨架</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>新建 WB 记录</h3>
+  <form method="post" action="/wb/new">
+    <p><label>实验名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB验证" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总蛋白"></p>
+    <p><label>目标蛋白</label><br><textarea name="target_proteins" rows="5" placeholder="例如：AKT, p-AKT, Nrf2, HO-1, BAX, BCL2"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="5" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>抗体信息</label><br><textarea name="antibodies" rows="6" placeholder="例如：AKT 1:1000；p-AKT 1:1000；GAPDH 1:5000"></textarea></p>
+    <p><label>备注</label><br><textarea name="notes" rows="5" placeholder="例如：条带太弱、曝光过度、需要补重复"></textarea></p>
+    <button type="submit">生成 WB 全套记录</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近 WB 记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无 WB 记录。</p>
+  {% endif %}
+</section>
+{% endblock %}

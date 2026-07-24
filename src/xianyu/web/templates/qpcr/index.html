@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}qPCR 工作台{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🧪 qPCR 工作台</h2>
+  <p>自动生成实验记录、Ct 数据模板、2^-ΔΔCt 骨架、Figure Legend 和 Methods 骨架</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>新建 qPCR 记录</h3>
+  <form method="post" action="/qpcr/new">
+    <p><label>实验名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR验证" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总RNA"></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="5" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2, CASP3"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="5" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>引物信息</label><br><textarea name="primers" rows="6" placeholder="例如：AKT1-F / AKT1-R；GAPDH-F / GAPDH-R"></textarea></p>
+    <p><label>备注</label><br><textarea name="notes" rows="5" placeholder="例如：重复孔偏差过大、熔解曲线异常、需要补样本"></textarea></p>
+    <button type="submit">生成 qPCR 全套记录</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近 qPCR 记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无 qPCR 记录。</p>
+  {% endif %}
+</section>
+{% endblock %}

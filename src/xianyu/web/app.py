@@ -682,6 +682,88 @@ def build_network_experiment_bundle(
 """
 
 
+
+
+def build_wb_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## WB 实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照。
+- Model 组：{disease_name} 模型组。
+- Treatment-Low 组：{project_name} 低剂量组。
+- Treatment-High 组：{project_name} 高剂量组。
+- Positive control 组：阳性药或经典通路抑制剂 / 激动剂组。
+
+### 建议优先蛋白
+- 核心靶点蛋白：
+- 通路总蛋白：
+- 磷酸化 / 活化蛋白：
+- 下游效应蛋白：
+- 内参蛋白：GAPDH / beta-actin / Tubulin
+
+### 建议记录信息
+- 蛋白提取方式：
+- 上样量：
+- 胶浓度：
+- 一抗孵育条件：
+- 二抗孵育条件：
+- 曝光参数：
+
+### 灰度分析与统计
+- 每组至少 3 个生物重复。
+- 先计算目标蛋白 / 内参蛋白比值。
+- 磷酸化蛋白建议同时归一化到总蛋白。
+- 最终使用均值 ± SD 展示，并记录统计学方法。
+
+### Results 草稿骨架
+- Compared with the model group, {project_name} altered the expression of the selected proteins associated with {disease_name}.
+- The treatment particularly affected the representative signaling proteins, suggesting regulation of the proposed pathway.
+- These WB results provided protein-level evidence supporting the mechanism predicted by the upstream analyses.
+
+### Methods 草稿骨架
+Western blot analysis was performed to evaluate the protein-level changes associated with the proposed mechanism of {project_name} against {disease_name}. Total protein was extracted from each group, quantified, separated by SDS-PAGE, and transferred onto PVDF membranes. After blocking, the membranes were incubated with primary antibodies against the selected target proteins and corresponding secondary antibodies. Protein bands were visualized and quantified, and the relative expression levels were normalized to the internal control.
+"""
+
+
+def build_qpcr_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## qPCR 实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照。
+- Model 组：{disease_name} 模型组。
+- Treatment-Low 组：{project_name} 低剂量组。
+- Treatment-High 组：{project_name} 高剂量组。
+- Positive control 组：阳性药或经典通路抑制剂 / 激动剂组。
+
+### 建议优先检测基因
+- 核心靶点基因：
+- 通路关键基因：
+- 凋亡 / 炎症 / 氧化应激相关基因：
+- 内参基因：GAPDH / ACTB / 18S rRNA
+
+### 建议记录信息
+- RNA 提取试剂：
+- RNA 纯度（A260/A280）：
+- 逆转录体系：
+- 引物序列：
+- 扩增体系：
+- 反应程序：
+
+### 数据处理与统计
+- 建议每组至少 3 个生物重复，技术重复 2-3 次。
+- 记录 Ct 值并检查重复孔一致性。
+- 使用 2^-ΔΔCt 方法计算相对表达量。
+- 最终使用均值 ± SD 展示，并记录统计学方法。
+
+### Results 草稿骨架
+- Compared with the model group, {project_name} significantly regulated the mRNA expression of the selected genes related to {disease_name}.
+- The transcriptional changes were generally consistent with the predicted targets and pathways.
+- These qPCR findings provided gene-level evidence supporting the proposed multi-target mechanism.
+
+### Methods 草稿骨架
+RT-qPCR was conducted to determine the transcriptional changes related to the proposed mechanism of {project_name} against {disease_name}. Total RNA was extracted from each group and reverse-transcribed into cDNA. Quantitative PCR was then performed using gene-specific primers, and the relative mRNA expression levels were calculated using the 2^-ΔΔCt method with the selected housekeeping gene as the internal reference.
+"""
+
 def build_network_methods_bundle(
     recommendations,
     project_name: str,
@@ -2012,8 +2094,9 @@ def experiment_index():
             "path": str(file.relative_to(ROOT)),
             "content": read(file)[:500]
         })
+    current_project = get_current_project() or {}
     template = env.get_template("experiment/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(items=items, active_project=current_project)
 
 @app.post("/experiment/new")
 def experiment_new(title: str = Form(...), exp_type: str = Form("general")):
@@ -3105,6 +3188,77 @@ def writing_network_experiment_new(title: str = Form(...)):
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
+
+
+
+@app.post("/writing/wb-qpcr-validation/new")
+def writing_wb_qpcr_validation_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Validation_Draft.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get('research_object', '') or current_project.get('name', '') or 'the project'
+    disease_name = current_project.get('disease', '') or 'the disease model'
+    recent_wb = get_recent_notes("03_实验记录/WB", limit=5)
+    recent_qpcr = get_recent_notes("03_实验记录/qPCR", limit=5)
+    wb_summary = "\n".join([f"- {item['name']}｜{item['path']}" for item in recent_wb]) if recent_wb else "- 当前暂无最近 WB 记录。"
+    qpcr_summary = "\n".join([f"- {item['name']}｜{item['path']}" for item in recent_qpcr]) if recent_qpcr else "- 当前暂无最近 qPCR 记录。"
+    wb_bundle = build_wb_experiment_bundle(project_name, disease_name)
+    qpcr_bundle = build_qpcr_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# WB / qPCR 验证整合草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近 WB 记录
+{wb_summary}
+
+## 最近 qPCR 记录
+{qpcr_summary}
+
+{wb_bundle}
+
+{qpcr_bundle}
+
+## 联合验证逻辑
+- 先用 qPCR 提供转录水平证据。
+- 再用 WB 提供蛋白水平和通路活化证据。
+- 若转录与蛋白变化一致，可增强机制链条的可信度。
+- 若结果不一致，优先排查时间点、抗体 / 引物、样本质量和通路反馈调节。
+
+## 建议图表组合
+- Figure X：WB 条带图 + 灰度柱状图
+- Figure Y：qPCR 相对表达柱状图
+- Supplementary：原始 Ct 表、原始灰度值、抗体与引物清单
+
+## Methods 整合骨架
+- Western blot analysis was performed to evaluate the protein-level changes of the proposed targets and pathways.
+- RT-qPCR was conducted to determine the transcriptional changes of the selected genes.
+- The combined evidence from transcriptional and protein-level assays was used to validate the proposed mechanism.
+
+## Results 整合骨架
+- Compared with the model group, {project_name} modulated both the mRNA and protein expression profiles associated with {disease_name}.
+- The qPCR and WB findings were generally consistent with the predicted targets and signaling pathways.
+- These data provided convergent wet-lab evidence supporting the proposed mechanism.
+
+## Discussion 承接句
+- The combined qPCR and WB results strengthened the interpretation that {project_name} may regulate the selected pathway at both transcriptional and protein levels.
+- This multi-level validation helped bridge the in silico predictions and the biological response observed in the experimental model.
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding='utf-8')
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 @app.post("/writing/network-methods/new")
 def writing_network_methods_new(title: str = Form(...)):
@@ -5158,6 +5312,201 @@ def cck8_new(
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
+
+
+
+@app.get("/wb", response_class=HTMLResponse)
+def wb_index():
+    files = list_md("03_实验记录/WB")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("wb/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/wb/new")
+def wb_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_proteins: str = Form(""),
+    groups: str = Form(""),
+    antibodies: str = Form(""),
+    notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "WB"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# WB 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 样本类型
+{sample_type}
+
+## 目标蛋白
+{target_proteins}
+
+## 实验分组
+{text_block_start}
+{groups}
+{text_block_end}
+
+## 抗体信息
+{text_block_start}
+{antibodies}
+{text_block_end}
+
+## 样本制备与上样
+- 裂解液：
+- 定量方法：
+- 上样量：
+- 胶浓度：
+- 转膜条件：
+
+## 孵育条件
+- 封闭液：
+- 一抗条件：
+- 二抗条件：
+- ECL / 显影：
+
+## 原始条带与灰度数据
+```text
+组别	目标蛋白灰度	内参灰度	归一化结果
+Control			
+Model			
+Treatment-Low			
+Treatment-High			
+Positive control			
+```
+
+## 异常与备注
+{text_block_start}
+{notes}
+{text_block_end}
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. Effects of {project_name} on the protein expression related to {disease_name}.
+
+## 下一步
+- [ ] 完成灰度统计
+- [ ] 生成柱状图
+- [ ] 写入 Results
+- [ ] 与 qPCR 结果交叉验证
+""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/qpcr", response_class=HTMLResponse)
+def qpcr_index():
+    files = list_md("03_实验记录/qPCR")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("qpcr/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/qpcr/new")
+def qpcr_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_genes: str = Form(""),
+    groups: str = Form(""),
+    primers: str = Form(""),
+    notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# qPCR 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 样本类型
+{sample_type}
+
+## 目标基因
+{target_genes}
+
+## 实验分组
+{text_block_start}
+{groups}
+{text_block_end}
+
+## 引物信息
+{text_block_start}
+{primers}
+{text_block_end}
+
+## RNA 与逆转录记录
+- RNA 提取试剂：
+- RNA 浓度：
+- A260/A280：
+- 逆转录体系：
+- 反应程序：
+
+## 原始 Ct 数据
+```text
+Gene	Control-1	Control-2	Control-3	Model-1	Model-2	Model-3	Treatment-Low	Treatment-High	Positive control
+
+```
+
+## 2^-ΔΔCt 结果
+```text
+Gene	Control	Model	Treatment-Low	Treatment-High	Positive control
+
+```
+
+## 异常与备注
+{text_block_start}
+{notes}
+{text_block_end}
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. Effects of {project_name} on the mRNA expression related to {disease_name}.
+
+## 下一步
+- [ ] 完成 Ct 质控
+- [ ] 计算 2^-ΔΔCt
+- [ ] 生成柱状图
+- [ ] 与 WB 结果交叉验证
+""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 @app.get("/literature-pool", response_class=HTMLResponse)
 def literature_pool():

@@ -1,72 +1,67 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>实验中心</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<aside>
-<h1><a href="/">🐟 咸鱼 OS</a></h1>
-<a href="/new">＋ 新建记录</a>
-<a href="/project">📌 项目中心</a>
-<a href="/search">🔍 全局搜索</a>
-<a href="/upload-pdf">📄 上传PDF</a>
-<a href="/pdf-library">📚 PDF库</a>
-<a href="/literature-v2">📚 文献中心V2</a>
-<a href="/literature-pool">🗂️ 文献用途池</a>
-<a href="/literature-keywords">🧬 机制关键词池</a>
-<a href="/help">❓ 使用说明</a>
-{% for key, item in modules.items() %}
-<a href="/module/{{ key }}">{{ item[1] }}</a>
-{% endfor %}
-</aside>
+{% extends "base.html" %}
 
-<main>
-<h2>🧪 实验中心</h2>
+{% block title %}实验中心{% endblock %}
 
+{% block content %}
+<header class="page-header">
+  <h2>🧪 实验中心</h2>
+  <p>统一管理 CCK-8、WB、RT-qPCR 及其他验证实验</p>
+</header>
+
+{% if active_project %}
 <section>
-<h3>＋ 新建实验记录</h3>
-<form method="post" action="/experiment/new">
-  <p>
-    <label>实验名称</label><br>
-    <input name="title" placeholder="例如：CCK8 / WB / RT-qPCR / H_R模型" required>
-  </p>
-
-  <p>
-    <label>实验类型</label><br>
-    <select name="exp_type">
-      <option value="cell">细胞实验</option>
-      <option value="wb">Western Blot</option>
-      <option value="qpcr">RT-qPCR</option>
-      <option value="flow">流式细胞术</option>
-      <option value="image">成像 / IF / ROS / JC-1</option>
-      <option value="column">柱层析 / 提取纯化</option>
-      <option value="general">通用实验</option>
-    </select>
-  </p>
-
-  <button type="submit">生成实验记录</button>
-</form>
-<form method="post" action="/backup" style="margin:10px 0;">
-  <button type="submit">一键备份</button>
-</form>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
 </section>
-
-<section>
-<h3>最近实验记录</h3>
-{% if items %}
-  {% for item in items %}
-  <div class="file-card">
-    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
-    <p>{{ item.path }}</p>
-    <pre>{{ item.content }}</pre>
-  </div>
-  {% endfor %}
-{% else %}
-  <p>暂无实验记录。</p>
 {% endif %}
+
+<section>
+  <h3>实验工作台</h3>
+  <div class="quick-grid">
+    <a href="/cck8">🧫 CCK-8 工作台</a>
+    <a href="/wb">🧬 WB 工作台</a>
+    <a href="/qpcr">🧪 qPCR 工作台</a>
+  </div>
 </section>
-</main>
-</body>
-</html>
+
+<section>
+  <h3>＋ 新建通用实验记录</h3>
+  <form method="post" action="/experiment/new">
+    <p>
+      <label>实验名称</label><br>
+      <input name="title" placeholder="例如：H_R模型预实验 / IF验证 / ROS检测" required>
+    </p>
+
+    <p>
+      <label>实验类型</label><br>
+      <select name="exp_type">
+        <option value="cell">细胞实验</option>
+        <option value="wb">Western Blot</option>
+        <option value="qpcr">RT-qPCR</option>
+        <option value="flow">流式细胞术</option>
+        <option value="image">成像 / IF / ROS / JC-1</option>
+        <option value="column">柱层析 / 提取纯化</option>
+        <option value="general">通用实验</option>
+      </select>
+    </p>
+
+    <button type="submit">生成实验记录</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近实验记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <p>{{ item.path }}</p>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无实验记录。</p>
+  {% endif %}
+</section>
+{% endblock %}
