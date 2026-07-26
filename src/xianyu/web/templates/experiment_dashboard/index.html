@@ -41,6 +41,86 @@
 </section>
 
 <section>
+  <h3>自动判断：现在能写什么</h3>
+  <div class="dashboard-stats">
+    <article class="stat-card">
+      <div class="stat-label">可生成 Figure 的模块</div>
+      <div class="stat-value">{{ figure_ready|length }}</div>
+      {% if figure_ready %}
+      <p>{{ figure_ready|join("、") }}</p>
+      {% else %}
+      <p>暂无。</p>
+      {% endif %}
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-label">可写 Results 的模块</div>
+      <div class="stat-value">{{ results_ready|length }}</div>
+      {% if results_ready %}
+      <p>{{ results_ready|join("、") }}</p>
+      {% else %}
+      <p>暂无。</p>
+      {% endif %}
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-label">可写 Methods 的模块</div>
+      <div class="stat-value">{{ methods_ready|length }}</div>
+      {% if methods_ready %}
+      <p>{{ methods_ready|join("、") }}</p>
+      {% else %}
+      <p>暂无。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>建议立即产出</h3>
+
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>Figure 建议</h3>
+      {% if figure_suggestions %}
+      <ul>
+        {% for item in figure_suggestions %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>当前还没有足够记录支持标准 Figure 产出。</p>
+      {% endif %}
+    </article>
+
+    <article class="file-card">
+      <h3>Results 建议</h3>
+      {% if results_suggestions %}
+      <ul>
+        {% for item in results_suggestions %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>当前建议先继续补实验记录，再写结果段。</p>
+      {% endif %}
+    </article>
+
+    <article class="file-card">
+      <h3>Methods 建议</h3>
+      {% if methods_suggestions %}
+      <ul>
+        {% for item in methods_suggestions %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>当前建议先补齐实验条件与参数记录。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section>
   <h3>模块进度</h3>
   <div class="project-grid">
     {% for module in modules %}
@@ -50,6 +130,13 @@
       <p><strong>记录数：</strong>{{ module.count }}</p>
       <p><strong>当前状态：</strong>{{ module.status }}</p>
       <p><strong>下一步：</strong>{{ module.next_step }}</p>
+      <p><strong>当前可产出：</strong>
+        {% if module.deliverables %}
+          {{ module.deliverables|join(" / ") }}
+        {% else %}
+          暂无
+        {% endif %}
+      </p>
 
       {% if module.recent %}
       <details>

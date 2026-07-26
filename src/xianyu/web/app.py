@@ -2138,6 +2138,22 @@ def build_experiment_dashboard_modules():
         else:
             status = "尚缺直接记录"
 
+        can_make_figure = count >= 1
+        can_write_results = count >= 2
+        can_write_methods = count >= 1
+        if spec["key"] in {"wb", "qpcr", "flow", "ros", "jc1", "if"}:
+            can_make_figure = count >= 1
+            can_write_results = count >= 1
+            can_write_methods = True
+
+        deliverables = []
+        if can_make_figure:
+            deliverables.append("Figure")
+        if can_write_results:
+            deliverables.append("Results")
+        if can_write_methods:
+            deliverables.append("Methods")
+
         modules.append({
             "key": spec["key"],
             "title": spec["title"],
@@ -2145,6 +2161,10 @@ def build_experiment_dashboard_modules():
             "count": count,
             "status": status,
             "next_step": spec["next_step"],
+            "can_make_figure": can_make_figure,
+            "can_write_results": can_write_results,
+            "can_write_methods": can_write_methods,
+            "deliverables": deliverables,
             "recent": recent,
         })
 
@@ -2185,11 +2205,54 @@ def get_experiment_dashboard_summary():
     active = sum(1 for module in modules if module["count"] > 0)
     ready = sum(1 for module in modules if module["count"] >= 3)
     empty = [module["title"] for module in modules if module["count"] == 0]
+    figure_ready = [module["title"] for module in modules if module["can_make_figure"]]
+    results_ready = [module["title"] for module in modules if module["can_write_results"]]
+    methods_ready = [module["title"] for module in modules if module["can_write_methods"]]
+
+    figure_suggestions = []
+    if any(module["key"] == "cck8" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：CCK-8 细胞活力柱状图 / 折线图")
+    if any(module["key"] == "wb" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：WB 条带图 + 灰度值统计图")
+    if any(module["key"] == "qpcr" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：qPCR 相对表达柱状图")
+    if any(module["key"] == "flow" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：流式门控图 + 阳性率统计图")
+    if any(module["key"] == "ros" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：ROS 荧光图 + 定量图")
+    if any(module["key"] == "jc1" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：JC-1 红绿荧光图 + 比值统计图")
+    if any(module["key"] == "if" and module["can_make_figure"] for module in modules):
+        figure_suggestions.append("Figure：IF 代表图 + 定量分析图")
+
+    results_suggestions = []
+    if results_ready:
+        results_suggestions.append(
+            "Results：已可先写 " + "、".join(results_ready[:4]) + " 的结果段初稿"
+        )
+    if "wb" in [module["key"] for module in modules if module["can_write_results"]] and \
+       "qpcr" in [module["key"] for module in modules if module["can_write_results"]]:
+        results_suggestions.append("Results：可合并生成 WB + qPCR 联合验证结果段")
+
+    methods_suggestions = []
+    if methods_ready:
+        methods_suggestions.append(
+            "Methods：已可先写 " + "、".join(methods_ready[:4]) + " 的方法学初稿"
+        )
+    if "flow" in [module["key"] for module in modules if module["can_write_methods"]]:
+        methods_suggestions.append("Methods：可补写流式染色、门控和统计分析描述")
+
     return {
         "modules": modules,
         "active_count": active,
         "ready_count": ready,
         "empty_modules": empty,
+        "figure_ready": figure_ready,
+        "results_ready": results_ready,
+        "methods_ready": methods_ready,
+        "figure_suggestions": figure_suggestions,
+        "results_suggestions": results_suggestions,
+        "methods_suggestions": methods_suggestions,
     }
 
 
@@ -2773,6 +2836,12 @@ def experiment_dashboard():
         active_count=summary["active_count"],
         ready_count=summary["ready_count"],
         empty_modules=summary["empty_modules"],
+        figure_ready=summary["figure_ready"],
+        results_ready=summary["results_ready"],
+        methods_ready=summary["methods_ready"],
+        figure_suggestions=summary["figure_suggestions"],
+        results_suggestions=summary["results_suggestions"],
+        methods_suggestions=summary["methods_suggestions"],
         writing_items=writing_items,
     )
 
