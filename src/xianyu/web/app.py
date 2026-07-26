@@ -2044,6 +2044,155 @@ def get_recent_notes(folder: str, limit: int = 5):
     return items
 
 
+def build_experiment_dashboard_modules():
+    module_specs = [
+        {
+            "key": "cck8",
+            "title": "CCK-8",
+            "description": "细胞活力与给药趋势",
+            "folders": ["03_实验记录", "05_数据分析"],
+            "keywords": ["cck8", "cck-8", "细胞活力"],
+            "next_step": "补齐浓度梯度、重复次数和统计图。",
+        },
+        {
+            "key": "wb",
+            "title": "WB",
+            "description": "蛋白表达验证",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": ["wb", "western blot"],
+            "next_step": "补齐灰度值、内参与代表性条带图。",
+        },
+        {
+            "key": "qpcr",
+            "title": "qPCR",
+            "description": "转录水平验证",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": ["qpcr", "rt-qpcr", "rt qpcr", "pcr", "ct值"],
+            "next_step": "补齐 Ct 原始值、2^-ΔΔCt 表和引物信息。",
+        },
+        {
+            "key": "flow",
+            "title": "Flow",
+            "description": "流式表型验证",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": ["flow", "流式"],
+            "next_step": "补齐门控图、阳性率和统计比较。",
+        },
+        {
+            "key": "ros",
+            "title": "ROS",
+            "description": "氧化应激水平",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": ["ros", "氧化应激"],
+            "next_step": "补齐荧光图、定量值与代表性结果句。",
+        },
+        {
+            "key": "jc1",
+            "title": "JC-1",
+            "description": "线粒体膜电位",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": ["jc1", "jc-1", "膜电位"],
+            "next_step": "补齐红绿比值、统计图和机制解释。",
+        },
+        {
+            "key": "if",
+            "title": "IF",
+            "description": "免疫荧光定位验证",
+            "folders": ["03_实验记录", "06_论文写作"],
+            "keywords": [" if", "if验证", "免疫荧光", "immunofluorescence"],
+            "next_step": "补齐代表图、定位描述和定量策略。",
+        },
+    ]
+
+    modules = []
+    for spec in module_specs:
+        matched = []
+        for folder in spec["folders"]:
+            for file in list_md(folder):
+                haystack = f"{file.name}\n{read(file)[:400]}".lower()
+                if any(keyword in haystack for keyword in spec["keywords"]):
+                    matched.append(file)
+
+        unique_files = []
+        seen = set()
+        for file in matched:
+            rel = str(file.relative_to(ROOT))
+            if rel in seen:
+                continue
+            seen.add(rel)
+            unique_files.append(file)
+
+        recent = []
+        for file in unique_files[:3]:
+            recent.append({
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:220],
+            })
+
+        count = len(unique_files)
+        if count >= 3:
+            status = "已形成可写结果基础"
+        elif count >= 1:
+            status = "已有记录，建议继续补图和统计"
+        else:
+            status = "尚缺直接记录"
+
+        modules.append({
+            "key": spec["key"],
+            "title": spec["title"],
+            "description": spec["description"],
+            "count": count,
+            "status": status,
+            "next_step": spec["next_step"],
+            "recent": recent,
+        })
+
+    return modules
+
+
+def get_validation_writing_outputs(limit: int = 8):
+    keywords = [
+        "wb",
+        "qpcr",
+        "flow",
+        "ros",
+        "jc1",
+        "jc-1",
+        "if",
+        "验证",
+        "supplementary",
+        "figure",
+        "methods",
+    ]
+    items = []
+    for file in list_md("06_论文写作"):
+        haystack = file.name.lower()
+        if not any(keyword in haystack for keyword in keywords):
+            continue
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:260],
+        })
+        if len(items) >= limit:
+            break
+    return items
+
+
+def get_experiment_dashboard_summary():
+    modules = build_experiment_dashboard_modules()
+    active = sum(1 for module in modules if module["count"] > 0)
+    ready = sum(1 for module in modules if module["count"] >= 3)
+    empty = [module["title"] for module in modules if module["count"] == 0]
+    return {
+        "modules": modules,
+        "active_count": active,
+        "ready_count": ready,
+        "empty_modules": empty,
+    }
+
+
 def get_recent_figure_packages(limit: int = 5):
     files = list_md("05_数据分析/科研作图")
     items = []
@@ -2610,6 +2759,23 @@ def experiment_index():
     current_project = get_current_project() or {}
     template = env.get_template("experiment/index.html")
     return template.render(items=items, active_project=current_project)
+
+
+@app.get("/experiment-dashboard", response_class=HTMLResponse)
+def experiment_dashboard():
+    current_project = get_current_project() or {}
+    summary = get_experiment_dashboard_summary()
+    writing_items = get_validation_writing_outputs()
+    template = env.get_template("experiment_dashboard/index.html")
+    return template.render(
+        active_project=current_project,
+        modules=summary["modules"],
+        active_count=summary["active_count"],
+        ready_count=summary["ready_count"],
+        empty_modules=summary["empty_modules"],
+        writing_items=writing_items,
+    )
+
 
 @app.post("/experiment/new")
 def experiment_new(title: str = Form(...), exp_type: str = Form("general")):

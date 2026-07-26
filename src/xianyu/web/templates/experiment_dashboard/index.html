@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}实验总览面板{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🧪 实验总览面板</h2>
+  <p>把实验记录、结果草稿、图表准备情况放在一页里集中查看</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>总体状态</h3>
+  <div class="dashboard-stats">
+    <article class="stat-card">
+      <div class="stat-label">已有记录模块</div>
+      <div class="stat-value">{{ active_count }}</div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-label">可继续写结果模块</div>
+      <div class="stat-value">{{ ready_count }}</div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-label">仍待补齐模块</div>
+      <div class="stat-value">{{ empty_modules|length }}</div>
+    </article>
+  </div>
+
+  {% if empty_modules %}
+  <p><strong>当前建议优先补齐：</strong>{{ empty_modules|join("、") }}</p>
+  {% else %}
+  <p><strong>很好：</strong>主要验证模块都已经有记录了，可以继续推进统计、图表和 Results 草稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>模块进度</h3>
+  <div class="project-grid">
+    {% for module in modules %}
+    <article class="file-card">
+      <h3>{{ module.title }}</h3>
+      <p>{{ module.description }}</p>
+      <p><strong>记录数：</strong>{{ module.count }}</p>
+      <p><strong>当前状态：</strong>{{ module.status }}</p>
+      <p><strong>下一步：</strong>{{ module.next_step }}</p>
+
+      {% if module.recent %}
+      <details>
+        <summary>查看最近相关记录</summary>
+        {% for item in module.recent %}
+        <div class="dashboard-recent-item">
+          <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+          <pre>{{ item.content }}</pre>
+        </div>
+        {% endfor %}
+      </details>
+      {% else %}
+      <p>暂无直接相关记录。</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <h3>最近验证写作产出</h3>
+  {% if writing_items %}
+    {% for item in writing_items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无验证结果相关写作产出。</p>
+  {% endif %}
+</section>
+{% endblock %}
