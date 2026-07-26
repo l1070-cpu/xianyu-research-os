@@ -353,6 +353,29 @@ Supplementary Table S2	引物信息"></textarea>
     </p>
     <button type="submit">生成 Flow / ROS / JC-1 / IF 整合写作包</button>
   </form>
+  <form id="cck8-full-package" method="post" action="/cck8/full-package/new">
+    <p>
+      <label>CCK-8 联合总包名称</label><br>
+      <input name="title" placeholder="例如：CCK8_活力验证总包" required>
+    </p>
+    <p>
+      <label>细胞类型</label><br>
+      <input name="cell" placeholder="例如：H/R 细胞 / HCT116 / HepG2">
+    </p>
+    <p>
+      <label>处理时间</label><br>
+      <input name="timepoint" placeholder="例如：24h / 48h">
+    </p>
+    <p>
+      <label>分组与浓度</label><br>
+      <textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea>
+    </p>
+    <p>
+      <label>原始 OD 数据</label><br>
+      <textarea name="od_data" rows="6" placeholder="例如：Group&#10;Control 0.82 0.80 0.84&#10;Model 0.51 0.49 0.53"></textarea>
+    </p>
+    <button type="submit">生成 CCK-8 Results + Methods + Figure Legend 总包</button>
+  </form>
   <form id="functional-validation-full-package" method="post" action="/writing/functional-validation-full-package/new">
     <p>
       <label>功能验证联合总包名称</label><br>

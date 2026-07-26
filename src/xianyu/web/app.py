@@ -6697,6 +6697,99 @@ def cck8_new(
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+def build_cck8_full_package_bundle(
+    project_name: str,
+    disease_name: str,
+    cell_type: str,
+    timepoint: str,
+    groups: str,
+    od_data: str,
+):
+    return f"""## CCK-8 联合总包
+
+### 一、实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 细胞类型：{cell_type or "- 待补充"}
+- 处理时间：{timepoint or "- 待补充"}
+
+### 二、实验分组
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+### 三、原始 OD 数据
+```text
+{od_data or "Group\tRep1\tRep2\tRep3\tMean"}
+```
+
+### 四、Results 初稿
+CCK-8 assay was performed to evaluate the effect of {project_name} on cell viability in the {disease_name} model. Compared with the control group, the model group exhibited a marked reduction in cell viability. Treatment with {project_name} partially or significantly restored cell viability, suggesting an overall protective effect against model-induced cellular injury.
+
+### 五、Methods 初稿
+Cell viability was assessed using the CCK-8 assay. Cells were seeded into 96-well plates and exposed to the indicated treatments for {timepoint or "the specified duration"}. After incubation, CCK-8 reagent was added to each well and the plates were further incubated under standard culture conditions. Absorbance was measured at 450 nm using a microplate reader, and relative cell viability was calculated according to the experimental design.
+
+### 六、Figure Legend 初稿
+- Figure X. Effects of {project_name} on cell viability in the {disease_name} model, as determined by the CCK-8 assay. Data are presented as mean ± SD.
+
+### 七、Supplementary 建议
+- Supplementary Table S1：Raw OD values for each replicate
+- Supplementary Table S2：Cell viability calculation sheet
+- Supplementary Note S1：Plate layout and blank-control arrangement
+
+### 八、投稿前核对清单
+- [ ] 是否补齐空白孔和对照孔信息
+- [ ] 是否明确细胞密度与处理时间
+- [ ] 是否保存原始 OD 值和计算过程
+- [ ] 是否补充统计学方法与显著性标记
+"""
+
+
+@app.post("/cck8/full-package/new")
+def cck8_full_package_new(
+    title: str = Form(...),
+    cell: str = Form(""),
+    timepoint: str = Form(""),
+    groups: str = Form(""),
+    od_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_CCK8_Full_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_cck8_full_package_bundle(
+        project_name,
+        disease_name,
+        cell,
+        timepoint,
+        groups,
+        od_data,
+    )
+
+    if not file_path.exists():
+        content = f"""# CCK-8 联合总包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 
 
 @app.get("/wb", response_class=HTMLResponse)
