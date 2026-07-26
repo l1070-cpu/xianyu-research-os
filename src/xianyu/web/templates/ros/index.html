@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}ROS 工作台{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>✨ ROS 工作台</h2>
+  <p>自动生成 ROS 记录、荧光读数模板和结果草稿骨架</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>新建 ROS 记录</h3>
+  <form method="post" action="/ros/new">
+    <p><label>实验名称</label><br><input name="title" placeholder="例如：ROS_氧化应激验证" required></p>
+    <p><label>探针</label><br><input name="probe" placeholder="例如：DCFH-DA"></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="5"></textarea></p>
+    <p><label>原始荧光数据</label><br><textarea name="raw_data" rows="8" placeholder="例如：Group Rep1 Rep2 Rep3"></textarea></p>
+    <p><label>备注</label><br><textarea name="notes" rows="5"></textarea></p>
+    <button type="submit">生成 ROS 全套记录</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近 ROS 记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无 ROS 记录。</p>
+  {% endif %}
+</section>
+{% endblock %}

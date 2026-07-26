@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}IF 工作台{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🖼️ IF 工作台</h2>
+  <p>自动生成免疫荧光记录、成像要点和结果草稿骨架</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>新建 IF 记录</h3>
+  <form method="post" action="/if/new">
+    <p><label>实验名称</label><br><input name="title" placeholder="例如：Nrf2_IF定位验证" required></p>
+    <p><label>目标标志物</label><br><input name="target_marker" placeholder="例如：Nrf2"></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="5"></textarea></p>
+    <p><label>成像记录</label><br><textarea name="imaging_notes" rows="6" placeholder="例如：放大倍数、曝光时间、比例尺"></textarea></p>
+    <p><label>定量数据</label><br><textarea name="quant_data" rows="8" placeholder="例如：Group Rep1 Rep2 Rep3"></textarea></p>
+    <button type="submit">生成 IF 全套记录</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近 IF 记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无 IF 记录。</p>
+  {% endif %}
+</section>
+{% endblock %}

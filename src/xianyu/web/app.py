@@ -970,6 +970,145 @@ The raw data supporting the WB and qPCR findings are provided in the Supplementa
 """
 
 
+def build_flow_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## 流式细胞术实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照
+- Model 组：{disease_name} 模型组
+- Treatment-Low 组：{project_name} 低剂量组
+- Treatment-High 组：{project_name} 高剂量组
+- Positive control 组：阳性对照组
+
+### 建议检测指标
+- Annexin V / PI：细胞凋亡
+- Cell cycle：细胞周期
+- ROS fluorescence：若设备支持，可联动氧化应激结果
+
+### 关键记录信息
+- 染色方案：
+- 上机通道：
+- 门控策略：
+- 每组采集事件数：
+
+### Results 草稿骨架
+- Flow cytometric analysis showed that {project_name} altered the proportion of the target cell population associated with {disease_name}.
+- The treatment reduced the apoptotic fraction or shifted the distribution toward the protective phenotype.
+"""
+
+
+def build_ros_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## ROS 实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照
+- Model 组：{disease_name} 模型组
+- Treatment-Low 组：{project_name} 低剂量组
+- Treatment-High 组：{project_name} 高剂量组
+- Positive control 组：阳性对照组
+
+### 建议记录信息
+- 探针名称：
+- 染色浓度：
+- 染色时间：
+- 读取方式：酶标仪 / 荧光显微镜 / 流式
+
+### Results 草稿骨架
+- Intracellular ROS levels were markedly elevated in the model group compared with the control group.
+- Treatment with {project_name} reduced ROS accumulation, indicating attenuation of oxidative stress in the {disease_name} model.
+"""
+
+
+def build_jc1_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## JC-1 线粒体膜电位实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照
+- Model 组：{disease_name} 模型组
+- Treatment-Low 组：{project_name} 低剂量组
+- Treatment-High 组：{project_name} 高剂量组
+- Positive control 组：阳性对照组
+
+### 建议记录信息
+- 染色试剂：
+- 染色时间：
+- 红 / 绿荧光读取方式：
+- 计算指标：红绿比值
+
+### Results 草稿骨架
+- The mitochondrial membrane potential was significantly reduced in the model group, as reflected by a decreased red/green fluorescence ratio.
+- Treatment with {project_name} restored the JC-1 fluorescence pattern, suggesting preservation of mitochondrial function.
+"""
+
+
+def build_if_experiment_bundle(project_name: str, disease_name: str):
+    return f"""## 免疫荧光 IF 实验设计总包
+
+### 建议实验分组
+- Control 组：正常对照
+- Model 组：{disease_name} 模型组
+- Treatment-Low 组：{project_name} 低剂量组
+- Treatment-High 组：{project_name} 高剂量组
+- Positive control 组：阳性对照组
+
+### 建议记录信息
+- 目标蛋白：
+- 一抗信息：
+- 二抗信息：
+- DAPI 染核：
+- 成像参数：
+
+### Results 草稿骨架
+- Immunofluorescence analysis revealed altered expression or subcellular localization of the selected marker in the {disease_name} model.
+- Treatment with {project_name} reversed the abnormal fluorescence pattern, supporting modulation of the proposed pathway.
+"""
+
+
+def build_functional_validation_package_bundle(
+    project_name: str,
+    disease_name: str,
+    markers: str,
+    main_readouts: str,
+):
+    return f"""## 功能验证整合写作包
+
+### 覆盖模块
+- 流式细胞术
+- ROS
+- JC-1
+- IF / 免疫荧光
+
+### 重点指标
+{markers or '- 待补充关键指标 / 标志物'}
+
+### 核心读数
+{main_readouts or '- 待补充主读数，如凋亡率、ROS强度、红绿比、荧光定位'}
+
+### Figure Legend 清单
+- Figure X. Flow cytometry analysis of apoptotic or other functional cell populations in the {disease_name} model after treatment with {project_name}.
+- Figure Y. Intracellular ROS levels in each group following treatment with {project_name}.
+- Figure Z. JC-1 fluorescence imaging and red/green ratio quantification showing changes in mitochondrial membrane potential.
+- Figure W. Immunofluorescence staining of the selected marker, showing expression level or subcellular localization changes after treatment.
+
+### 合并 Results 段骨架
+Functional validation experiments further supported the protective effect of {project_name} against {disease_name}. Flow cytometry demonstrated an improvement in the relevant cell population phenotype, while ROS assays showed attenuation of oxidative stress. JC-1 staining indicated restoration of mitochondrial membrane potential, and immunofluorescence analysis further confirmed the regulation of the selected marker at the cellular level. Together, these results provided complementary functional evidence supporting the proposed mechanism.
+
+### Supplementary 建议
+- Supplementary Figure S1：Flow 门控策略图
+- Supplementary Figure S2：ROS 原始荧光图 / 原始读数
+- Supplementary Figure S3：JC-1 原始图像
+- Supplementary Figure S4：IF 原始视野图
+- Supplementary Table S1：抗体 / 探针 / 染料信息
+- Supplementary Table S2：原始荧光强度或百分比数据
+
+### 审稿前核对清单
+- [ ] 是否保存原始流式门控图
+- [ ] 是否保存 ROS / JC-1 / IF 原始图像
+- [ ] 是否统一图中比例尺、颜色和统计方式
+- [ ] 是否把功能实验与主文机制串起来
+"""
+
+
 
 def build_wb_qpcr_reviewer_bundle(
     project_name: str,
@@ -3735,6 +3874,51 @@ def writing_wb_qpcr_mapping_new(
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
+
+@app.post("/writing/functional-validation-package/new")
+def writing_functional_validation_package_new(
+    title: str = Form(...),
+    markers: str = Form(""),
+    main_readouts: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Functional_Validation_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_functional_validation_package_bundle(
+        project_name,
+        disease_name,
+        markers,
+        main_readouts,
+    )
+
+    if not file_path.exists():
+        content = f"""# 功能验证整合写作包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终 Results 段
+
+## 最终 Figure Legends
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
 @app.post("/writing/network-methods/new")
 def writing_network_methods_new(title: str = Form(...)):
     today = date.today().isoformat()
@@ -6056,6 +6240,279 @@ def qpcr_results_new(
 ## 最终 Results 段
 
 ## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/flow", response_class=HTMLResponse)
+def flow_index():
+    files = list_md("03_实验记录/Flow")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("flow/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/flow/new")
+def flow_new(
+    title: str = Form(...),
+    assay_type: str = Form("Annexin V / PI"),
+    groups: str = Form(""),
+    markers: str = Form(""),
+    notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "Flow"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_flow_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Flow 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 检测类型
+{assay_type}
+
+## 标志物 / 通道
+{markers}
+
+## 实验分组
+```text
+{groups}
+```
+
+## 原始读数模板
+```text
+Group\tRep1\tRep2\tRep3\tMean\tSD
+Control\t\t\t\t\t
+Model\t\t\t\t\t
+Treatment-Low\t\t\t\t\t
+Treatment-High\t\t\t\t\t
+Positive control\t\t\t\t\t
+```
+
+## 门控与上机记录
+- 门控策略：
+- 采集事件数：
+- 仪器参数：
+
+## 备注
+```text
+{notes}
+```
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. Flow cytometry analysis of {assay_type} in the indicated groups.
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/ros", response_class=HTMLResponse)
+def ros_index():
+    files = list_md("03_实验记录/ROS")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("ros/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/ros/new")
+def ros_new(
+    title: str = Form(...),
+    probe: str = Form("DCFH-DA"),
+    groups: str = Form(""),
+    raw_data: str = Form(""),
+    notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "ROS"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_ros_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# ROS 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 探针
+{probe}
+
+## 实验分组
+```text
+{groups}
+```
+
+## 原始荧光数据
+```text
+{raw_data}
+```
+
+## 备注
+```text
+{notes}
+```
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. Intracellular ROS levels in the indicated groups detected using {probe}.
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/jc1", response_class=HTMLResponse)
+def jc1_index():
+    files = list_md("03_实验记录/JC1")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("jc1/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/jc1/new")
+def jc1_new(
+    title: str = Form(...),
+    groups: str = Form(""),
+    ratio_data: str = Form(""),
+    notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "JC1"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_jc1_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# JC-1 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 实验分组
+```text
+{groups}
+```
+
+## 红 / 绿比值数据
+```text
+{ratio_data}
+```
+
+## 备注
+```text
+{notes}
+```
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. JC-1 staining and mitochondrial membrane potential changes in the indicated groups.
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.get("/if", response_class=HTMLResponse)
+def if_index():
+    files = list_md("03_实验记录/IF")
+    items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    current_project = get_current_project() or {}
+    template = env.get_template("if/index.html")
+    return template.render(items=items, active_project=current_project)
+
+
+@app.post("/if/new")
+def if_new(
+    title: str = Form(...),
+    target_marker: str = Form(""),
+    groups: str = Form(""),
+    imaging_notes: str = Form(""),
+    quant_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "03_实验记录" / "IF"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_if_experiment_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# IF 工作台记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 目标标志物
+{target_marker}
+
+## 实验分组
+```text
+{groups}
+```
+
+## 成像记录
+```text
+{imaging_notes}
+```
+
+## 定量数据
+```text
+{quant_data}
+```
+
+{bundle}
+
+## Figure Legend 草稿
+- Figure X. Immunofluorescence staining of {target_marker} in the indicated groups.
 """
         file_path.write_text(content, encoding="utf-8")
 
