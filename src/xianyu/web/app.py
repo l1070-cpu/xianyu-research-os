@@ -826,6 +826,72 @@ def build_qpcr_results_bundle(project_name: str, disease_name: str, target_genes
 - Treatment with {project_name} reversed or attenuated these transcriptional changes, supporting regulation of the proposed pathway.
 """
 
+
+def build_wb_qpcr_package_bundle(
+    project_name: str,
+    disease_name: str,
+    target_proteins: str,
+    target_genes: str,
+    wb_data: str,
+    qpcr_data: str,
+):
+    wb_targets = target_proteins or "- 待补充 WB 目标蛋白"
+    qpcr_targets = target_genes or "- 待补充 qPCR 目标基因"
+    wb_block = wb_data or "Protein\tControl\tModel\tTreatment-Low\tTreatment-High"
+    qpcr_block = qpcr_data or "Gene\tControl\tModel\tTreatment-Low\tTreatment-High"
+
+    return f"""## WB / qPCR 标准写作整合包
+
+### 一、标准 Figure Legend 清单
+- Figure X. Effects of {project_name} on the protein expression related to {disease_name}. Representative immunoblots and normalized gray-value quantification are shown for the indicated proteins. Data are presented as mean ± SD.
+- Figure Y. Effects of {project_name} on the mRNA expression related to {disease_name}. Relative expression levels were calculated using the 2^-ΔΔCt method and are presented as mean ± SD.
+- Supplementary Figure S1. Full-length immunoblot images for the proteins analyzed in this study.
+- Supplementary Figure S2. Raw Ct value summary and primer information for the qPCR assays.
+
+### 二、目标清单
+#### WB 目标蛋白
+{wb_targets}
+
+#### qPCR 目标基因
+{qpcr_targets}
+
+### 三、原始结果摘要
+#### WB 归一化数据
+```text
+{wb_block}
+```
+
+#### qPCR 相对表达数据
+```text
+{qpcr_block}
+```
+
+### 四、合并 Results 段骨架
+Compared with the model group, {project_name} modulated both the protein and mRNA expression profiles associated with {disease_name}. At the protein level, the representative targets showed an overall trend consistent with regulation of the proposed signaling pathway. At the transcriptional level, the selected genes were also significantly altered after treatment, and these changes were broadly in line with the predicted targets and pathways. Taken together, the combined WB and qPCR findings provided convergent wet-lab evidence supporting the proposed mechanism of {project_name} against {disease_name}.
+
+### 五、分段 Results 句库
+- WB results showed that the expression of the selected proteins was markedly dysregulated in the model group relative to the control group.
+- Treatment with {project_name} partially or significantly reversed these protein changes, indicating modulation of the corresponding pathway.
+- qPCR results demonstrated that the mRNA expression levels of the selected genes were also altered in response to treatment.
+- The consistency between the transcriptional and protein-level findings strengthened the biological interpretation of the proposed mechanism.
+
+### 六、Supplementary 原始数据清单
+- Supplementary Table S1：Primary antibody information, including supplier, catalog number, host species, and dilution ratio.
+- Supplementary Table S2：Primer sequences used for qPCR, including forward and reverse primers.
+- Supplementary Table S3：Raw WB gray values before normalization.
+- Supplementary Table S4：Normalized WB quantification values used for plotting.
+- Supplementary Table S5：Raw Ct values for each qPCR replicate.
+- Supplementary Table S6：2^-ΔΔCt calculation sheet and relative expression summary.
+- Supplementary Figure S1：Full blot images with molecular weight markers.
+- Supplementary Figure S2：Amplification / melting-curve quality control summary if needed.
+
+### 七、投稿前核对清单
+- [ ] Figure Legend 是否写清分组、统计学方法和显著性标记
+- [ ] Supplementary 是否包含抗体、引物、原始灰度值和原始 Ct 值
+- [ ] WB 与 qPCR 目标是否与主文机制一致
+- [ ] Results 文字是否避免过度解释，仅基于真实结果
+"""
+
 def build_network_methods_bundle(
     recommendations,
     project_name: str,
@@ -3319,6 +3385,55 @@ def writing_wb_qpcr_validation_new(title: str = Form(...)):
 ## 修改记录
 """
         file_path.write_text(content, encoding='utf-8')
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/wb-qpcr-package/new")
+def writing_wb_qpcr_package_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    target_genes: str = Form(""),
+    wb_data: str = Form(""),
+    qpcr_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Figure_Results_Supplementary.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    package_bundle = build_wb_qpcr_package_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        target_genes,
+        wb_data,
+        qpcr_data,
+    )
+
+    if not file_path.exists():
+        content = f"""# WB / qPCR 图注-结果-Supplementary 整合包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{package_bundle}
+
+## 自定义补充说明
+
+## 最终可复制段落
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 

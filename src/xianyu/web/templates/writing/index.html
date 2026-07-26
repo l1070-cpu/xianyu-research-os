@@ -212,6 +212,29 @@
     </p>
     <button type="submit">生成 WB / qPCR 整合草稿</button>
   </form>
+  <form method="post" action="/writing/wb-qpcr-package/new">
+    <p>
+      <label>WB / qPCR 整合包名称</label><br>
+      <input name="title" placeholder="例如：WB_qPCR_Results_Supplementary_整合包" required>
+    </p>
+    <p>
+      <label>WB 目标蛋白</label><br>
+      <textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea>
+    </p>
+    <p>
+      <label>qPCR 目标基因</label><br>
+      <textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea>
+    </p>
+    <p>
+      <label>WB 归一化数据</label><br>
+      <textarea name="wb_data" rows="6" placeholder="例如：Protein&#10;AKT 1.00 0.62 0.78 0.95"></textarea>
+    </p>
+    <p>
+      <label>qPCR 相对表达数据</label><br>
+      <textarea name="qpcr_data" rows="6" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea>
+    </p>
+    <button type="submit">生成 图注 + Results + Supplementary 整合包</button>
+  </form>
   <form method="post" action="/writing/network-methods/new">
     <p>
       <label>Methods 草稿名称</label><br>
