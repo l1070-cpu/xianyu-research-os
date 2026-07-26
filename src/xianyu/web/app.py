@@ -1429,6 +1429,95 @@ def build_recent_validation_draft_fragments():
     return "\n\n".join(blocks)
 
 
+def build_recent_network_snapshot():
+    figure_items = get_recent_figure_packages(limit=3)
+    network_items = get_recent_notes("02_项目管理/网络药理学", limit=3)
+
+    figure_lines = [f"- {item['name']}｜{item['path']}" for item in figure_items]
+    network_lines = [f"- {item['name']}｜{item['path']}" for item in network_items]
+
+    figure_block = "\n".join(figure_lines) if figure_lines else "- 当前暂无最近网络药理图表包。"
+    network_block = "\n".join(network_lines) if network_lines else "- 当前暂无最近网络药理记录。"
+
+    return f"""### 最近网络药理图表包
+{figure_block}
+
+### 最近网络药理记录
+{network_block}"""
+
+
+def build_network_validation_master_bundle(
+    project_name: str,
+    disease_name: str,
+    mechanism_focus: str,
+    target_focus: str,
+    recent_network_snapshot: str,
+    recent_validation_snapshot: str,
+    recent_validation_fragments: str,
+):
+    mechanism_text = mechanism_focus or "多成分-多靶点-多通路作用机制"
+    target_text = target_focus or "核心靶点、关键通路与下游验证指标"
+
+    return f"""## 网络药理 + 实验验证整合总稿
+
+### 一、研究主线
+- 研究对象：{project_name}
+- 疾病 / 模型：{disease_name}
+- 机制主线：{mechanism_text}
+- 优先验证重点：{target_text}
+
+### 二、最近网络药理自动摘要
+{recent_network_snapshot}
+
+### 三、最近实验验证自动摘要
+{recent_validation_snapshot}
+
+### 四、最近验证草稿自动拼接
+{recent_validation_fragments}
+
+### 五、总 Results 主段初稿
+Network pharmacology analysis suggested that {project_name} may exert therapeutic effects against {disease_name} through a multi-component, multi-target, and multi-pathway mode of action. The shared targets, hub genes, and representative enriched pathways provided a systems-level framework for selecting downstream validation markers. Subsequent experimental validation further supported this mechanistic prediction. CCK-8 assays demonstrated an overall beneficial effect on cell viability, WB and qPCR analyses suggested regulation of the selected targets and pathways at both protein and transcriptional levels, and functional assays including flow cytometry, ROS, JC-1, and immunofluorescence provided additional phenotypic and mechanistic support. Collectively, these data connected in silico predictions with wet-lab evidence and strengthened the proposed mechanism of {project_name} against {disease_name}.
+
+### 六、Results 分段衔接句
+- The network pharmacology results first identified shared targets, hub genes, and representative pathways associated with {disease_name}.
+- Based on these findings, the key targets and pathways were prioritized for downstream experimental validation.
+- The subsequent CCK-8, WB, qPCR, and functional assays generally supported the mechanistic hypothesis derived from the network pharmacology analysis.
+- The consistency between the computational predictions and the experimental observations strengthened the overall interpretation of the study.
+
+### 七、Discussion 主段初稿
+The present study integrated network pharmacology analysis with downstream experimental validation to explore the potential therapeutic mechanism of {project_name} against {disease_name}. The network-level findings suggested that the pharmacological effects of {project_name} were likely mediated through coordinated regulation of multiple targets and pathways rather than a single molecular event. This systems-level prediction was further supported by wet-lab evidence showing beneficial effects on cellular phenotype, oxidative stress, mitochondrial function, and target-associated protein or gene expression. Therefore, the combined strategy of network pharmacology and experimental validation provided a coherent framework for interpreting the pharmacological activity of {project_name}.
+
+### 八、Methods 总骨架
+- Network pharmacology analysis was first conducted to identify shared targets, hub genes, and representative enriched pathways associated with {project_name} against {disease_name}.
+- Based on these findings, candidate targets and pathways were prioritized for downstream validation.
+- Cell viability was assessed using the CCK-8 assay.
+- Protein-level changes were examined by Western blot analysis.
+- Transcriptional changes were determined by RT-qPCR.
+- Flow cytometry, ROS assays, JC-1 staining, and immunofluorescence were used to further validate the functional and mechanistic effects.
+
+### 九、Figure 编排建议
+- Figure 1：网络药理整体流程 / 成分-靶点-通路框架
+- Figure 2：PPI / GO / KEGG 核心结果
+- Figure 3：CCK-8 活力验证
+- Figure 4：WB + qPCR 联合机制验证
+- Figure 5：Flow / ROS / JC-1 / IF 功能验证
+
+### 十、Supplementary 建议
+- Supplementary Figure S1：完整网络药理附图或扩展图
+- Supplementary Figure S2：Full blot images
+- Supplementary Figure S3：Flow gating strategy
+- Supplementary Figure S4：ROS / JC-1 / IF 原始图像
+- Supplementary Table S1：抗体与引物信息
+- Supplementary Table S2：原始灰度值、Ct 值与功能读数
+
+### 十一、投稿前核对清单
+- [ ] 网络药理结论与实验验证主线是否一致
+- [ ] 关键靶点、通路和验证指标是否一一对应
+- [ ] Results 段是否从预测证据自然过渡到湿实验证据
+- [ ] Figure 编号、Figure Legend 与 Supplementary 是否完整对应
+"""
+
+
 def build_full_validation_master_bundle(
     project_name: str,
     disease_name: str,
@@ -4650,6 +4739,62 @@ def writing_functional_validation_full_package_new(
 - 当前阶段：{current_project.get('stage', '')}
 
 {bundle}
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/network-validation-master/new")
+def writing_network_validation_master_new(
+    title: str = Form(...),
+    mechanism_focus: str = Form(""),
+    target_focus: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Network_Validation_Master_Draft.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    recent_network_snapshot = build_recent_network_snapshot()
+    recent_validation_snapshot = build_recent_validation_snapshot()
+    recent_validation_fragments = build_recent_validation_draft_fragments()
+    bundle = build_network_validation_master_bundle(
+        project_name,
+        disease_name,
+        mechanism_focus,
+        target_focus,
+        recent_network_snapshot,
+        recent_validation_snapshot,
+        recent_validation_fragments,
+    )
+
+    if not file_path.exists():
+        content = f"""# 网络药理 + 实验验证整合总稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 自动汇总来源
+本稿会自动带入最近网络药理图表包、最近网络药理记录、最近验证记录摘要，以及最近验证草稿片段，便于继续整合成完整论文正文。
+
+{bundle}
+
+## 最终可复制 Results 段
+
+## 最终可复制 Discussion 段
+
+## 最终可复制 Methods 片段
 
 ## 修改记录
 """
