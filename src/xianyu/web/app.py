@@ -1109,6 +1109,79 @@ Functional validation experiments further supported the protective effect of {pr
 """
 
 
+def build_full_validation_master_bundle(
+    project_name: str,
+    disease_name: str,
+    core_markers: str,
+    key_readouts: str,
+):
+    return f"""## 实验验证总包
+
+### 覆盖模块
+- CCK-8：整体活力 / 保护效应
+- WB：蛋白水平机制验证
+- qPCR：转录水平机制验证
+- Flow：凋亡或表型流式验证
+- ROS：氧化应激验证
+- JC-1：线粒体膜电位验证
+- IF：蛋白表达 / 定位验证
+
+### 核心标志物
+{core_markers or '- 待补充核心靶点、通路蛋白和功能标志物'}
+
+### 核心读数
+{key_readouts or '- 待补充细胞活力、蛋白表达、基因表达、凋亡率、ROS、膜电位和荧光定位读数'}
+
+### 推荐 Figure 编排
+- Figure 1：实验设计流程图 / 分组示意图
+- Figure 2：CCK-8 活力结果
+- Figure 3：WB 条带图 + 灰度统计
+- Figure 4：qPCR 相对表达结果
+- Figure 5：Flow 结果
+- Figure 6：ROS 与 JC-1 结果
+- Figure 7：IF 代表图与定量
+
+### 合并 Results 段骨架
+The experimental validation workflow further supported the protective effect of {project_name} against {disease_name}. Cell viability assays demonstrated an overall beneficial effect of the treatment. WB and qPCR analyses consistently suggested regulation of the selected targets and pathways at both protein and transcriptional levels. Flow cytometry further showed improvement in the relevant cell phenotype, while ROS and JC-1 assays indicated attenuation of oxidative stress and preservation of mitochondrial function. In addition, immunofluorescence analysis confirmed the expression change or subcellular redistribution of the selected marker. Collectively, these findings provided multi-level experimental evidence supporting the proposed mechanism of {project_name}.
+
+### Figure Legend 总清单
+- Figure 2. Effects of {project_name} on cell viability in the {disease_name} model.
+- Figure 3. Effects of {project_name} on the protein expression of the selected targets in the {disease_name} model.
+- Figure 4. Effects of {project_name} on the mRNA expression of the selected genes in the {disease_name} model.
+- Figure 5. Flow cytometry analysis showing the effect of {project_name} on the relevant cell phenotype.
+- Figure 6. Effects of {project_name} on intracellular ROS accumulation and mitochondrial membrane potential.
+- Figure 7. Immunofluorescence staining of the selected marker in each group.
+
+### Supplementary 建议
+- Supplementary Figure S1：Full blot images
+- Supplementary Figure S2：Flow gating strategy
+- Supplementary Figure S3：ROS raw fluorescence images / readings
+- Supplementary Figure S4：JC-1 raw images
+- Supplementary Figure S5：IF raw fields
+- Supplementary Table S1：Primary antibody information
+- Supplementary Table S2：Primer sequences
+- Supplementary Table S3：Raw WB gray values
+- Supplementary Table S4：Raw Ct values and 2^-ΔΔCt calculations
+- Supplementary Table S5：Raw flow percentages / counts
+- Supplementary Table S6：Raw ROS / JC-1 / IF quantification values
+
+### Methods 总骨架
+- Cell viability was measured using the CCK-8 assay.
+- Protein-level changes were determined by Western blot analysis.
+- Transcriptional changes were evaluated by RT-qPCR.
+- Flow cytometry was used to analyze apoptosis or other functional cell phenotypes.
+- Intracellular ROS levels and mitochondrial membrane potential were assessed using ROS probes and JC-1 staining, respectively.
+- Immunofluorescence staining was performed to assess the expression level or localization of the selected marker.
+
+### 审稿前核对清单
+- [ ] 主文 Figure 是否覆盖从表型到机制的完整证据链
+- [ ] 所有 Supplementary 原始数据是否齐全
+- [ ] WB / qPCR / 功能实验之间结论是否一致
+- [ ] Results 文字是否严格基于真实结果
+- [ ] Figure Legends 与正文引用编号是否一致
+"""
+
+
 
 def build_wb_qpcr_reviewer_bundle(
     project_name: str,
@@ -3912,6 +3985,53 @@ def writing_functional_validation_package_new(
 ## 最终 Results 段
 
 ## 最终 Figure Legends
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/full-validation-master/new")
+def writing_full_validation_master_new(
+    title: str = Form(...),
+    core_markers: str = Form(""),
+    key_readouts: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Full_Validation_Master_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_full_validation_master_bundle(
+        project_name,
+        disease_name,
+        core_markers,
+        key_readouts,
+    )
+
+    if not file_path.exists():
+        content = f"""# 实验验证总控整合包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终可复制 Results 段
+
+## 最终可复制 Figure Legends
+
+## 最终可复制 Methods 片段
 
 ## 修改记录
 """
