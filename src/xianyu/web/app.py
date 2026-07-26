@@ -1398,12 +1398,44 @@ def build_recent_validation_snapshot():
     return "\n\n".join(blocks)
 
 
+def build_recent_validation_draft_fragments():
+    draft_specs = [
+        ("CCK-8 草稿", ["cck8", "cck-8"]),
+        ("WB / qPCR 联合草稿", ["wb_qpcr", "wb qpcr", "wb", "qpcr"]),
+        ("功能验证联合草稿", ["functional_validation", "flow_ros_jc1_if", "flow", "ros", "jc1", "if"]),
+    ]
+    files = list_md("06_论文写作")
+    blocks = []
+
+    for label, keywords in draft_specs:
+        matched = None
+        for file in files:
+            haystack = file.name.lower()
+            if any(keyword in haystack for keyword in keywords):
+                matched = file
+                break
+
+        if not matched:
+            blocks.append(f"### {label}\n- 当前暂无最近草稿。")
+            continue
+
+        content = read(matched)[:800]
+        blocks.append(
+            f"### {label}\n"
+            f"- 来源：{matched.name}｜{matched.relative_to(ROOT)}\n"
+            f"```text\n{content}\n```"
+        )
+
+    return "\n\n".join(blocks)
+
+
 def build_full_validation_master_bundle(
     project_name: str,
     disease_name: str,
     core_markers: str,
     key_readouts: str,
     recent_snapshot: str = "",
+    recent_fragments: str = "",
 ):
     return f"""## 实验验证总包
 
@@ -1424,6 +1456,9 @@ def build_full_validation_master_bundle(
 
 ### 最近验证记录自动摘要
 {recent_snapshot or '- 当前暂无自动摘要。'}
+
+### 最近验证草稿自动拼接
+{recent_fragments or '- 当前暂无最近草稿片段。'}
 
 ### 推荐 Figure 编排
 - Figure 1：实验设计流程图 / 分组示意图
@@ -4637,12 +4672,14 @@ def writing_full_validation_master_new(
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
     recent_snapshot = build_recent_validation_snapshot()
+    recent_fragments = build_recent_validation_draft_fragments()
     bundle = build_full_validation_master_bundle(
         project_name,
         disease_name,
         core_markers,
         key_readouts,
         recent_snapshot,
+        recent_fragments,
     )
 
     if not file_path.exists():
@@ -4659,6 +4696,7 @@ def writing_full_validation_master_new(
 
 ## 自动汇总来源
 本稿已自动读取最近的 CCK-8、WB、qPCR、Flow、ROS、JC-1、IF 记录名称与路径，便于继续补写总 Results、总 Methods 与 Figure Legends。
+本稿同时会自动拼接最近的验证写作草稿片段，便于继续合并为总 Results 与总 Methods。
 
 {bundle}
 
