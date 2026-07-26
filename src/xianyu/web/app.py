@@ -3995,6 +3995,87 @@ def build_submission_checklist_summary():
     }
 
 
+def build_submission_supplementary_bundle(project_name: str, disease_name: str):
+    return f"""## Supplementary 文件建议清单
+- Supplementary Figure S1：成分筛选或原始成分信息补充
+- Supplementary Figure S2：PPI 或扩展网络结果补充
+- Supplementary Figure S3：GO / KEGG 扩展富集结果
+- Supplementary Figure S4：对接姿势补充图或额外成分-靶点结果
+- Supplementary Figure S5：WB 原膜、qPCR 原始扩增信息、额外功能验证图
+
+## Supplementary Table 建议清单
+| 文件编号 | 建议名称 | 主要内容 |
+|---|---|---|
+| Table S1 | Compound list of {project_name} | 成分名称、CID、SMILES、筛选依据 |
+| Table S2 | Predicted targets of {project_name} | 成分-靶点预测结果与来源数据库 |
+| Table S3 | Disease-related targets for {disease_name} | 疾病靶点、筛选阈值、来源数据库 |
+| Table S4 | Shared targets and hub genes | 交集靶点、核心靶点及网络指标 |
+| Table S5 | GO and KEGG enrichment results | 富集结果明细、p值/FDR、基因数 |
+| Table S6 | Docking scores and interaction summary | 对接能量、关键相互作用、候选排序 |
+| Table S7 | Primer / antibody / reagent information | qPCR 引物、WB 抗体、关键试剂信息 |
+
+## Supplementary 整理清单
+- [ ] 所有 Supplementary Figure 均有标题和图注
+- [ ] 所有 Supplementary Table 均有列名说明
+- [ ] 原始图、原始表与正文中的结果一一对应
+- [ ] Figure / Table 在正文首次提及时编号一致
+- [ ] 文件格式统一为 PDF / XLSX / TIFF / CSV 的投稿要求格式
+
+## 建议最终目录
+- Supplementary_Figures/
+- Supplementary_Tables/
+- Raw_Data_Index/
+- Figure_Legend_Supplementary/
+- Method_Details_Extended/
+"""
+
+
+def build_submission_naming_guide_bundle(project_name: str, disease_name: str):
+    return f"""## 投稿文件命名规范建议
+
+### 主文文件
+- Manuscript_MainText_{safe_name(project_name)}.docx
+- Cover_Letter_{safe_name(project_name)}.docx
+- Response_Letter_{safe_name(project_name)}.docx
+- Highlights_{safe_name(project_name)}.docx
+- Graphical_Abstract_{safe_name(project_name)}.pptx
+
+### Figure 文件
+- Figure1_Study_Design.tif
+- Figure2_Component_Target_Network.tif
+- Figure3_PPI_and_Enrichment.tif
+- Figure4_Docking_and_Core_Targets.tif
+- Figure5_WB_qPCR_Functional_Validation.tif
+
+### Supplementary 文件
+- Supplementary_Figure_S1_Component_Screening.tif
+- Supplementary_Figure_S2_Extended_PPI.tif
+- Supplementary_Table_S1_Compound_List.xlsx
+- Supplementary_Table_S2_Target_List.xlsx
+- Supplementary_Table_S3_Enrichment_Results.xlsx
+
+### 原始数据文件
+- RawData_WB_{safe_name(disease_name)}.zip
+- RawData_qPCR_{safe_name(disease_name)}.xlsx
+- RawData_CCK8_{safe_name(disease_name)}.xlsx
+- RawData_Docking_{safe_name(project_name)}.csv
+
+## 命名统一规则
+- 只使用英文字母、数字、下划线
+- 不在最终投稿文件中使用空格和中文
+- 同一类型文件编号连续，不跳号
+- Figure / Table / Supplementary 的编号必须与正文一致
+- 最终归档前检查大小写和缩写是否统一
+
+## 投稿前最终核对
+- [ ] 主文文件名与期刊要求一致
+- [ ] Figure 文件名与图注编号一致
+- [ ] Supplementary 文件名与正文引用一致
+- [ ] 原始数据文件与补充材料可一一对应
+- [ ] 所有最终文件放入同一投稿归档目录
+"""
+
+
 @app.get("/submission", response_class=HTMLResponse)
 def submission_index():
     files = list_md("06_论文写作")
@@ -4032,6 +4113,86 @@ def submission_index():
         recent_network=recent_network,
         checklist=checklist,
     )
+
+
+@app.post("/writing/submission-supplementary/new")
+def writing_submission_supplementary_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Supplementary_Checklist.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    recent_figure_packages = get_recent_figure_packages(limit=5)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
+    figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
+    network_summary_lines = [f"- {item['name']}｜{item['path']}" for item in recent_network]
+    figure_package_summary = "\n".join(figure_package_lines) if figure_package_lines else "- 当前暂无最近网络药理图表包。"
+    network_summary = "\n".join(network_summary_lines) if network_summary_lines else "- 当前暂无最近网络药理记录。"
+    bundle = build_submission_supplementary_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Supplementary Checklist｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 最近网络药理图表包
+{figure_package_summary}
+
+## 最近网络药理记录
+{network_summary}
+
+{bundle}
+
+## 最终补充材料目录
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/submission-naming-guide/new")
+def writing_submission_naming_guide_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Submission_Naming_Guide.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_submission_naming_guide_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Submission Naming Guide｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终文件归档路径
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
 @app.post("/writing/new")
