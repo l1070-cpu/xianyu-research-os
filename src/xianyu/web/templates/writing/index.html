@@ -353,6 +353,33 @@ Supplementary Table S2	引物信息"></textarea>
     </p>
     <button type="submit">生成 Flow / ROS / JC-1 / IF 整合写作包</button>
   </form>
+  <form method="post" action="/writing/functional-validation-full-package/new">
+    <p>
+      <label>功能验证联合总包名称</label><br>
+      <input name="title" placeholder="例如：Flow_ROS_JC1_IF_联合总包" required>
+    </p>
+    <p>
+      <label>样本类型</label><br>
+      <input name="sample_type" placeholder="例如：H/R 细胞 / 染色后细胞样本">
+    </p>
+    <p>
+      <label>统一实验分组</label><br>
+      <textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea>
+    </p>
+    <p>
+      <label>关键指标 / 标志物</label><br>
+      <textarea name="markers" rows="4" placeholder="例如：Annexin V/PI, ROS, JC-1 red/green ratio, Nrf2 IF"></textarea>
+    </p>
+    <p>
+      <label>探针 / 染料 / 抗体信息</label><br>
+      <textarea name="probe_reagents" rows="5" placeholder="例如：Annexin V-FITC/PI；DCFH-DA；JC-1；Nrf2一抗"></textarea>
+    </p>
+    <p>
+      <label>核心读数</label><br>
+      <textarea name="main_readouts" rows="4" placeholder="例如：凋亡率下降、ROS降低、膜电位恢复、核转位改善"></textarea>
+    </p>
+    <button type="submit">生成 联合 Results + Methods + Figure Legend 总包</button>
+  </form>
   <form method="post" action="/writing/full-validation-master/new">
     <p>
       <label>实验验证总包名称</label><br>

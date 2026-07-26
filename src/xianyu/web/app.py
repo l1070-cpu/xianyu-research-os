@@ -1310,6 +1310,73 @@ Functional validation experiments further supported the protective effect of {pr
 """
 
 
+def build_functional_validation_full_bundle(
+    project_name: str,
+    disease_name: str,
+    sample_type: str,
+    groups: str,
+    markers: str,
+    probe_reagents: str,
+    main_readouts: str,
+):
+    return f"""## 功能验证联合总包
+
+### 一、实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 样本类型：{sample_type or "- 待补充"}
+
+### 二、统一分组
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+### 三、关键指标 / 标志物
+{markers or "- 待补充关键指标 / 标志物"}
+
+### 四、探针 / 染料 / 抗体信息
+```text
+{probe_reagents or "待补充 Annexin V/PI、ROS 探针、JC-1、IF 一抗/二抗等信息"}
+```
+
+### 五、核心读数
+{main_readouts or "- 待补充凋亡率、ROS 强度、JC-1 红绿比、IF 定位或荧光强度"}
+
+### 六、联合 Results 初稿
+Functional validation assays further supported the protective effect of {project_name} against {disease_name}. Flow cytometry showed an improvement in the relevant cell phenotype, such as reduced apoptosis or restoration of the normal cellular distribution. ROS assays indicated attenuation of oxidative stress after treatment. JC-1 staining suggested recovery of mitochondrial membrane potential, while immunofluorescence analysis further confirmed the expression change or subcellular redistribution of the selected marker. Collectively, these functional data provided complementary evidence supporting the proposed mechanism of {project_name}.
+
+### 七、分段 Results 句库
+- Flow cytometry demonstrated that the abnormal cell phenotype observed in the model group was partially or significantly reversed after treatment.
+- Intracellular ROS accumulation was markedly increased in the model group but was attenuated by {project_name}.
+- JC-1 staining revealed a restoration of mitochondrial membrane potential following treatment.
+- Immunofluorescence analysis further confirmed the regulation of the selected marker at the cellular level.
+
+### 八、联合 Methods 初稿
+For functional validation, cells or samples derived from {sample_type or "the indicated model"} were assigned to the groups described above. Flow cytometry was performed to assess the relevant cellular phenotype using the designated staining reagents. Intracellular ROS accumulation was evaluated with the appropriate fluorescent probe, and mitochondrial membrane potential was determined by JC-1 staining. Immunofluorescence staining was conducted using antibodies against the selected marker to assess expression level or subcellular localization. Quantitative data were collected from at least three independent experiments and presented as mean ± SD.
+
+### 九、Figure Legend 总清单
+- Figure X. Flow cytometry analysis of the relevant cell phenotype in the {disease_name} model after treatment with {project_name}.
+- Figure Y. Intracellular ROS levels in each group following treatment with {project_name}.
+- Figure Z. JC-1 fluorescence imaging and red/green ratio quantification showing changes in mitochondrial membrane potential.
+- Figure W. Immunofluorescence staining of the selected marker, showing expression level or subcellular localization changes after treatment.
+
+### 十、Supplementary 建议清单
+- Supplementary Figure S1：Flow 门控策略图
+- Supplementary Figure S2：ROS 原始荧光图 / 原始读数
+- Supplementary Figure S3：JC-1 原始图像
+- Supplementary Figure S4：IF 原始视野图
+- Supplementary Table S1：探针 / 染料 / 抗体信息
+- Supplementary Table S2：原始功能读数和统计表
+
+### 十一、投稿前核对清单
+- [ ] Flow / ROS / JC-1 / IF 分组是否完全一致
+- [ ] 原始图像、门控图和原始读数是否齐全
+- [ ] 图中比例尺、颜色方案和统计标记是否统一
+- [ ] 功能实验结果是否与主文机制一致
+- [ ] Results 文字是否严格基于真实读数
+"""
+
+
 def build_full_validation_master_bundle(
     project_name: str,
     disease_name: str,
@@ -4476,6 +4543,53 @@ def writing_functional_validation_package_new(
 ## 最终 Results 段
 
 ## 最终 Figure Legends
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/functional-validation-full-package/new")
+def writing_functional_validation_full_package_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    groups: str = Form(""),
+    markers: str = Form(""),
+    probe_reagents: str = Form(""),
+    main_readouts: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Functional_Validation_Full_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_functional_validation_full_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        groups,
+        markers,
+        probe_reagents,
+        main_readouts,
+    )
+
+    if not file_path.exists():
+        content = f"""# 功能验证联合总包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
 
 ## 修改记录
 """
