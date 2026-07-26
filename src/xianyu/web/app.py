@@ -3826,6 +3826,44 @@ def writing_index():
         recent_network=recent_network,
     )
 
+
+@app.get("/submission", response_class=HTMLResponse)
+def submission_index():
+    files = list_md("06_论文写作")
+    current_project = get_current_project()
+    recent_figure_packages = get_recent_figure_packages(limit=5)
+    recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
+    items = []
+    for file in files[:30]:
+        lower = file.name.lower()
+        if not any(keyword in lower for keyword in [
+            "submission",
+            "response",
+            "cover",
+            "master",
+            "validation",
+            "figure",
+            "supplementary",
+            "reviewer",
+        ]):
+            continue
+        items.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500]
+        })
+        if len(items) >= 20:
+            break
+    template = env.get_template("submission/index.html")
+    return template.render(
+        items=items,
+        modules=MODULES,
+        active_project=current_project,
+        recent_figure_packages=recent_figure_packages,
+        recent_network=recent_network,
+    )
+
+
 @app.post("/writing/new")
 def writing_new(title: str = Form(...), section_type: str = Form("discussion")):
     today = date.today().isoformat()

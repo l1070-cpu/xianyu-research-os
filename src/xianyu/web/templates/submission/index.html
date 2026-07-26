@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}投稿打包中心{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>📦 投稿打包中心</h2>
+  <p>把整合总稿、图注、Supplementary、投稿信和回复信集中到一个地方</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>投稿核心入口</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>网络药理投稿总包</h3>
+      <form method="post" action="/writing/network-submission-package/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：SubmissionPackage_金毛狗脊投稿总包" required></p>
+        <p>
+          <label>目标期刊模板</label><br>
+          <select name="journal">
+            <option value="generic">通用投稿模板</option>
+            <option value="phytomedicine">Phytomedicine</option>
+            <option value="joe">Journal of Ethnopharmacology</option>
+          </select>
+        </p>
+        <button type="submit">生成 Submission Package</button>
+      </form>
+    </article>
+
+    <article class="file-card">
+      <h3>网络药理 + 实验验证整合总稿</h3>
+      <form method="post" action="/writing/network-validation-master/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：Network_Validation_Master_整合总稿" required></p>
+        <p><label>机制主线</label><br><textarea name="mechanism_focus" rows="3" placeholder="例如：PI3K/AKT/Nrf2、氧化应激、凋亡调控"></textarea></p>
+        <p><label>优先验证重点</label><br><textarea name="target_focus" rows="3" placeholder="例如：AKT、Nrf2、HO-1 及功能验证指标"></textarea></p>
+        <button type="submit">生成 整合总稿</button>
+      </form>
+    </article>
+
+    <article class="file-card">
+      <h3>实验验证总控包</h3>
+      <form method="post" action="/writing/full-validation-master/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：Full_Validation_Master_投稿总包" required></p>
+        <p><label>核心标志物</label><br><textarea name="core_markers" rows="3" placeholder="例如：AKT, p-AKT, Nrf2, HO-1, BAX, BCL2"></textarea></p>
+        <p><label>核心读数</label><br><textarea name="key_readouts" rows="3" placeholder="例如：活力恢复、凋亡率下降、ROS降低、膜电位恢复"></textarea></p>
+        <button type="submit">生成 实验验证总控包</button>
+      </form>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>投稿信与返修</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>Cover Letter</h3>
+      <form method="post" action="/writing/network-cover-letter/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：CoverLetter_投稿信" required></p>
+        <p>
+          <label>目标期刊模板</label><br>
+          <select name="journal">
+            <option value="generic">通用投稿模板</option>
+            <option value="phytomedicine">Phytomedicine</option>
+            <option value="joe">Journal of Ethnopharmacology</option>
+          </select>
+        </p>
+        <button type="submit">生成 Cover Letter</button>
+      </form>
+    </article>
+
+    <article class="file-card">
+      <h3>Response Letter</h3>
+      <form method="post" action="/writing/network-response-letter/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：ResponseLetter_返修回复" required></p>
+        <p>
+          <label>目标期刊模板</label><br>
+          <select name="journal">
+            <option value="generic">通用投稿模板</option>
+            <option value="phytomedicine">Phytomedicine</option>
+            <option value="joe">Journal of Ethnopharmacology</option>
+          </select>
+        </p>
+        <button type="submit">生成 Response Letter</button>
+      </form>
+    </article>
+
+    <article class="file-card">
+      <h3>审稿意见拆分</h3>
+      <form method="post" action="/writing/reviewer-split/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：Reviewer1_返修意见拆分" required></p>
+        <p><label>审稿人名称</label><br><input name="reviewer_name" placeholder="例如：Reviewer 1"></p>
+        <p><label>原始审稿意见</label><br><textarea name="raw_comments" rows="6" placeholder="把 Reviewer comments 整段粘贴到这里"></textarea></p>
+        <button type="submit">生成 审稿意见拆分稿</button>
+      </form>
+    </article>
+  </div>
+</section>
+
+{% if recent_figure_packages %}
+<section>
+  <h3>最近网络药理图表包</h3>
+  {% for item in recent_figure_packages %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if recent_network %}
+<section>
+  <h3>最近网络药理记录</h3>
+  {% for item in recent_network %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <h3>最近投稿相关写作记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <p>{{ item.path }}</p>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无投稿相关写作记录。</p>
+  {% endif %}
+</section>
+{% endblock %}
