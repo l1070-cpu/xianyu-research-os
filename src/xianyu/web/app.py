@@ -3827,12 +3827,181 @@ def writing_index():
     )
 
 
+def build_submission_checklist_summary():
+    writing_files = list_md("06_论文写作")
+    figure_files = list_md("05_数据分析/科研作图")
+    figure_packages = get_recent_figure_packages(limit=20)
+
+    def normalize(name: str) -> str:
+        return name.lower().replace(" ", "_").replace("-", "_")
+
+    writing_index = []
+    for file in writing_files:
+        writing_index.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "normalized": normalize(file.name),
+        })
+
+    figure_index = []
+    for file in figure_files:
+        figure_index.append({
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "normalized": normalize(file.name),
+        })
+
+    figure_package_index = []
+    for item in figure_packages:
+        figure_package_index.append({
+            "name": item["name"],
+            "path": item["path"],
+            "normalized": normalize(item["name"]),
+        })
+
+    def find_match(pool, keywords):
+        for item in pool:
+            normalized = item["normalized"]
+            if all(keyword in normalized for keyword in keywords):
+                return item
+        return None
+
+    checklist_sections = [
+        {
+            "title": "主文与整合稿",
+            "items": [
+                {
+                    "label": "网络药理 + 实验验证整合总稿",
+                    "keywords": ["network", "validation", "master"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "实验验证总控包",
+                    "keywords": ["full", "validation", "master"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "投稿总包 Submission Package",
+                    "keywords": ["submission", "package"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "Methods 初稿 / 方法整合",
+                    "keywords": ["methods"],
+                    "pool": "writing",
+                },
+            ],
+        },
+        {
+            "title": "Figure 与补充材料",
+            "items": [
+                {
+                    "label": "网络药理图表包",
+                    "keywords": ["network", "figure", "package"],
+                    "pool": "figure_package",
+                },
+                {
+                    "label": "Figure Legend / Results 草稿",
+                    "keywords": ["figure", "legend"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "WB / qPCR 全验证包",
+                    "keywords": ["wb", "qpcr", "full", "validation", "package"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "CCK-8 全包",
+                    "keywords": ["cck8", "full", "package"],
+                    "pool": "writing",
+                },
+            ],
+        },
+        {
+            "title": "投稿与返修文件",
+            "items": [
+                {
+                    "label": "Cover Letter",
+                    "keywords": ["cover", "letter"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "Response Letter",
+                    "keywords": ["response", "letter"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "审稿意见拆分稿",
+                    "keywords": ["reviewer"],
+                    "pool": "writing",
+                },
+            ],
+        },
+    ]
+
+    pool_mapping = {
+        "writing": writing_index,
+        "figure": figure_index,
+        "figure_package": figure_package_index,
+    }
+
+    ready_count = 0
+    missing_count = 0
+    sections = []
+    missing_items = []
+
+    for section in checklist_sections:
+        rendered_items = []
+        for item in section["items"]:
+            matched = find_match(pool_mapping[item["pool"]], item["keywords"])
+            status = "ready" if matched else "missing"
+            if matched:
+                ready_count += 1
+            else:
+                missing_count += 1
+                missing_items.append(item["label"])
+            rendered_items.append({
+                "label": item["label"],
+                "status": status,
+                "matched": matched,
+            })
+        sections.append({
+            "title": section["title"],
+            "entries": rendered_items,
+        })
+
+    recent_submission_items = []
+    for item in writing_index:
+        if any(keyword in item["normalized"] for keyword in [
+            "submission",
+            "response",
+            "cover",
+            "reviewer",
+            "master",
+            "validation",
+            "figure",
+        ]):
+            recent_submission_items.append(item)
+        if len(recent_submission_items) >= 8:
+            break
+
+    return {
+        "total_count": ready_count + missing_count,
+        "ready_count": ready_count,
+        "missing_count": missing_count,
+        "sections": sections,
+        "missing_items": missing_items,
+        "recent_submission_items": recent_submission_items,
+    }
+
+
 @app.get("/submission", response_class=HTMLResponse)
 def submission_index():
     files = list_md("06_论文写作")
     current_project = get_current_project()
     recent_figure_packages = get_recent_figure_packages(limit=5)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
+    checklist = build_submission_checklist_summary()
     items = []
     for file in files[:30]:
         lower = file.name.lower()
@@ -3861,6 +4030,7 @@ def submission_index():
         active_project=current_project,
         recent_figure_packages=recent_figure_packages,
         recent_network=recent_network,
+        checklist=checklist,
     )
 
 

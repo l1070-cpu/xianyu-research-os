@@ -16,6 +16,66 @@
 </section>
 {% endif %}
 
+{% if checklist %}
+<section>
+  <h3>投稿材料自动汇总</h3>
+  <div class="summary-grid">
+    <article class="file-card">
+      <h3>已就绪</h3>
+      <p class="metric-number">{{ checklist.ready_count }}</p>
+      <p>当前已识别的核心投稿材料</p>
+    </article>
+    <article class="file-card">
+      <h3>待补齐</h3>
+      <p class="metric-number">{{ checklist.missing_count }}</p>
+      <p>建议优先补齐的缺失材料</p>
+    </article>
+    <article class="file-card">
+      <h3>总检查项</h3>
+      <p class="metric-number">{{ checklist.total_count }}</p>
+      <p>主文、图表、Supplementary、投稿与返修</p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>投稿清单状态</h3>
+  <div class="project-grid">
+    {% for section in checklist.sections %}
+    <article class="file-card">
+      <h3>{{ section.title }}</h3>
+      {% for item in section.entries %}
+      <div class="checklist-row">
+        <div>
+          <strong>
+            {% if item.status == "ready" %}✅{% else %}⬜{% endif %}
+            {{ item.label }}
+          </strong>
+          {% if item.matched %}
+          <p><a href="/file?path={{ item.matched.path }}">{{ item.matched.name }}</a></p>
+          {% else %}
+          <p>当前还未自动识别到对应草稿</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% if checklist.missing_items %}
+<section>
+  <h3>建议下一步优先补齐</h3>
+  <div class="tag-list">
+    {% for item in checklist.missing_items %}
+    <span class="tag">{{ item }}</span>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endif %}
+
 <section>
   <h3>投稿核心入口</h3>
   <div class="project-grid">
@@ -103,6 +163,18 @@
     </article>
   </div>
 </section>
+
+{% if checklist and checklist.recent_submission_items %}
+<section>
+  <h3>最近投稿核心稿件</h3>
+  {% for item in checklist.recent_submission_items %}
+  <div class="file-card">
+    <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+    <pre>{{ item.path }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
 
 {% if recent_figure_packages %}
 <section>

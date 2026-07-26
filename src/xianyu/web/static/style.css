@@ -126,7 +126,35 @@ aside nav a:hover {
   font-weight: 600;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-number {
+  margin: 10px 0 6px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.checklist-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.checklist-row:last-child {
+  border-bottom: none;
+}
+
+.checklist-row p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
 @media (max-width: 900px) {
+  .summary-grid,
   .project-grid,
   .quick-grid {
     grid-template-columns: 1fr;
