@@ -250,6 +250,51 @@
     </p>
     <button type="submit">生成 统计表 + Supplementary + 原始数据说明</button>
   </form>
+  <form method="post" action="/writing/wb-qpcr-reviewer/new">
+    <p>
+      <label>WB / qPCR 审稿答复名称</label><br>
+      <input name="title" placeholder="例如：WB_qPCR_原始数据答复稿" required>
+    </p>
+    <p>
+      <label>审稿意见原文</label><br>
+      <textarea name="reviewer_comment" rows="6" placeholder="例如：Please provide the raw WB and qPCR data."></textarea>
+    </p>
+    <p>
+      <label>WB 目标蛋白</label><br>
+      <textarea name="target_proteins" rows="3" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea>
+    </p>
+    <p>
+      <label>qPCR 目标基因</label><br>
+      <textarea name="target_genes" rows="3" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea>
+    </p>
+    <button type="submit">生成 原始数据审稿答复稿</button>
+  </form>
+  <form method="post" action="/writing/wb-qpcr-mapping/new">
+    <p>
+      <label>WB / qPCR 图表映射名称</label><br>
+      <input name="title" placeholder="例如：WB_qPCR_Figure_Table_Mapping" required>
+    </p>
+    <p>
+      <label>主文 Figure</label><br>
+      <textarea name="main_figures" rows="4" placeholder="例如：Figure 6	WB条带+灰度
+Figure 7	qPCR柱状图"></textarea>
+    </p>
+    <p>
+      <label>Supplementary Figure</label><br>
+      <textarea name="supp_figures" rows="4" placeholder="例如：Supplementary Figure S1	Full blot
+Supplementary Figure S2	qPCR质量控制"></textarea>
+    </p>
+    <p>
+      <label>主文 Table</label><br>
+      <textarea name="main_tables" rows="3" placeholder="例如：Table 2	WB/qPCR统计结果总表"></textarea>
+    </p>
+    <p>
+      <label>Supplementary Table</label><br>
+      <textarea name="supp_tables" rows="4" placeholder="例如：Supplementary Table S1	抗体信息
+Supplementary Table S2	引物信息"></textarea>
+    </p>
+    <button type="submit">生成 Figure / Supplementary 映射表</button>
+  </form>
   <form method="post" action="/writing/network-methods/new">
     <p>
       <label>Methods 草稿名称</label><br>

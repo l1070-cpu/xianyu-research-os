@@ -969,6 +969,102 @@ The raw data supporting the WB and qPCR findings are provided in the Supplementa
 - [ ] 原始数据说明是否与投稿要求一致
 """
 
+
+
+def build_wb_qpcr_reviewer_bundle(
+    project_name: str,
+    disease_name: str,
+    reviewer_comment: str,
+    target_proteins: str,
+    target_genes: str,
+):
+    return f"""## WB / qPCR 原始数据答复稿
+
+### 审稿人意见原文
+{reviewer_comment or '- 待补充审稿人意见'}
+
+### 建议回复主段
+We thank the reviewer for this valuable comment. In response, we have carefully整理并补充了与 {project_name} 在 {disease_name} 模型中的 WB 和 qPCR 验证相关的原始数据材料. Specifically, the full-length immunoblot images, raw gray values, normalized quantification values, primer sequences, raw Ct values, and the complete 2^-ΔΔCt calculation sheets have been rechecked and organized. These materials are now available in the revised supplementary files and support the reproducibility and transparency of the reported results.
+
+### 可直接补到 Response Letter 的句子
+- We have added the raw WB images and quantitative gray-value data to the Supplementary Materials.
+- We have also provided the primer information, raw Ct values, and the complete 2^-ΔΔCt calculation sheet for the qPCR assays.
+- These additions do not alter the conclusions of the study but improve the transparency of the experimental evidence.
+
+### 建议补充的数据点
+#### WB 目标蛋白
+{target_proteins or '- 待补充 WB 目标蛋白'}
+
+#### qPCR 目标基因
+{target_genes or '- 待补充 qPCR 目标基因'}
+
+### 建议放置位置
+- Supplementary Figure S1：完整 WB 条带原图
+- Supplementary Table S1：抗体信息
+- Supplementary Table S2：引物信息
+- Supplementary Table S3：原始灰度值与归一化结果
+- Supplementary Table S4：原始 Ct 值与 2^-ΔΔCt 结果
+
+### 说明结论不变的句子
+- The additional raw data provided in the Supplementary Materials further support the consistency of the reported WB and qPCR findings, and the overall conclusions of the manuscript remain unchanged.
+
+### 核对清单
+- [ ] 是否补齐 full blot 图
+- [ ] 是否补齐原始灰度值
+- [ ] 是否补齐引物序列
+- [ ] 是否补齐原始 Ct 值和 2^-ΔΔCt 表
+- [ ] 是否在 Response Letter 中写明补充位置
+"""
+
+
+def build_wb_qpcr_mapping_bundle(
+    project_name: str,
+    disease_name: str,
+    main_figures: str,
+    supp_figures: str,
+    main_tables: str,
+    supp_tables: str,
+):
+    return f"""## WB / qPCR 图表编号映射包
+
+### 主文 Figure 清单
+```text
+{main_figures or "Figure X\tWB条带+灰度\nFigure Y\tqPCR柱状图"}
+```
+
+### Supplementary Figure 清单
+```text
+{supp_figures or "Supplementary Figure S1\tFull blot\nSupplementary Figure S2\tqPCR质量控制"}
+```
+
+### 主文 Table 清单
+```text
+{main_tables or "Table X\tWB/qPCR统计结果总表"}
+```
+
+### Supplementary Table 清单
+```text
+{supp_tables or "Supplementary Table S1\t抗体信息\nSupplementary Table S2\t引物信息\nSupplementary Table S3\t原始灰度值\nSupplementary Table S4\t原始Ct与2^-ΔΔCt"}
+```
+
+### 推荐映射逻辑
+- 主文 Figure 优先保留最核心的机制证据：WB 定量图、qPCR 相对表达图。
+- Supplementary Figure 主要放完整 WB 条带、熔解曲线、扩增曲线等支撑性图像。
+- 主文 Table 建议只保留统计结果总表。
+- Supplementary Table 用于放抗体、引物、原始值和计算表。
+
+### 编号一致性核对清单
+- [ ] 主文 Figure 编号是否与正文引用一致
+- [ ] Supplementary Figure 编号是否与图注一致
+- [ ] 主文 Table 编号是否与 Results 段一致
+- [ ] Supplementary Table 编号是否与 Response Letter 一致
+- [ ] Figure Legend / Supplementary Legend 是否一一对应
+
+### 投稿前说明句
+- The numbering of the main figures, supplementary figures, main tables, and supplementary tables has been cross-checked to ensure consistency throughout the revised manuscript.
+- The supplementary items were organized to provide full transparency for the WB and qPCR validation workflow of {project_name} against {disease_name}.
+"""
+
 def build_network_methods_bundle(
     recommendations,
     project_name: str,
@@ -3552,6 +3648,86 @@ def writing_wb_qpcr_stats_new(
 ## 自定义补充说明
 
 ## 最终投稿用说明段
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+
+@app.post("/writing/wb-qpcr-reviewer/new")
+def writing_wb_qpcr_reviewer_new(
+    title: str = Form(...),
+    reviewer_comment: str = Form(""),
+    target_proteins: str = Form(""),
+    target_genes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Reviewer_Response.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_qpcr_reviewer_bundle(project_name, disease_name, reviewer_comment, target_proteins, target_genes)
+
+    if not file_path.exists():
+        content = f"""# WB / qPCR 原始数据审稿答复稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终答复稿
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/wb-qpcr-mapping/new")
+def writing_wb_qpcr_mapping_new(
+    title: str = Form(...),
+    main_figures: str = Form(""),
+    supp_figures: str = Form(""),
+    main_tables: str = Form(""),
+    supp_tables: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Figure_Table_Mapping.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_qpcr_mapping_bundle(project_name, disease_name, main_figures, supp_figures, main_tables, supp_tables)
+
+    if not file_path.exists():
+        content = f"""# WB / qPCR 图表编号映射表｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终映射说明
 
 ## 修改记录
 """
