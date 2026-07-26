@@ -40,6 +40,19 @@
 </section>
 
 <section>
+  <h3>一键生成 qPCR 全套草稿</h3>
+  <form method="post" action="/qpcr/full-draft/new">
+    <p><label>草稿名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR全套草稿" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总RNA"></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>引物信息</label><br><textarea name="primers" rows="5" placeholder="例如：AKT1-F / AKT1-R；GAPDH-F / GAPDH-R"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="8" placeholder="例如：Gene\tControl\tModel\tLow\tHigh&#10;AKT1\t1.00\t0.54\t0.77\t0.96"></textarea></p>
+    <button type="submit">生成 qPCR Results + Methods 初稿</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 qPCR 记录</h3>
   {% if items %}
     {% for item in items %}

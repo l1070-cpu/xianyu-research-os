@@ -40,6 +40,19 @@
 </section>
 
 <section>
+  <h3>一键生成 WB 全套草稿</h3>
+  <form method="post" action="/wb/full-draft/new">
+    <p><label>草稿名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB全套草稿" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总蛋白"></p>
+    <p><label>目标蛋白</label><br><textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>抗体信息</label><br><textarea name="antibodies" rows="5" placeholder="例如：AKT 1:1000；p-AKT 1:1000；GAPDH 1:5000"></textarea></p>
+    <p><label>归一化灰度数据</label><br><textarea name="normalized_data" rows="8" placeholder="例如：Protein\tControl\tModel\tLow\tHigh&#10;AKT\t1.00\t0.62\t0.78\t0.95"></textarea></p>
+    <button type="submit">生成 WB Results + Methods 初稿</button>
+  </form>
+</section>
+
+<section>
   <h3>最近 WB 记录</h3>
   {% if items %}
     {% for item in items %}

@@ -827,6 +827,112 @@ def build_qpcr_results_bundle(project_name: str, disease_name: str, target_genes
 """
 
 
+def build_wb_full_draft_bundle(
+    project_name: str,
+    disease_name: str,
+    sample_type: str,
+    target_proteins: str,
+    groups: str,
+    antibodies: str,
+    normalized_data: str,
+):
+    return f"""# WB Results + Methods 初稿
+
+## 实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 样本类型：{sample_type or "- 待补充"}
+
+## 目标蛋白
+{target_proteins or "- 待补充目标蛋白"}
+
+## 分组信息
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+## 抗体信息
+```text
+{antibodies or "待补充抗体名称、货号和稀释比例"}
+```
+
+## 归一化灰度数据
+```text
+{normalized_data or "Protein\tControl\tModel\tTreatment-Low\tTreatment-High"}
+```
+
+{build_wb_results_bundle(project_name, disease_name, target_proteins, normalized_data)}
+
+## Results 初稿
+Western blot analysis was performed to evaluate the protein-level changes associated with {disease_name}. Compared with the control group, the model group showed an abnormal expression pattern of the selected proteins. Treatment with {project_name} partially or markedly reversed these alterations, suggesting that the intervention modulated the corresponding signaling pathway at the protein level.
+
+## Methods 初稿
+Protein samples were prepared from {sample_type or "the indicated samples"} in each experimental group. Equal amounts of protein were separated by SDS-PAGE and transferred onto PVDF membranes. After blocking, the membranes were incubated with the primary antibodies against {target_proteins or "the selected targets"} followed by the corresponding secondary antibodies. The protein bands were visualized using a chemiluminescence system, and the gray values were quantified with image analysis software. Relative protein expression levels were normalized to the internal reference protein, and when necessary, phosphorylated proteins were additionally normalized to their corresponding total proteins.
+
+## Figure Legend 初稿
+- Figure X. Effects of {project_name} on protein expression associated with {disease_name}. Representative immunoblots and quantitative analysis of normalized gray values are shown for each group.
+
+## 下一步清单
+- [ ] 补齐原始条带图
+- [ ] 确认统计学检验
+- [ ] 写入主文 Results
+- [ ] 与 qPCR 结果进行联合讨论
+"""
+
+
+def build_qpcr_full_draft_bundle(
+    project_name: str,
+    disease_name: str,
+    sample_type: str,
+    target_genes: str,
+    groups: str,
+    primers: str,
+    ddct_data: str,
+):
+    return f"""# qPCR Results + Methods 初稿
+
+## 实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 样本类型：{sample_type or "- 待补充"}
+
+## 目标基因
+{target_genes or "- 待补充目标基因"}
+
+## 分组信息
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+## 引物信息
+```text
+{primers or "待补充引物序列与内参基因"}
+```
+
+## 2^-ΔΔCt 数据
+```text
+{ddct_data or "Gene\tControl\tModel\tTreatment-Low\tTreatment-High"}
+```
+
+{build_qpcr_results_bundle(project_name, disease_name, target_genes, ddct_data)}
+
+## Results 初稿
+RT-qPCR analysis was conducted to determine the transcriptional changes related to {disease_name}. Relative to the control group, the model group exhibited dysregulated mRNA expression of the selected genes. Treatment with {project_name} reversed or attenuated these transcriptional abnormalities, supporting the involvement of the proposed targets and pathways at the gene-expression level.
+
+## Methods 初稿
+Total RNA was extracted from {sample_type or "the indicated samples"} in each group and reverse-transcribed into cDNA according to the manufacturer's protocol. Quantitative PCR was then performed using gene-specific primers for {target_genes or "the selected genes"}, with the designated housekeeping gene as the internal reference. Relative mRNA expression was calculated using the 2^-ΔΔCt method, and the data were presented as mean ± SD.
+
+## Figure Legend 初稿
+- Figure X. Effects of {project_name} on mRNA expression associated with {disease_name}. Relative expression levels of the selected genes were calculated using the 2^-ΔΔCt method.
+
+## 下一步清单
+- [ ] 补齐 Ct 原始值表
+- [ ] 确认引物与内参信息
+- [ ] 写入主文 Results
+- [ ] 与 WB 结果进行联合讨论
+"""
+
+
 def build_wb_qpcr_package_bundle(
     project_name: str,
     disease_name: str,
@@ -6467,6 +6573,50 @@ def wb_results_new(
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/wb/full-draft/new")
+def wb_full_draft_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_proteins: str = Form(""),
+    groups: str = Form(""),
+    antibodies: str = Form(""),
+    normalized_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_Full_Draft.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_full_draft_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        target_proteins,
+        groups,
+        antibodies,
+        normalized_data,
+    )
+
+    if not file_path.exists():
+        content = f"""# WB 全套草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/qpcr", response_class=HTMLResponse)
 def qpcr_index():
     files = list_md("03_实验记录/qPCR")
@@ -6557,6 +6707,50 @@ Gene	Control	Model	Treatment-Low	Treatment-High	Positive control
 - [ ] 生成柱状图
 - [ ] 与 WB 结果交叉验证
 """.replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/full-draft/new")
+def qpcr_full_draft_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_genes: str = Form(""),
+    groups: str = Form(""),
+    primers: str = Form(""),
+    ddct_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Full_Draft.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_full_draft_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        target_genes,
+        groups,
+        primers,
+        ddct_data,
+    )
+
+    if not file_path.exists():
+        content = f"""# qPCR 全套草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
