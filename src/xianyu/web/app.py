@@ -892,6 +892,83 @@ Compared with the model group, {project_name} modulated both the protein and mRN
 - [ ] Results 文字是否避免过度解释，仅基于真实结果
 """
 
+
+def build_wb_qpcr_stats_bundle(
+    project_name: str,
+    disease_name: str,
+    target_proteins: str,
+    target_genes: str,
+):
+    wb_targets = target_proteins or "AKT / p-AKT / Nrf2 / HO-1"
+    qpcr_targets = target_genes or "AKT1 / NFE2L2 / HMOX1 / BAX / BCL2"
+    return f"""## WB / qPCR 统计与补充材料整合包
+
+### 一、主文统计结果表模板
+#### Table X. Summary of WB and qPCR validation results for {project_name} against {disease_name}
+```text
+Assay\tTarget\tControl (mean ± SD)\tModel (mean ± SD)\tTreatment-Low (mean ± SD)\tTreatment-High (mean ± SD)\tPositive control (mean ± SD)\tP value\tSignificance
+WB\tTarget 1\t\t\t\t\t\t\t
+WB\tTarget 2\t\t\t\t\t\t\t
+qPCR\tGene 1\t\t\t\t\t\t\t
+qPCR\tGene 2\t\t\t\t\t\t\t
+```
+
+### 二、WB 统计表模板
+#### Suggested WB targets
+{wb_targets}
+
+```text
+Protein\tReplicate number\tNormalization method\tControl\tModel\tTreatment-Low\tTreatment-High\tPositive control\tStatistical test\tP value
+Protein 1\t3\tTarget / GAPDH\t\t\t\t\t\t\t
+Protein 2\t3\tTarget / GAPDH\t\t\t\t\t\t\t
+```
+
+### 三、qPCR 统计表模板
+#### Suggested qPCR targets
+{qpcr_targets}
+
+```text
+Gene\tReplicate number\tReference gene\tControl\tModel\tTreatment-Low\tTreatment-High\tPositive control\tStatistical test\tP value
+Gene 1\t3\tGAPDH\t\t\t\t\t\t\t
+Gene 2\t3\tGAPDH\t\t\t\t\t\t\t
+```
+
+### 四、Supplementary Table 模板
+#### Supplementary Table S1. Primary antibody information
+```text
+Target\tSupplier\tCatalog number\tHost species\tDilution\tIncubation condition
+```
+
+#### Supplementary Table S2. Primer information used for qPCR
+```text
+Gene\tForward primer (5'-3')\tReverse primer (5'-3')\tProduct size (bp)\tAnnealing temperature
+```
+
+#### Supplementary Table S3. Raw WB gray values
+```text
+Protein\tGroup\tRep1\tRep2\tRep3\tMean\tSD
+```
+
+#### Supplementary Table S4. Raw Ct values and 2^-ΔΔCt results
+```text
+Gene\tGroup\tCt-Rep1\tCt-Rep2\tCt-Rep3\tMean Ct\tDelta Ct\tDeltaDelta Ct\tRelative expression
+```
+
+### 五、原始数据说明稿
+The raw data supporting the WB and qPCR findings are provided in the Supplementary Materials. Full-length WB images, raw gray values before normalization, normalized quantification values, primer sequences, raw Ct values, and the corresponding 2^-ΔΔCt calculation sheets were archived to ensure transparency and reproducibility. All quantitative data used for plotting the figures in the main text were directly derived from these raw experimental records.
+
+### 六、返修或投稿时的原始数据说明句
+- Raw WB images and quantitative gray-value data are available in the Supplementary Materials.
+- Raw Ct values, primer sequences, and the complete 2^-ΔΔCt calculation sheet are provided in the Supplementary Materials.
+- All summary statistics in the main text were calculated from at least three biological replicates.
+
+### 七、核对清单
+- [ ] 主文统计表是否与柱状图数值一致
+- [ ] Supplementary Table 是否补齐抗体和引物信息
+- [ ] 是否标明统计学方法、重复数和显著性阈值
+- [ ] 原始数据说明是否与投稿要求一致
+"""
+
 def build_network_methods_bundle(
     recommendations,
     project_name: str,
@@ -3430,6 +3507,51 @@ def writing_wb_qpcr_package_new(
 ## 自定义补充说明
 
 ## 最终可复制段落
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/wb-qpcr-stats/new")
+def writing_wb_qpcr_stats_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    target_genes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Stats_Supplementary.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    stats_bundle = build_wb_qpcr_stats_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        target_genes,
+    )
+
+    if not file_path.exists():
+        content = f"""# WB / qPCR 统计表与补充材料整合包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{stats_bundle}
+
+## 自定义补充说明
+
+## 最终投稿用说明段
 
 ## 修改记录
 """
