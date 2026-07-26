@@ -235,6 +235,49 @@
     </p>
     <button type="submit">生成 图注 + Results + Supplementary 整合包</button>
   </form>
+  <form method="post" action="/writing/wb-qpcr-full-package/new">
+    <p>
+      <label>WB / qPCR 联合验证总包名称</label><br>
+      <input name="title" placeholder="例如：WB_qPCR_联合验证总包" required>
+    </p>
+    <p>
+      <label>WB 样本类型</label><br>
+      <input name="sample_type_wb" placeholder="例如：H/R 细胞总蛋白">
+    </p>
+    <p>
+      <label>qPCR 样本类型</label><br>
+      <input name="sample_type_qpcr" placeholder="例如：H/R 细胞总RNA">
+    </p>
+    <p>
+      <label>统一实验分组</label><br>
+      <textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea>
+    </p>
+    <p>
+      <label>WB 目标蛋白</label><br>
+      <textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea>
+    </p>
+    <p>
+      <label>qPCR 目标基因</label><br>
+      <textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea>
+    </p>
+    <p>
+      <label>抗体信息</label><br>
+      <textarea name="antibodies" rows="5" placeholder="例如：AKT 1:1000；p-AKT 1:1000；GAPDH 1:5000"></textarea>
+    </p>
+    <p>
+      <label>引物信息</label><br>
+      <textarea name="primers" rows="5" placeholder="例如：AKT1-F / AKT1-R；GAPDH-F / GAPDH-R"></textarea>
+    </p>
+    <p>
+      <label>WB 归一化数据</label><br>
+      <textarea name="wb_data" rows="6" placeholder="例如：Protein&#10;AKT 1.00 0.62 0.78 0.95"></textarea>
+    </p>
+    <p>
+      <label>qPCR 相对表达数据</label><br>
+      <textarea name="qpcr_data" rows="6" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea>
+    </p>
+    <button type="submit">生成 联合 Results + Methods + Figure Legend 总包</button>
+  </form>
   <form method="post" action="/writing/wb-qpcr-stats/new">
     <p>
       <label>WB / qPCR 统计包名称</label><br>
