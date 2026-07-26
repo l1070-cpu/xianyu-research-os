@@ -1377,11 +1377,33 @@ For functional validation, cells or samples derived from {sample_type or "the in
 """
 
 
+def build_recent_validation_snapshot():
+    module_specs = [
+        ("CCK-8", "05_数据分析/CCK8"),
+        ("WB", "03_实验记录/WB"),
+        ("qPCR", "03_实验记录/qPCR"),
+        ("Flow", "03_实验记录/Flow"),
+        ("ROS", "03_实验记录/ROS"),
+        ("JC-1", "03_实验记录/JC1"),
+        ("IF", "03_实验记录/IF"),
+    ]
+    blocks = []
+    for label, folder in module_specs:
+        items = get_recent_notes(folder, limit=2)
+        if items:
+            lines = [f"- {item['name']}｜{item['path']}" for item in items]
+            blocks.append(f"### {label}\n" + "\n".join(lines))
+        else:
+            blocks.append(f"### {label}\n- 当前暂无最近记录。")
+    return "\n\n".join(blocks)
+
+
 def build_full_validation_master_bundle(
     project_name: str,
     disease_name: str,
     core_markers: str,
     key_readouts: str,
+    recent_snapshot: str = "",
 ):
     return f"""## 实验验证总包
 
@@ -1399,6 +1421,9 @@ def build_full_validation_master_bundle(
 
 ### 核心读数
 {key_readouts or '- 待补充细胞活力、蛋白表达、基因表达、凋亡率、ROS、膜电位和荧光定位读数'}
+
+### 最近验证记录自动摘要
+{recent_snapshot or '- 当前暂无自动摘要。'}
 
 ### 推荐 Figure 编排
 - Figure 1：实验设计流程图 / 分组示意图
@@ -4611,11 +4636,13 @@ def writing_full_validation_master_new(
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    recent_snapshot = build_recent_validation_snapshot()
     bundle = build_full_validation_master_bundle(
         project_name,
         disease_name,
         core_markers,
         key_readouts,
+        recent_snapshot,
     )
 
     if not file_path.exists():
@@ -4629,6 +4656,9 @@ def writing_full_validation_master_new(
 - 研究对象：{current_project.get('research_object', '')}
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
+
+## 自动汇总来源
+本稿已自动读取最近的 CCK-8、WB、qPCR、Flow、ROS、JC-1、IF 记录名称与路径，便于继续补写总 Results、总 Methods 与 Figure Legends。
 
 {bundle}
 
