@@ -906,6 +906,7 @@ def build_wb_full_draft_bundle(
     normalized_data: str,
 ):
     wb_registry_block = build_wb_supplementary_registry_section(limit=12)
+    wb_legend_block = build_wb_supplementary_legend_section(limit=12)
     return f"""# WB Results + Methods 初稿
 
 ## 实验对象
@@ -949,6 +950,8 @@ Protein samples were prepared from {sample_type or "the indicated samples"} in e
 - [ ] 与 qPCR 结果进行联合讨论
 
 {wb_registry_block}
+
+{wb_legend_block}
 """
 
 
@@ -1670,6 +1673,33 @@ def build_qpcr_image_writeback_prompt(
     return system_prompt, user_prompt
 
 
+def build_wb_image_writeback_prompt(
+    project_name: str,
+    disease_name: str,
+    image_type: str,
+    observation: str,
+):
+    system_prompt = (
+        "你是生物医药科研写作助手。"
+        "必须严格基于提供的 WB 图片类型和人工观察记录，不得虚构未提供的实验事实。"
+        "请只输出合法 JSON，字段包括：results_sentence,supplementary_figure_legend,main_text_note,discussion_note,risk_note。"
+    )
+    user_prompt = f"""项目：{project_name}
+疾病/模型：{disease_name}
+WB 图片类型：{image_type}
+人工观察：
+{observation}
+
+请输出：
+1. 可直接用于 Results 的句子
+2. Supplementary Figure Legend 草稿
+3. 正文中如何引用这张图的备注
+4. 可写进 Discussion 的一句提醒
+5. 风险与保守表述
+"""
+    return system_prompt, user_prompt
+
+
 def format_ai_analysis_markdown(title: str, ai_result: dict):
     if ai_result.get("status") == "not_configured":
         return f"""# {title}
@@ -1748,6 +1778,7 @@ def build_wb_qpcr_package_bundle(
         limit=12,
         heading="WB 图片 Supplementary Figure 自动编号",
     )
+    wb_legend_block = build_wb_supplementary_legend_section(limit=12)
     qpcr_registry_block = build_qpcr_supplementary_registry_section(
         limit=12,
         heading="qPCR 图片 Supplementary Figure 自动编号",
@@ -1811,6 +1842,8 @@ Compared with the model group, {project_name} modulated both the protein and mRN
 
 {wb_registry_block}
 
+{wb_legend_block}
+
 {qpcr_registry_block}
 
 {qpcr_legend_block}
@@ -1834,6 +1867,7 @@ def build_wb_qpcr_full_validation_bundle(
         limit=12,
         heading="WB 图片 Supplementary Figure 自动编号",
     )
+    wb_legend_block = build_wb_supplementary_legend_section(limit=12)
     qpcr_registry_block = build_qpcr_supplementary_registry_section(
         limit=12,
         heading="qPCR 图片 Supplementary Figure 自动编号",
@@ -1920,6 +1954,8 @@ For transcriptional validation, total RNA was extracted from {sample_type_qpcr o
 - [ ] Results 是否避免超出真实数据的解释
 
 {wb_registry_block}
+
+{wb_legend_block}
 
 {qpcr_registry_block}
 
@@ -2440,6 +2476,22 @@ def build_wb_qpcr_reviewer_bundle(
     target_proteins: str,
     target_genes: str,
 ):
+    wb_registry_block = build_wb_supplementary_registry_section(
+        limit=12,
+        heading="WB 图片自动编号清单",
+    )
+    wb_legend_block = build_wb_supplementary_legend_section(
+        limit=12,
+        heading="WB Supplementary Figure Legend 草稿",
+    )
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(
+        limit=12,
+        heading="qPCR 图片自动编号清单",
+    )
+    qpcr_legend_block = build_qpcr_supplementary_legend_section(
+        limit=12,
+        heading="qPCR Supplementary Figure Legend 草稿",
+    )
     return f"""## WB / qPCR 原始数据答复稿
 
 ### 审稿人意见原文
@@ -2451,6 +2503,7 @@ We thank the reviewer for this valuable comment. In response, we have carefully�
 ### 可直接补到 Response Letter 的句子
 - We have added the raw WB images and quantitative gray-value data to the Supplementary Materials.
 - We have also provided the primer information, raw Ct values, and the complete 2^-ΔΔCt calculation sheet for the qPCR assays.
+- The full-length WB images were reorganized and renumbered as supplementary figures, and the corresponding legends were prepared for direct inclusion in the revised manuscript.
 - These additions do not alter the conclusions of the study but improve the transparency of the experimental evidence.
 
 ### 建议补充的数据点
@@ -2476,6 +2529,14 @@ We thank the reviewer for this valuable comment. In response, we have carefully�
 - [ ] 是否补齐引物序列
 - [ ] 是否补齐原始 Ct 值和 2^-ΔΔCt 表
 - [ ] 是否在 Response Letter 中写明补充位置
+
+{wb_registry_block}
+
+{wb_legend_block}
+
+{qpcr_registry_block}
+
+{qpcr_legend_block}
 """
 
 
@@ -2490,6 +2551,10 @@ def build_wb_qpcr_mapping_bundle(
     supp_figures_block = supp_figures or (
         "Supplementary Figure S1\tFull blot\n"
         + build_qpcr_supplementary_mapping_text(limit=12)
+    )
+    wb_legend_block = build_wb_supplementary_legend_section(
+        limit=12,
+        heading="WB Supplementary Figure Legend 草稿",
     )
     qpcr_bilingual_legend_block = build_qpcr_supplementary_bilingual_legend_section(limit=12)
     return f"""## WB / qPCR 图表编号映射包
@@ -2519,6 +2584,8 @@ def build_wb_qpcr_mapping_bundle(
 - Supplementary Figure 主要放完整 WB 条带、熔解曲线、扩增曲线等支撑性图像。
 - 主文 Table 建议只保留统计结果总表。
 - Supplementary Table 用于放抗体、引物、原始值和计算表。
+
+{wb_legend_block}
 
 {qpcr_bilingual_legend_block}
 
@@ -3322,6 +3389,27 @@ def get_recent_qpcr_image_writebacks(limit: int = 5):
     return items
 
 
+def get_recent_wb_image_writebacks(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_Image_Writeback.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
 def get_qpcr_image_type_bucket(image_type: str):
     text = (image_type or "").strip()
     lower = text.lower()
@@ -3534,6 +3622,27 @@ def build_wb_supplementary_registry_section(
         lines.append(f"- 原始文件：{item['path']}")
         if item["note_path"]:
             lines.append(f"- 备注文件：{item['note_path']}")
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def build_wb_supplementary_legend_section(
+    limit: int | None = None,
+    heading: str = "WB Supplementary Figure Legend 草稿",
+):
+    registry = build_wb_image_registry(limit=limit)
+    if not registry:
+        return f"""## {heading}
+- 当前暂无已归档的 WB 原始图片，暂无法生成图注。
+"""
+
+    lines = [f"## {heading}"]
+    for item in registry:
+        image_type = item["image_type"] or "WB supporting image"
+        lines.append(f"### {item['supplementary_label']}")
+        lines.append(
+            f"- {item['supplementary_title']}. This panel presents the {image_type} used to support the WB validation workflow of the current study, and the corresponding raw image is archived at {item['path']}."
+        )
         lines.append("")
     return "\n".join(lines).strip() + "\n"
 
@@ -5340,6 +5449,14 @@ def build_submission_rawdata_archive_bundle(project_name: str, disease_name: str
 
 
 def build_submission_final_checklist_bundle(project_name: str, disease_name: str):
+    wb_registry_block = build_wb_supplementary_registry_section(
+        limit=12,
+        heading="WB 图片 Supplementary 自动编号核对",
+    )
+    wb_legend_block = build_wb_supplementary_legend_section(
+        limit=12,
+        heading="WB Supplementary Figure Legend 核对稿",
+    )
     qpcr_registry_block = build_qpcr_supplementary_registry_section(
         limit=12,
         heading="qPCR 图片 Supplementary 自动编号核对",
@@ -5359,6 +5476,7 @@ def build_submission_final_checklist_bundle(project_name: str, disease_name: str
 ### Figure 与 Supplementary
 - [ ] 所有主图编号、图注、正文引用一致
 - [ ] Supplementary Figure / Table 已编号完成
+- [ ] WB Supplementary Figure 图注已核对
 - [ ] qPCR Supplementary Figure 的中英双语图注已核对
 - [ ] Figure 文件名已改为英文规范命名
 - [ ] 所有图片分辨率和格式符合期刊要求
@@ -5381,6 +5499,10 @@ def build_submission_final_checklist_bundle(project_name: str, disease_name: str
 - [ ] 建立 Raw_Data_{safe_name(project_name)} 目录
 - [ ] 建立 Supplementary_{safe_name(project_name)} 目录
 - [ ] 生成最终提交前版本号记录
+
+{wb_registry_block}
+
+{wb_legend_block}
 
 {qpcr_registry_block}
 
@@ -8958,9 +9080,15 @@ def wb_index():
     files = list_md("03_实验记录/WB")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     image_items = build_wb_image_registry(limit=12)
+    recent_writebacks = get_recent_wb_image_writebacks(limit=6)
     current_project = get_current_project() or {}
     template = env.get_template("wb/index.html")
-    return template.render(items=items, image_items=image_items, active_project=current_project)
+    return template.render(
+        items=items,
+        image_items=image_items,
+        recent_writebacks=recent_writebacks,
+        active_project=current_project,
+    )
 
 
 @app.post("/wb/new")
@@ -9129,6 +9257,69 @@ async def wb_image_upload(
             note_path.write_text(note_text + "\n", encoding="utf-8")
 
     return RedirectResponse(url="/wb", status_code=303)
+
+
+@app.post("/wb/image-writeback/new")
+def wb_image_writeback_new(note_path: str = Form(...)):
+    note_file = ROOT / note_path
+    if not note_file.exists():
+        return HTMLResponse("图片备注不存在", status_code=404)
+
+    note_text = read(note_file)
+    image_type = extract_markdown_section(note_text, "图片类型")
+    observation = extract_markdown_section(note_text, "图谱观察")
+    image_rel_path = extract_markdown_section(note_text, "原始文件")
+    image_name = Path(image_rel_path).stem if image_rel_path else note_file.stem
+    supplementary_label = extract_markdown_section(note_text, "Supplementary Figure 建议编号")
+    supplementary_title = extract_markdown_section(note_text, "Supplementary Figure 建议标题")
+
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(image_name)}_WB_Image_Writeback.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+
+    system_prompt, user_prompt = build_wb_image_writeback_prompt(
+        project_name,
+        disease_name,
+        f"{image_type or '未注明'}｜{supplementary_label or '未分配补充图编号'}｜{supplementary_title or '未分配补充图标题'}",
+        observation or "待补充",
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"WB 图片回填草稿｜{image_name}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 来源图片
+{image_rel_path}
+
+## 来源备注
+{note_path}
+
+## 图片类型
+{image_type or '未注明'}
+
+## Supplementary Figure 建议编号
+{supplementary_label or '待补充'}
+
+## Supplementary Figure 建议标题
+{supplementary_title or '待补充'}
+
+## 人工观察
+{observation or '待补充'}
+
+{content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
 @app.post("/wb/results/new")
