@@ -53,6 +53,88 @@
 </section>
 
 <section>
+  <h3>Ct 质控与 2^-ΔΔCt 计算</h3>
+  <form method="post" action="/qpcr/ct-qc/new">
+    <p><label>质控包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR_Ct质控" required></p>
+    <p><label>内参基因</label><br><input name="housekeeping_gene" placeholder="例如：GAPDH"></p>
+    <p><label>原始 Ct 数据</label><br><textarea name="raw_ct_data" rows="8" placeholder="例如：Gene&#10;AKT1 Control 23.1 23.0 23.2"></textarea></p>
+    <button type="submit">生成 Ct 质控与计算包</button>
+  </form>
+</section>
+
+<section>
+  <h3>qPCR 统计与 Supplementary</h3>
+  <form method="post" action="/qpcr/stats-package/new">
+    <p><label>统计包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR统计与补充材料" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="6" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea></p>
+    <p><label>统计结果汇总</label><br><textarea name="stats_summary" rows="6" placeholder="例如：AKT1&#10;ANOVA p=0.012 Tukey Model vs High"></textarea></p>
+    <button type="submit">生成 统计表与补充材料包</button>
+  </form>
+</section>
+
+<section>
+  <h3>qPCR 图表映射与审稿答复</h3>
+  <form method="post" action="/qpcr/mapping/new">
+    <p><label>图表映射名称</label><br><input name="title" placeholder="例如：qPCR_Figure_Table_Mapping" required></p>
+    <p><label>Main Figures</label><br><textarea name="main_figures" rows="4" placeholder="例如：Figure 5	qPCR relative expression bar plot"></textarea></p>
+    <p><label>Supplementary Figures</label><br><textarea name="supp_figures" rows="4" placeholder="例如：Supplementary Figure S1	qPCR QC / melting curve"></textarea></p>
+    <p><label>Main Tables</label><br><textarea name="main_tables" rows="3" placeholder="例如：Table 2	qPCR statistics summary"></textarea></p>
+    <p><label>Supplementary Tables</label><br><textarea name="supp_tables" rows="4" placeholder="例如：Supplementary Table S1	Primer information"></textarea></p>
+    <button type="submit">生成 图表编号映射包</button>
+  </form>
+
+  <form method="post" action="/qpcr/reviewer/new">
+    <p><label>审稿答复名称</label><br><input name="title" placeholder="例如：qPCR_原始数据答复稿" required></p>
+    <p><label>审稿意见</label><br><textarea name="reviewer_comment" rows="6" placeholder="例如：Please provide raw Ct values and primer information."></textarea></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <button type="submit">生成 审稿答复包</button>
+  </form>
+</section>
+
+<section>
+  <h3>一键生成 qPCR 投稿级全包</h3>
+  <form method="post" action="/qpcr/full-package/new">
+    <p><label>全包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR_投稿级全包" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总RNA"></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>引物信息</label><br><textarea name="primers" rows="5" placeholder="例如：AKT1-F / AKT1-R；GAPDH-F / GAPDH-R"></textarea></p>
+    <p><label>原始 Ct 数据</label><br><textarea name="raw_ct_data" rows="7" placeholder="例如：Gene&#10;AKT1 Control 23.1 23.0 23.2"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="7" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea></p>
+    <p><label>统计结果汇总</label><br><textarea name="stats_summary" rows="6" placeholder="例如：AKT1&#10;ANOVA p=0.012 Tukey Model vs High"></textarea></p>
+    <button type="submit">生成 qPCR 投稿级全包</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近 qPCR 结果与写作稿</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>最近结果分析</h3>
+      {% if recent_results %}
+        {% for item in recent_results %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 qPCR 结果稿。</p>
+      {% endif %}
+    </article>
+
+    <article class="file-card">
+      <h3>最近写作整合稿</h3>
+      {% if recent_writing %}
+        {% for item in recent_writing %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 qPCR 写作稿。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section>
   <h3>最近 qPCR 记录</h3>
   {% if items %}
     {% for item in items %}

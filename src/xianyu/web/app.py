@@ -933,6 +933,251 @@ Total RNA was extracted from {sample_type or "the indicated samples"} in each gr
 """
 
 
+def build_qpcr_ct_qc_bundle(
+    project_name: str,
+    disease_name: str,
+    housekeeping_gene: str,
+    raw_ct_data: str,
+):
+    return f"""## qPCR Ct 质控与 2^-ΔΔCt 计算包
+
+### 内参基因
+- {housekeeping_gene or "GAPDH / ACTB / 待补充"}
+
+### 原始 Ct 数据模板
+```text
+{raw_ct_data or "Gene\tGroup\tRep1\tRep2\tRep3\tMean Ct\tSD\tCV%"}
+```
+
+### 质控建议
+- 每个基因先检查 3 个重复孔的一致性。
+- 一般建议 SD 不明显偏大，异常重复孔要单独标记。
+- 先检查内参基因在各组间是否稳定。
+- 熔解曲线若出现异常峰，需要回看引物特异性和扩增体系。
+
+### 2^-ΔΔCt 计算模板
+```text
+Gene\tGroup\tCt(target)\tCt(reference)\tΔCt\tΔΔCt\t2^-ΔΔCt
+```
+
+### 结果解释骨架
+- The raw Ct values were first quality-checked to ensure acceptable consistency among technical replicates.
+- The relative expression levels were then calculated using the 2^-ΔΔCt method with {housekeeping_gene or "the selected housekeeping gene"} as the internal reference.
+- Only data passing the predefined quality-control criteria were included in the final statistical analysis.
+
+### Supplementary 建议
+- Supplementary Table：Raw Ct values for each replicate
+- Supplementary Table：2^-ΔΔCt calculation sheet
+- Supplementary Figure：Melting-curve or amplification QC summary if needed
+
+### 核对清单
+- [ ] 是否补齐所有重复孔原始 Ct 值
+- [ ] 是否标记异常孔和剔除原因
+- [ ] 是否确认内参基因稳定
+- [ ] 是否保存完整 2^-ΔΔCt 计算表
+"""
+
+
+def build_qpcr_stats_package_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    ddct_data: str,
+    stats_summary: str,
+):
+    return f"""## qPCR 统计表与补充材料包
+
+### 目标基因
+{target_genes or "- 待补充目标基因"}
+
+### 相对表达结果
+```text
+{ddct_data or "Gene\tControl\tModel\tTreatment-Low\tTreatment-High\tP value\tSignificance"}
+```
+
+### 统计结果汇总
+```text
+{stats_summary or "Gene\tTest\tP value\tPost hoc\tInterpretation"}
+```
+
+### 主文表格模板
+#### Table X. Summary of qPCR validation results for {project_name} against {disease_name}
+```text
+Gene\tControl (mean ± SD)\tModel (mean ± SD)\tTreatment-Low (mean ± SD)\tTreatment-High (mean ± SD)\tP value\tSignificance
+```
+
+### Supplementary 建议清单
+- Supplementary Table S1：Primer information
+- Supplementary Table S2：Raw Ct values
+- Supplementary Table S3：2^-ΔΔCt calculation sheet
+- Supplementary Table S4：Statistics summary used for plotting
+
+### Results 句库
+- RT-qPCR analysis showed that the selected genes were significantly dysregulated in the model group.
+- Treatment with {project_name} reversed or attenuated these transcriptional alterations.
+- These data provided gene-level support for the proposed mechanism of {project_name} against {disease_name}.
+
+### 核对清单
+- [ ] 是否补齐统计检验方法
+- [ ] 是否补齐均值、SD 和显著性标记
+- [ ] 是否保证正文、图和表的数值一致
+- [ ] 是否把原始 Ct 值和计算表放入 Supplementary
+"""
+
+
+def build_qpcr_reviewer_bundle(
+    project_name: str,
+    disease_name: str,
+    reviewer_comment: str,
+    target_genes: str,
+):
+    return f"""## qPCR 原始数据审稿答复稿
+
+### Reviewer Comment
+{reviewer_comment or "Please provide the raw qPCR data, primer information, and calculation details."}
+
+### Response Draft
+We thank the reviewer for this valuable comment. In response, we have carefully reorganized the qPCR validation materials associated with {project_name} against {disease_name}. Specifically, the primer information, raw Ct values, replicate-level records, and the complete 2^-ΔΔCt calculation sheets have been checked and compiled. These files are now available in the revised supplementary materials to improve transparency and reproducibility.
+
+### 涉及目标基因
+{target_genes or "- 待补充 qPCR 目标基因"}
+
+### 建议补充到 Supplementary 的项目
+- Supplementary Table：Primer sequences
+- Supplementary Table：Raw Ct values for each replicate
+- Supplementary Table：2^-ΔΔCt calculation sheet
+- Supplementary Figure：Amplification / melting-curve QC if required
+
+### 可直接使用的回复句
+- We have now provided the complete primer information used for the qPCR assays.
+- The raw Ct values for each replicate and the corresponding 2^-ΔΔCt calculation sheet have been added to the Supplementary Materials.
+- These additions do not change the conclusions of the manuscript but improve the transparency of the validation workflow.
+
+### 核对清单
+- [ ] 是否补齐引物序列
+- [ ] 是否补齐原始 Ct 值
+- [ ] 是否补齐 2^-ΔΔCt 计算表
+- [ ] 是否在回复信中标明对应 Supplementary 编号
+"""
+
+
+def build_qpcr_mapping_bundle(
+    project_name: str,
+    disease_name: str,
+    main_figures: str,
+    supp_figures: str,
+    main_tables: str,
+    supp_tables: str,
+):
+    return f"""## qPCR 图表编号映射包
+
+### Main Figures
+```text
+{main_figures or "Figure X\tqPCR relative expression bar plot"}
+```
+
+### Supplementary Figures
+```text
+{supp_figures or "Supplementary Figure S1\tqPCR QC / melting curve"}
+```
+
+### Main Tables
+```text
+{main_tables or "Table X\tqPCR statistics summary"}
+```
+
+### Supplementary Tables
+```text
+{supp_tables or "Supplementary Table S1\tPrimer information\nSupplementary Table S2\tRaw Ct values\nSupplementary Table S3\t2^-ΔΔCt calculation sheet"}
+```
+
+### 编号建议
+- 主文 Figure 只保留最核心的相对表达图。
+- 主文 Table 放统计汇总即可。
+- Supplementary 负责承载引物、原始 Ct、计算表和 QC 图。
+
+### 说明句模板
+- The main text presents the relative expression changes of the selected genes, while the primer details, raw Ct values, and full 2^-ΔΔCt calculation sheets are provided in the Supplementary Materials.
+
+### 核对清单
+- [ ] 主文与补充材料编号是否连续
+- [ ] qPCR 图、表、Supplementary 是否一一对应
+- [ ] 正文首次引用的编号是否正确
+"""
+
+
+def build_qpcr_full_package_bundle(
+    project_name: str,
+    disease_name: str,
+    sample_type: str,
+    target_genes: str,
+    groups: str,
+    primers: str,
+    raw_ct_data: str,
+    ddct_data: str,
+    stats_summary: str,
+):
+    return f"""## qPCR 投稿级全包
+
+### 实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 样本类型：{sample_type or "- 待补充"}
+
+### 分组设计
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+### 目标基因
+{target_genes or "- 待补充目标基因"}
+
+### 引物信息
+```text
+{primers or "Gene\tForward primer\tReverse primer\tProduct size"}
+```
+
+### 原始 Ct 数据
+```text
+{raw_ct_data or "Gene\tGroup\tRep1\tRep2\tRep3\tMean Ct\tSD"}
+```
+
+### 2^-ΔΔCt 数据
+```text
+{ddct_data or "Gene\tControl\tModel\tTreatment-Low\tTreatment-High"}
+```
+
+### 统计汇总
+```text
+{stats_summary or "Gene\tP value\tPost hoc\tInterpretation"}
+```
+
+{build_qpcr_results_bundle(project_name, disease_name, target_genes, ddct_data)}
+
+### Results 初稿
+RT-qPCR was performed to evaluate the transcriptional changes associated with {disease_name}. Compared with the control group, the model group displayed dysregulated expression of the selected genes. Treatment with {project_name} reversed or attenuated these changes, thereby supporting the proposed targets and pathways at the gene-expression level.
+
+### Methods 初稿
+Total RNA was extracted from {sample_type or "the indicated samples"} in each group and reverse-transcribed into cDNA according to the manufacturer's protocol. Quantitative PCR was then performed using gene-specific primers for {target_genes or "the selected genes"}, with the designated housekeeping gene as the internal reference. Relative mRNA expression was calculated using the 2^-ΔΔCt method, and the data were presented as mean ± SD. Only replicate sets passing the quality-control criteria were included in the final analysis.
+
+### Figure Legend 初稿
+- Figure X. Effects of {project_name} on mRNA expression associated with {disease_name}. Relative expression levels of the selected genes were calculated using the 2^-ΔΔCt method and are presented as mean ± SD.
+
+### Supplementary 建议
+- Supplementary Table S1：Primer information
+- Supplementary Table S2：Raw Ct values
+- Supplementary Table S3：2^-ΔΔCt calculation sheet
+- Supplementary Table S4：Statistics summary
+- Supplementary Figure S1：qPCR QC / melting-curve summary if needed
+
+### 投稿前核对
+- [ ] 引物、原始 Ct 值、2^-ΔΔCt 表是否齐全
+- [ ] 统计检验与显著性标记是否统一
+- [ ] Results、Figure、Supplementary 是否完全对应
+- [ ] 是否可直接并入 WB / qPCR 联合验证总稿
+"""
+
+
 def build_wb_qpcr_package_bundle(
     project_name: str,
     disease_name: str,
@@ -7994,9 +8239,16 @@ def wb_full_draft_new(
 def qpcr_index():
     files = list_md("03_实验记录/qPCR")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
+    recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
     current_project = get_current_project() or {}
     template = env.get_template("qpcr/index.html")
-    return template.render(items=items, active_project=current_project)
+    return template.render(
+        items=items,
+        active_project=current_project,
+        recent_results=recent_results,
+        recent_writing=recent_writing,
+    )
 
 
 @app.post("/qpcr/new")
@@ -8162,6 +8414,193 @@ def qpcr_results_new(
 ## 最终 Results 段
 
 ## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/ct-qc/new")
+def qpcr_ct_qc_new(
+    title: str = Form(...),
+    housekeeping_gene: str = Form(""),
+    raw_ct_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Ct_QC.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_ct_qc_bundle(project_name, disease_name, housekeeping_gene, raw_ct_data)
+
+    if not file_path.exists():
+        content = f"""# qPCR Ct 质控与计算包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+
+## 质控备注
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/stats-package/new")
+def qpcr_stats_package_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Stats_Supplementary.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_stats_package_bundle(project_name, disease_name, target_genes, ddct_data, stats_summary)
+
+    if not file_path.exists():
+        content = f"""# qPCR 统计表与补充材料包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/reviewer/new")
+def qpcr_reviewer_new(
+    title: str = Form(...),
+    reviewer_comment: str = Form(""),
+    target_genes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Reviewer_Response.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_reviewer_bundle(project_name, disease_name, reviewer_comment, target_genes)
+
+    if not file_path.exists():
+        content = f"""# qPCR 审稿答复包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/mapping/new")
+def qpcr_mapping_new(
+    title: str = Form(...),
+    main_figures: str = Form(""),
+    supp_figures: str = Form(""),
+    main_tables: str = Form(""),
+    supp_tables: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Figure_Table_Mapping.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_mapping_bundle(project_name, disease_name, main_figures, supp_figures, main_tables, supp_tables)
+
+    if not file_path.exists():
+        content = f"""# qPCR 图表编号映射表｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/full-package/new")
+def qpcr_full_package_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_genes: str = Form(""),
+    groups: str = Form(""),
+    primers: str = Form(""),
+    raw_ct_data: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Full_Package.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_full_package_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        target_genes,
+        groups,
+        primers,
+        raw_ct_data,
+        ddct_data,
+        stats_summary,
+    )
+
+    if not file_path.exists():
+        content = f"""# qPCR 投稿级全包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
 """
         file_path.write_text(content, encoding="utf-8")
 
