@@ -3235,6 +3235,42 @@ def get_recent_notes(folder: str, limit: int = 5):
     return items
 
 
+def get_recent_qpcr_image_writebacks(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Image_Writeback.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def build_recent_image_writeback_section(items, heading: str = "最近 qPCR 图片回填草稿"):
+    if not items:
+        return f"""## {heading}
+- 当前暂无 qPCR 图片回填草稿。
+"""
+
+    lines = [f"## {heading}"]
+    for item in items:
+        lines.append(f"### {item['name']}")
+        lines.append(f"- 路径：{item['path']}")
+        lines.append(item["content"])
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
 def build_experiment_dashboard_modules():
     module_specs = [
         {
@@ -6095,6 +6131,7 @@ def writing_wb_qpcr_full_package_new(
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    image_writebacks = get_recent_qpcr_image_writebacks(limit=5)
     bundle = build_wb_qpcr_full_validation_bundle(
         project_name,
         disease_name,
@@ -6107,6 +6144,10 @@ def writing_wb_qpcr_full_package_new(
         primers,
         wb_data,
         qpcr_data,
+    )
+    image_writeback_block = build_recent_image_writeback_section(
+        image_writebacks,
+        heading="最近 qPCR 图片回填草稿（自动并入）",
     )
 
     if not file_path.exists():
@@ -6122,6 +6163,8 @@ def writing_wb_qpcr_full_package_new(
 - 当前阶段：{current_project.get('stage', '')}
 
 {bundle}
+
+{image_writeback_block}
 
 ## 修改记录
 """
@@ -9675,6 +9718,7 @@ def qpcr_full_package_new(
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    image_writebacks = get_recent_qpcr_image_writebacks(limit=5)
     bundle = build_qpcr_full_package_bundle(
         project_name,
         disease_name,
@@ -9685,6 +9729,10 @@ def qpcr_full_package_new(
         raw_ct_data,
         ddct_data,
         stats_summary,
+    )
+    image_writeback_block = build_recent_image_writeback_section(
+        image_writebacks,
+        heading="最近 qPCR 图片回填草稿（自动并入）",
     )
 
     if not file_path.exists():
@@ -9699,6 +9747,8 @@ def qpcr_full_package_new(
 - 疾病 / 模型：{current_project.get('disease', '')}
 
 {bundle}
+
+{image_writeback_block}
 """
         file_path.write_text(content, encoding="utf-8")
 
