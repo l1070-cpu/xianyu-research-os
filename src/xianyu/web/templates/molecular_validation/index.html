@@ -53,6 +53,28 @@
 </section>
 
 <section>
+  <h3>生成 qPCR 支撑分析统一包</h3>
+  <form method="post" action="/molecular-validation/qpcr-support/new">
+    <p><label>统一包名称</label><br><input name="title" placeholder="例如：AKT1_qPCR图谱误差引物统一包" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>物种 / 样本来源</label><br><input name="species" placeholder="例如：Homo sapiens / H/R 细胞"></p>
+    <p><label>内参基因</label><br><input name="housekeeping_gene" placeholder="例如：GAPDH"></p>
+    <p><label>推荐产物长度</label><br><input name="amplicon_range" placeholder="例如：80-200 bp"></p>
+    <p><label>推荐 Tm 范围</label><br><input name="tm_range" placeholder="例如：58-62°C"></p>
+    <p><label>推荐 GC 含量</label><br><input name="gc_range" placeholder="例如：40%-60%"></p>
+    <p><label>扩增曲线观察</label><br><textarea name="amplification_notes" rows="4" placeholder="例如：重复孔起跳位置一致，模型组 Ct 略提前"></textarea></p>
+    <p><label>熔解曲线观察</label><br><textarea name="melting_notes" rows="4" placeholder="例如：AKT1 单峰，BAX 有轻微肩峰"></textarea></p>
+    <p><label>NTC 情况</label><br><textarea name="ntc_status" rows="3" placeholder="例如：NTC 无明显扩增"></textarea></p>
+    <p><label>扩增效率 / 标准曲线备注</label><br><textarea name="efficiency_notes" rows="4" placeholder="例如：效率 96%，R²=0.998"></textarea></p>
+    <p><label>当前问题概述</label><br><textarea name="issue_summary" rows="4" placeholder="例如：重复孔离散度大，内参波动明显"></textarea></p>
+    <p><label>原始 Ct 异常模式</label><br><textarea name="raw_ct_pattern" rows="4" placeholder="例如：Rep3 高 1.2 Ct；GAPDH 在 Model 组不稳定"></textarea></p>
+    <p><label>推测原因</label><br><textarea name="possible_causes" rows="4" placeholder="例如：移液误差、RNA质量差、引物二聚体"></textarea></p>
+    <p><label>纠正措施</label><br><textarea name="corrective_actions" rows="4" placeholder="例如：重做逆转录、补做 RNA 质检、复测异常孔"></textarea></p>
+    <button type="submit">生成 qPCR 支撑分析统一包</button>
+  </form>
+</section>
+
+<section>
   <h3>最近记录</h3>
   <div class="project-grid">
     <article class="file-card">
@@ -175,6 +197,34 @@
     {% endfor %}
   {% else %}
     <p>暂无最近分子验证写作稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR 支撑分析稿</h3>
+  {% if qpcr_support_notes %}
+    {% for item in qpcr_support_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR 支撑分析稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR AI 支撑稿</h3>
+  {% if qpcr_ai_support_notes %}
+    {% for item in qpcr_ai_support_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR AI 支撑稿。</p>
   {% endif %}
 </section>
 

@@ -1945,6 +1945,75 @@ def build_molecular_validation_summary(current_project: dict):
 """
 
 
+def build_qpcr_validation_support_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    species: str,
+    housekeeping_gene: str,
+    amplicon_range: str,
+    tm_range: str,
+    gc_range: str,
+    amplification_notes: str,
+    melting_notes: str,
+    ntc_status: str,
+    efficiency_notes: str,
+    issue_summary: str,
+    raw_ct_pattern: str,
+    possible_causes: str,
+    corrective_actions: str,
+):
+    primer_bundle = build_qpcr_primer_design_bundle(
+        project_name,
+        species,
+        target_genes,
+        housekeeping_gene,
+        amplicon_range,
+        tm_range,
+        gc_range,
+    )
+    curve_bundle = build_qpcr_curve_interpretation_bundle(
+        project_name,
+        target_genes,
+        amplification_notes,
+        melting_notes,
+        ntc_status,
+        efficiency_notes,
+    )
+    error_bundle = build_qpcr_error_analysis_bundle(
+        project_name,
+        disease_name,
+        issue_summary,
+        raw_ct_pattern,
+        possible_causes,
+        corrective_actions,
+    )
+    return f"""## qPCR 图谱讲解 + 误差分析 + 引物设计统一包
+
+### 当前课题
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 目标基因：{target_genes or "- 待补充"}
+
+### 推荐用途
+- [ ] 引物设计与实验前检查
+- [ ] 图谱质控与熔解曲线说明
+- [ ] 误差排查与复测决策
+- [ ] Methods / Supplementary / 审稿答复材料整理
+
+{primer_bundle}
+
+{curve_bundle}
+
+{error_bundle}
+
+## 分子验证中心整合建议
+- 若图谱质量稳定，可继续进入 2^-ΔΔCt 计算、统计分析和正文写作。
+- 若误差分析提示高风险问题，应优先补做 RNA 质检、逆转录或引物复核。
+- 若引物仍处于设计阶段，建议先完成特异性检查与产物长度确认，再进入正式扩增。
+"""
+
+
 def build_wb_qpcr_package_bundle(
     project_name: str,
     disease_name: str,
@@ -3670,6 +3739,47 @@ def get_recent_wb_qpcr_integrated_results(limit: int = 5):
                 "content": read(file)[:500],
             }
         )
+    return items
+
+
+def get_recent_qpcr_support_notes(limit: int = 6):
+    candidates = (
+        get_recent_notes("05_数据分析/qPCR", limit=50)
+        + get_recent_notes("06_论文写作/WB_qPCR验证", limit=50)
+    )
+    keywords = (
+        "_qPCR_Primer_Design",
+        "_qPCR_Curve_Interpretation",
+        "_qPCR_Error_Analysis",
+        "_qPCR_Primer_Table",
+    )
+    items = []
+    seen = set()
+    for item in candidates:
+        name = item["name"]
+        path = item["path"]
+        if path in seen:
+            continue
+        if any(keyword in name for keyword in keywords):
+            items.append(item)
+            seen.add(path)
+        if len(items) >= limit:
+            break
+    return items
+
+
+def get_recent_qpcr_ai_support_notes(limit: int = 6):
+    candidates = get_recent_notes("05_数据分析/qPCR", limit=80)
+    keywords = (
+        "_qPCR_AI_",
+        "_qPCR_AI_Image_Curve",
+    )
+    items = []
+    for item in candidates:
+        if any(keyword in item["name"] for keyword in keywords):
+            items.append(item)
+        if len(items) >= limit:
+            break
     return items
 
 
@@ -9832,6 +9942,69 @@ def molecular_validation_integrated_results_new(
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/molecular-validation/qpcr-support/new")
+def molecular_validation_qpcr_support_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    species: str = Form(""),
+    housekeeping_gene: str = Form(""),
+    amplicon_range: str = Form(""),
+    tm_range: str = Form(""),
+    gc_range: str = Form(""),
+    amplification_notes: str = Form(""),
+    melting_notes: str = Form(""),
+    ntc_status: str = Form(""),
+    efficiency_notes: str = Form(""),
+    issue_summary: str = Form(""),
+    raw_ct_pattern: str = Form(""),
+    possible_causes: str = Form(""),
+    corrective_actions: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Support_Bundle.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_validation_support_bundle(
+        project_name,
+        disease_name,
+        target_genes,
+        species,
+        housekeeping_gene,
+        amplicon_range,
+        tm_range,
+        gc_range,
+        amplification_notes,
+        melting_notes,
+        ntc_status,
+        efficiency_notes,
+        issue_summary,
+        raw_ct_pattern,
+        possible_causes,
+        corrective_actions,
+    )
+
+    file_path.write_text(
+        f"""# qPCR 图谱讲解 + 误差分析 + 引物设计统一包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.post("/wb/full-draft/new")
 def wb_full_draft_new(
     title: str = Form(...),
@@ -10122,6 +10295,8 @@ def molecular_validation_index():
     qpcr_images = build_qpcr_image_registry(limit=8)
     validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
     integrated_results = get_recent_wb_qpcr_integrated_results(limit=6)
+    qpcr_support_notes = get_recent_qpcr_support_notes(limit=8)
+    qpcr_ai_support_notes = get_recent_qpcr_ai_support_notes(limit=8)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")
     return template.render(
@@ -10135,6 +10310,8 @@ def molecular_validation_index():
         qpcr_images=qpcr_images,
         validation_writing=validation_writing,
         integrated_results=integrated_results,
+        qpcr_support_notes=qpcr_support_notes,
+        qpcr_ai_support_notes=qpcr_ai_support_notes,
     )
 
 
