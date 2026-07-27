@@ -10643,6 +10643,9 @@ def molecular_validation_index():
     integrated_results = get_recent_wb_qpcr_integrated_results(limit=6)
     qpcr_support_notes = get_recent_qpcr_support_notes(limit=8)
     qpcr_ai_support_notes = get_recent_qpcr_ai_support_notes(limit=8)
+    qpcr_figure_legends = get_recent_qpcr_figure_legends(limit=8)
+    qpcr_stats_notes = get_recent_qpcr_stats_notes(limit=8)
+    qpcr_image_chains = get_recent_qpcr_image_chains(limit=8)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")
     return template.render(
@@ -10658,6 +10661,9 @@ def molecular_validation_index():
         integrated_results=integrated_results,
         qpcr_support_notes=qpcr_support_notes,
         qpcr_ai_support_notes=qpcr_ai_support_notes,
+        qpcr_figure_legends=qpcr_figure_legends,
+        qpcr_stats_notes=qpcr_stats_notes,
+        qpcr_image_chains=qpcr_image_chains,
     )
 
 
