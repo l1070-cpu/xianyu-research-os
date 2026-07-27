@@ -955,6 +955,95 @@ Western blot analysis was performed to evaluate the protein-level changes associ
 """
 
 
+def build_wb_stats_note_bundle(
+    project_name: str,
+    disease_name: str,
+    target_proteins: str,
+    normalized_data: str,
+    stats_summary: str,
+):
+    groups, rows = parse_wb_normalized_data(normalized_data)
+    group_text = ", ".join(groups) if groups else "the indicated groups"
+    trend_summary = build_wb_trend_summary(rows)
+    return f"""## WB 统计学解释与显著性说明
+
+### 当前目标蛋白
+{target_proteins or "- 待补充目标蛋白"}
+
+### 分组
+{group_text}
+
+### 灰度趋势摘要
+{trend_summary}
+
+### 统计结果摘要
+{stats_summary or "- 待补充均值、SD、P 值、显著性符号和所用统计学方法。"}
+
+### Results 统计解释句
+- Quantitative analysis of normalized gray values showed statistically significant differences among the indicated groups for the selected proteins.
+- Compared with the model group, treatment with {project_name} significantly restored the abnormal protein-expression pattern associated with {disease_name}.
+- These statistically supported changes strengthened the interpretation of protein-level pathway regulation.
+
+### 图注中的统计学写法
+- Data are presented as mean ± SD from at least three independent experiments.
+- Statistical significance was evaluated using the indicated method, and significance levels were annotated in the figure using the corresponding symbols.
+
+### Methods 统计学补充句
+- Quantitative WB data were expressed as mean ± SD and analyzed using the indicated statistical method after normalization to the internal reference protein.
+
+### 显著性标记核对
+- [ ] 是否明确 *、**、#、## 等符号含义
+- [ ] 是否说明比较对象是 Control 还是 Model
+- [ ] 是否保证正文、图注、统计表显著性符号一致
+"""
+
+
+def build_wb_qpcr_integrated_results_bundle(
+    project_name: str,
+    disease_name: str,
+    target_proteins: str,
+    target_genes: str,
+    wb_data: str,
+    qpcr_data: str,
+    stats_summary: str,
+):
+    wb_groups, wb_rows = parse_wb_normalized_data(wb_data)
+    qpcr_groups, qpcr_rows = parse_wb_normalized_data(qpcr_data)
+    wb_group_text = ", ".join(wb_groups) if wb_groups else "the indicated groups"
+    qpcr_group_text = ", ".join(qpcr_groups) if qpcr_groups else "the indicated groups"
+    wb_trend = build_wb_trend_summary(wb_rows)
+    qpcr_trend = build_wb_trend_summary(qpcr_rows) if qpcr_rows else "- 暂无 qPCR 趋势摘要。"
+    return f"""## WB / qPCR 联合机制验证 Results 草稿
+
+### WB 目标蛋白
+{target_proteins or "- 待补充"}
+
+### qPCR 目标基因
+{target_genes or "- 待补充"}
+
+### WB 趋势摘要
+{wb_trend}
+
+### qPCR 趋势摘要
+{qpcr_trend}
+
+### 统计补充说明
+{stats_summary or "- 待补充统计学摘要。"}
+
+### 联合 Results 段落
+To further validate the proposed mechanism of {project_name} against {disease_name}, both WB and RT-qPCR assays were performed. Across {wb_group_text}, WB results showed that treatment with {project_name} partially or markedly reversed the dysregulated protein-expression profile observed in the model group. Similarly, across {qpcr_group_text}, the relative mRNA expression levels of the selected genes also showed a treatment-responsive trend consistent with the predicted pathway regulation. Taken together, the coordinated changes at both transcriptional and protein levels provided convergent evidence supporting the proposed mechanistic action of {project_name}.
+
+### 分段句库
+- WB analysis demonstrated a protein-level corrective effect of {project_name} on the selected pathway markers.
+- RT-qPCR further supported this trend by showing coordinated transcriptional changes in the corresponding genes.
+- The consistency between WB and qPCR findings strengthened the reliability of the mechanistic interpretation.
+
+### Discussion 承接句
+- The concordance between the protein-level and transcriptional findings suggests that the proposed pathway may be regulated by {project_name} at multiple biological levels.
+- If some targets show inconsistent WB and qPCR trends, this may reflect temporal regulation, post-transcriptional control, or differences between transcriptional and protein turnover responses.
+"""
+
+
 def build_qpcr_results_bundle(project_name: str, disease_name: str, target_genes: str, ddct_data: str):
     return f"""## qPCR 结果分析总包
 
@@ -3527,6 +3616,48 @@ def get_recent_wb_figure_legends(limit: int = 5):
         return []
     files = sorted(
         folder.glob("*_WB_Figure_Legend.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_wb_stats_notes(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_Stats_Note.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_wb_qpcr_integrated_results(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_qPCR_Integrated_Results.md"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -9215,6 +9346,7 @@ def wb_index():
     recent_writebacks = get_recent_wb_image_writebacks(limit=6)
     recent_results_writebacks = get_recent_wb_results_writebacks(limit=6)
     recent_figure_legends = get_recent_wb_figure_legends(limit=6)
+    recent_stats_notes = get_recent_wb_stats_notes(limit=6)
     current_project = get_current_project() or {}
     template = env.get_template("wb/index.html")
     return template.render(
@@ -9223,6 +9355,7 @@ def wb_index():
         recent_writebacks=recent_writebacks,
         recent_results_writebacks=recent_results_writebacks,
         recent_figure_legends=recent_figure_legends,
+        recent_stats_notes=recent_stats_notes,
         active_project=current_project,
     )
 
@@ -9585,6 +9718,120 @@ def wb_figure_legend_new(
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/wb/stats-note/new")
+def wb_stats_note_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    normalized_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_Stats_Note.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_stats_note_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        normalized_data,
+        stats_summary,
+    )
+
+    file_path.write_text(
+        f"""# WB 统计学解释稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 目标蛋白
+{target_proteins or "待补充"}
+
+## 归一化灰度数据
+```text
+{normalized_data or "Protein\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## 统计摘要
+{stats_summary or "待补充"}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/molecular-validation/integrated-results/new")
+def molecular_validation_integrated_results_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    target_genes: str = Form(""),
+    wb_data: str = Form(""),
+    qpcr_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Integrated_Results.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_qpcr_integrated_results_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        target_genes,
+        wb_data,
+        qpcr_data,
+        stats_summary,
+    )
+
+    file_path.write_text(
+        f"""# WB / qPCR 联合机制验证 Results 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## WB 目标蛋白
+{target_proteins or "待补充"}
+
+## qPCR 目标基因
+{target_genes or "待补充"}
+
+## WB 数据
+```text
+{wb_data or "Protein\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## qPCR 数据
+```text
+{qpcr_data or "Gene\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## 统计摘要
+{stats_summary or "待补充"}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.post("/wb/full-draft/new")
 def wb_full_draft_new(
     title: str = Form(...),
@@ -9874,6 +10121,7 @@ def molecular_validation_index():
     wb_images = build_wb_image_registry(limit=8)
     qpcr_images = build_qpcr_image_registry(limit=8)
     validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
+    integrated_results = get_recent_wb_qpcr_integrated_results(limit=6)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")
     return template.render(
@@ -9886,6 +10134,7 @@ def molecular_validation_index():
         wb_images=wb_images,
         qpcr_images=qpcr_images,
         validation_writing=validation_writing,
+        integrated_results=integrated_results,
     )
 
 

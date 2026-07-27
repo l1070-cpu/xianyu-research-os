@@ -40,6 +40,19 @@
 </section>
 
 <section>
+  <h3>生成联合机制验证 Results 草稿</h3>
+  <form method="post" action="/molecular-validation/integrated-results/new">
+    <p><label>草稿名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB_qPCR联合结果" required></p>
+    <p><label>WB 目标蛋白</label><br><textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea></p>
+    <p><label>qPCR 目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>WB 数据</label><br><textarea name="wb_data" rows="6" placeholder="例如：Protein\tControl\tModel\tLow\tHigh&#10;AKT\t1.00\t0.62\t0.78\t0.95"></textarea></p>
+    <p><label>qPCR 数据</label><br><textarea name="qpcr_data" rows="6" placeholder="例如：Gene\tControl\tModel\tLow\tHigh&#10;AKT1\t1.00\t0.54\t0.77\t0.96"></textarea></p>
+    <p><label>统计摘要</label><br><textarea name="stats_summary" rows="5" placeholder="例如：WB 与 qPCR 均采用单因素方差分析；Model vs Control, p<0.01；High vs Model, p<0.05"></textarea></p>
+    <button type="submit">生成联合 Results 草稿</button>
+  </form>
+</section>
+
+<section>
   <h3>最近记录</h3>
   <div class="project-grid">
     <article class="file-card">
@@ -162,6 +175,20 @@
     {% endfor %}
   {% else %}
     <p>暂无最近分子验证写作稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近联合机制 Results 草稿</h3>
+  {% if integrated_results %}
+    {% for item in integrated_results %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近联合机制 Results 草稿。</p>
   {% endif %}
 </section>
 {% endblock %}
