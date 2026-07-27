@@ -174,9 +174,11 @@
         <p>
           <label>目标期刊模板</label><br>
           <select name="journal">
-            <option value="generic">通用投稿模板</option>
-            <option value="phytomedicine">Phytomedicine</option>
-            <option value="joe">Journal of Ethnopharmacology</option>
+            {% for option in journal_context.journal_options %}
+            <option value="{{ option.value }}" {% if option.value == journal_context.selected_journal %}selected{% endif %}>
+              {{ option.label }}
+            </option>
+            {% endfor %}
           </select>
         </p>
         <button type="submit">生成 Submission Package</button>
@@ -207,6 +209,7 @@
       <h3>一键投稿工具包</h3>
       <form method="post" action="/writing/submission-toolkit/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：Submission_Toolkit_投稿总控台" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 投稿工具包总稿</button>
       </form>
     </article>
@@ -220,6 +223,7 @@
       <h3>Supplementary 清单</h3>
       <form method="post" action="/writing/submission-supplementary/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：Supplementary_投稿补充材料清单" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 Supplementary 清单</button>
       </form>
     </article>
@@ -228,6 +232,7 @@
       <h3>投稿文件命名规范</h3>
       <form method="post" action="/writing/submission-naming-guide/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：Submission_File_Naming_Guide" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 文件命名规范</button>
       </form>
     </article>
@@ -236,6 +241,7 @@
       <h3>Figure 文件清单</h3>
       <form method="post" action="/writing/submission-figure-manifest/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：Figure_Manifest_投稿图件清单" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 Figure 文件清单</button>
       </form>
     </article>
@@ -244,6 +250,7 @@
       <h3>原始数据归档清单</h3>
       <form method="post" action="/writing/submission-rawdata-archive/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：RawData_Archive_投稿原始数据清单" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 原始数据归档清单</button>
       </form>
     </article>
@@ -252,6 +259,7 @@
       <h3>最终投稿 Checklist</h3>
       <form method="post" action="/writing/submission-final-checklist/new">
         <p><label>名称</label><br><input name="title" placeholder="例如：Final_Submission_Checklist" required></p>
+        <input type="hidden" name="journal" value="{{ journal_context.selected_journal }}">
         <button type="submit">生成 最终投稿 Checklist</button>
       </form>
     </article>
@@ -268,9 +276,11 @@
         <p>
           <label>目标期刊模板</label><br>
           <select name="journal">
-            <option value="generic">通用投稿模板</option>
-            <option value="phytomedicine">Phytomedicine</option>
-            <option value="joe">Journal of Ethnopharmacology</option>
+            {% for option in journal_context.journal_options %}
+            <option value="{{ option.value }}" {% if option.value == journal_context.selected_journal %}selected{% endif %}>
+              {{ option.label }}
+            </option>
+            {% endfor %}
           </select>
         </p>
         <button type="submit">生成 Cover Letter</button>
@@ -284,9 +294,11 @@
         <p>
           <label>目标期刊模板</label><br>
           <select name="journal">
-            <option value="generic">通用投稿模板</option>
-            <option value="phytomedicine">Phytomedicine</option>
-            <option value="joe">Journal of Ethnopharmacology</option>
+            {% for option in journal_context.journal_options %}
+            <option value="{{ option.value }}" {% if option.value == journal_context.selected_journal %}selected{% endif %}>
+              {{ option.label }}
+            </option>
+            {% endfor %}
           </select>
         </p>
         <button type="submit">生成 Response Letter</button>

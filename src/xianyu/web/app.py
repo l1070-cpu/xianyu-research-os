@@ -4368,7 +4368,7 @@ def submission_index(journal: str = "generic"):
 
 
 @app.post("/writing/submission-supplementary/new")
-def writing_submission_supplementary_new(title: str = Form(...)):
+def writing_submission_supplementary_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4376,6 +4376,7 @@ def writing_submission_supplementary_new(title: str = Form(...)):
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     recent_figure_packages = get_recent_figure_packages(limit=5)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
     figure_package_lines = [f"- {item['name']}｜{item['path']}" for item in recent_figure_packages]
@@ -4396,6 +4397,11 @@ def writing_submission_supplementary_new(title: str = Form(...)):
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
 
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
+
 ## 最近网络药理图表包
 {figure_package_summary}
 
@@ -4414,7 +4420,7 @@ def writing_submission_supplementary_new(title: str = Form(...)):
 
 
 @app.post("/writing/submission-naming-guide/new")
-def writing_submission_naming_guide_new(title: str = Form(...)):
+def writing_submission_naming_guide_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4422,6 +4428,7 @@ def writing_submission_naming_guide_new(title: str = Form(...)):
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     bundle = build_submission_naming_guide_bundle(project_name, disease_name)
 
     if not file_path.exists():
@@ -4436,6 +4443,11 @@ def writing_submission_naming_guide_new(title: str = Form(...)):
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
 
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
+
 {bundle}
 
 ## 最终文件归档路径
@@ -4448,7 +4460,7 @@ def writing_submission_naming_guide_new(title: str = Form(...)):
 
 
 @app.post("/writing/submission-figure-manifest/new")
-def writing_submission_figure_manifest_new(title: str = Form(...)):
+def writing_submission_figure_manifest_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4456,6 +4468,7 @@ def writing_submission_figure_manifest_new(title: str = Form(...)):
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     bundle = build_submission_figure_manifest_bundle(project_name, disease_name)
 
     if not file_path.exists():
@@ -4470,6 +4483,11 @@ def writing_submission_figure_manifest_new(title: str = Form(...)):
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
 
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
+
 {bundle}
 
 ## 最终 Figure 交付记录
@@ -4482,7 +4500,7 @@ def writing_submission_figure_manifest_new(title: str = Form(...)):
 
 
 @app.post("/writing/submission-rawdata-archive/new")
-def writing_submission_rawdata_archive_new(title: str = Form(...)):
+def writing_submission_rawdata_archive_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4490,6 +4508,7 @@ def writing_submission_rawdata_archive_new(title: str = Form(...)):
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     bundle = build_submission_rawdata_archive_bundle(project_name, disease_name)
 
     if not file_path.exists():
@@ -4504,6 +4523,11 @@ def writing_submission_rawdata_archive_new(title: str = Form(...)):
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
 
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
+
 {bundle}
 
 ## 最终原始数据归档路径
@@ -4516,7 +4540,7 @@ def writing_submission_rawdata_archive_new(title: str = Form(...)):
 
 
 @app.post("/writing/submission-final-checklist/new")
-def writing_submission_final_checklist_new(title: str = Form(...)):
+def writing_submission_final_checklist_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4524,6 +4548,7 @@ def writing_submission_final_checklist_new(title: str = Form(...)):
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     bundle = build_submission_final_checklist_bundle(project_name, disease_name)
 
     if not file_path.exists():
@@ -4538,6 +4563,11 @@ def writing_submission_final_checklist_new(title: str = Form(...)):
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
 
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
+
 {bundle}
 
 ## 最终提交日期
@@ -4550,7 +4580,7 @@ def writing_submission_final_checklist_new(title: str = Form(...)):
 
 
 @app.post("/writing/submission-toolkit/new")
-def writing_submission_toolkit_new(title: str = Form(...)):
+def writing_submission_toolkit_new(title: str = Form(...), journal: str = Form("generic")):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
     folder.mkdir(parents=True, exist_ok=True)
@@ -4559,6 +4589,7 @@ def writing_submission_toolkit_new(title: str = Form(...)):
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
     checklist = build_submission_checklist_summary()
+    journal_bundle = build_journal_preset_bundle(journal, project_name, disease_name)
     bundle = build_submission_toolkit_bundle(project_name, disease_name)
     missing_summary = "\n".join([f"- {item}" for item in checklist["missing_items"]]) if checklist["missing_items"] else "- 当前投稿核心材料已基本齐全。"
 
@@ -4573,6 +4604,11 @@ def writing_submission_toolkit_new(title: str = Form(...)):
 - 研究对象：{current_project.get('research_object', '')}
 - 疾病 / 模型：{current_project.get('disease', '')}
 - 当前阶段：{current_project.get('stage', '')}
+
+## 目标期刊模板
+- 模板代号：{journal}
+
+{journal_bundle}
 
 ## 当前完成度
 - 已就绪：{checklist['ready_count']}
