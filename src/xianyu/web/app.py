@@ -1054,6 +1054,7 @@ def build_qpcr_stats_package_bundle(
     ddct_data: str,
     stats_summary: str,
 ):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(limit=12)
     return f"""## qPCR 统计表与补充材料包
 
 ### 目标基因
@@ -1091,6 +1092,8 @@ Gene\tControl (mean ± SD)\tModel (mean ± SD)\tTreatment-Low (mean ± SD)\tTrea
 - [ ] 是否补齐均值、SD 和显著性标记
 - [ ] 是否保证正文、图和表的数值一致
 - [ ] 是否把原始 Ct 值和计算表放入 Supplementary
+
+{qpcr_registry_block}
 """
 
 
@@ -1138,6 +1141,7 @@ def build_qpcr_mapping_bundle(
     main_tables: str,
     supp_tables: str,
 ):
+    supp_figures_block = supp_figures or build_qpcr_supplementary_mapping_text(limit=12)
     return f"""## qPCR 图表编号映射包
 
 ### Main Figures
@@ -1147,7 +1151,7 @@ def build_qpcr_mapping_bundle(
 
 ### Supplementary Figures
 ```text
-{supp_figures or "Supplementary Figure S1\tqPCR QC / melting curve"}
+{supp_figures_block}
 ```
 
 ### Main Tables
@@ -1186,6 +1190,7 @@ def build_qpcr_full_package_bundle(
     ddct_data: str,
     stats_summary: str,
 ):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(limit=12)
     return f"""## qPCR 投稿级全包
 
 ### 实验对象
@@ -1244,6 +1249,8 @@ Total RNA was extracted from {sample_type or "the indicated samples"} in each gr
 - [ ] 统计检验与显著性标记是否统一
 - [ ] Results、Figure、Supplementary 是否完全对应
 - [ ] 是否可直接并入 WB / qPCR 联合验证总稿
+
+{qpcr_registry_block}
 """
 
 
@@ -1715,6 +1722,10 @@ def build_wb_qpcr_package_bundle(
     wb_data: str,
     qpcr_data: str,
 ):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(
+        limit=12,
+        heading="qPCR 图片 Supplementary Figure 自动编号",
+    )
     wb_targets = target_proteins or "- 待补充 WB 目标蛋白"
     qpcr_targets = target_genes or "- 待补充 qPCR 目标基因"
     wb_block = wb_data or "Protein\tControl\tModel\tTreatment-Low\tTreatment-High"
@@ -1770,6 +1781,8 @@ Compared with the model group, {project_name} modulated both the protein and mRN
 - [ ] Supplementary 是否包含抗体、引物、原始灰度值和原始 Ct 值
 - [ ] WB 与 qPCR 目标是否与主文机制一致
 - [ ] Results 文字是否避免过度解释，仅基于真实结果
+
+{qpcr_registry_block}
 """
 
 
@@ -1786,6 +1799,10 @@ def build_wb_qpcr_full_validation_bundle(
     wb_data: str,
     qpcr_data: str,
 ):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(
+        limit=12,
+        heading="qPCR 图片 Supplementary Figure 自动编号",
+    )
     group_block = groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"
     antibody_block = antibodies or "待补充抗体名称、货号、宿主和稀释比例"
     primer_block = primers or "待补充引物序列与内参基因"
@@ -1865,6 +1882,8 @@ For transcriptional validation, total RNA was extracted from {sample_type_qpcr o
 - [ ] 原始灰度值和原始 Ct 值是否已保存
 - [ ] 统计学方法与显著性标记是否统一
 - [ ] Results 是否避免超出真实数据的解释
+
+{qpcr_registry_block}
 """
 
 
@@ -3313,6 +3332,41 @@ def build_qpcr_image_registry(limit: int | None = None):
     for item in registry:
         item.pop("mtime", None)
     return registry
+
+
+def build_qpcr_supplementary_registry_section(
+    limit: int | None = None,
+    heading: str = "qPCR 图片 Supplementary Figure 建议清单",
+):
+    registry = build_qpcr_image_registry(limit=limit)
+    if not registry:
+        return f"""## {heading}
+- 当前暂无已归档的 qPCR 原始图片。
+"""
+
+    lines = [f"## {heading}"]
+    for item in registry:
+        lines.append(f"### {item['supplementary_label']}")
+        lines.append(f"- 建议标题：{item['supplementary_title']}")
+        lines.append(f"- 图片类型：{item['image_type'] or '未注明'}")
+        lines.append(f"- 原始文件：{item['path']}")
+        if item["note_path"]:
+            lines.append(f"- 备注文件：{item['note_path']}")
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def build_qpcr_supplementary_mapping_text(limit: int | None = None):
+    registry = build_qpcr_image_registry(limit=limit)
+    if not registry:
+        return "Supplementary Figure S1\tqPCR QC / melting curve"
+
+    lines = []
+    for item in registry:
+        lines.append(
+            f"{item['supplementary_label']}\t{item['supplementary_title']}（{item['image_type'] or '未注明'}）"
+        )
+    return "\n".join(lines)
 
 
 def build_recent_image_writeback_section(items, heading: str = "最近 qPCR 图片回填草稿"):
@@ -4964,6 +5018,10 @@ def build_submission_checklist_summary():
 
 
 def build_submission_supplementary_bundle(project_name: str, disease_name: str):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(
+        limit=12,
+        heading="qPCR 原始图片自动编号清单",
+    )
     return f"""## Supplementary 文件建议清单
 - Supplementary Figure S1：成分筛选或原始成分信息补充
 - Supplementary Figure S2：PPI 或扩展网络结果补充
@@ -4995,6 +5053,8 @@ def build_submission_supplementary_bundle(project_name: str, disease_name: str):
 - Raw_Data_Index/
 - Figure_Legend_Supplementary/
 - Method_Details_Extended/
+
+{qpcr_registry_block}
 """
 
 
