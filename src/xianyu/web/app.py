@@ -1257,6 +1257,168 @@ CASP3
 """
 
 
+def build_qpcr_primer_design_bundle(
+    project_name: str,
+    species: str,
+    target_genes: str,
+    housekeeping_gene: str,
+    amplicon_range: str,
+    tm_range: str,
+    gc_range: str,
+):
+    return f"""## qPCR 引物设计建议包
+
+### 项目背景
+- 项目：{project_name}
+- 物种 / 样本来源：{species or "待补充"}
+- 目标基因：{target_genes or "待补充"}
+- 内参基因：{housekeeping_gene or "待补充"}
+
+### 推荐设计原则
+- 扩增产物长度建议控制在 {amplicon_range or "80-200 bp"}。
+- 引物退火温度建议控制在 {tm_range or "58-62°C"}，同一对引物的 Tm 尽量接近。
+- GC 含量建议控制在 {gc_range or "40%-60%"}。
+- 优先跨越外显子连接区，减少基因组 DNA 干扰。
+- 避免连续同碱基、明显发卡结构和引物二聚体风险。
+- 建议同时准备 NCBI / Primer-BLAST 验证结果截图或编号。
+
+### Primer Table 设计模板
+```text
+Gene\tForward primer (5'-3')\tReverse primer (5'-3')\tProduct size (bp)\tTm (°C)\tGC%\tExon junction\tSpecificity check\tRemark
+{housekeeping_gene or "GAPDH"}
+AKT1
+NFE2L2
+HMOX1
+BAX
+BCL2
+CASP3
+```
+
+### 实验前核对
+- [ ] 是否确认基因名与物种一致
+- [ ] 是否确认序列方向为 5'-3'
+- [ ] 是否完成 Primer-BLAST 特异性验证
+- [ ] 是否确认产物长度适合 qPCR
+- [ ] 是否给出内参基因选择理由
+
+### Methods 句式模板
+- Primers for RT-qPCR were designed according to the target transcript sequences and validated for specificity before use.
+- The expected amplicon sizes ranged from {amplicon_range or "80 to 200 bp"}, and the melting temperatures were controlled within {tm_range or "the recommended range"}.
+
+### Supplementary 建议
+- Supplementary Table S1：Primer sequences, expected amplicon size, Tm and validation notes.
+"""
+
+
+def build_qpcr_curve_interpretation_bundle(
+    project_name: str,
+    target_genes: str,
+    amplification_notes: str,
+    melting_notes: str,
+    ntc_status: str,
+    efficiency_notes: str,
+):
+    return f"""## qPCR 图谱讲解与结果解读包
+
+### 目标基因
+{target_genes or "待补充目标基因"}
+
+### 需要解读的图谱
+1. 扩增曲线（Amplification plot）
+2. 熔解曲线（Melting curve）
+3. 相对表达柱状图 / 散点图
+
+### 扩增曲线讲解模板
+- 理想状态：指数期清晰、平台期稳定、重复孔曲线彼此接近。
+- 当前记录：
+{amplification_notes or "- 待补充扩增曲线观察结果"}
+- 结果判断：
+  - 如果重复孔起跳位置差异较大，提示移液或模板一致性问题。
+  - 如果背景波动明显，提示基线设置或反应体系稳定性问题。
+
+### 熔解曲线讲解模板
+- 理想状态：单一尖锐峰，峰位稳定，无明显肩峰或杂峰。
+- 当前记录：
+{melting_notes or "- 待补充熔解曲线观察结果"}
+- 结果判断：
+  - 单峰通常支持扩增特异性较好。
+  - 多峰、肩峰或低温小峰常提示非特异扩增或引物二聚体。
+
+### NTC / 阴性对照说明
+- 当前情况：{ntc_status or "待补充"}
+- 标准解释：
+  - NTC 无扩增或极晚期扩增，通常可接受。
+  - NTC 明显扩增时，应优先排查污染或引物二聚体。
+
+### 扩增效率与稳定性说明
+- 当前记录：{efficiency_notes or "待补充"}
+- 推荐补充：
+  - 标准曲线斜率
+  - 扩增效率（90%-110% 为常见可接受范围）
+  - R² 是否接近 1
+
+### Figure Legend / 结果段讲解句式
+- The amplification plots showed consistent exponential amplification across technical replicates.
+- The melting curves exhibited a single dominant peak for the selected genes, supporting acceptable amplification specificity.
+- The relative mRNA expression data were interpreted together with the amplification and melting profiles to ensure data reliability.
+
+### 出图配套建议
+- Supplementary Figure：Amplification and melting-curve quality-control panel.
+- Main Figure：Relative expression bar chart with mean ± SD and significance marks.
+"""
+
+
+def build_qpcr_error_analysis_bundle(
+    project_name: str,
+    disease_name: str,
+    issue_summary: str,
+    raw_ct_pattern: str,
+    possible_causes: str,
+    corrective_actions: str,
+):
+    return f"""## qPCR 误差分析与排错包
+
+### 项目背景
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+
+### 当前问题概述
+{issue_summary or "- 待补充"}
+
+### 原始 Ct 异常模式
+{raw_ct_pattern or "- 待补充，如：重复孔差值 > 0.5 / NTC 扩增 / 内参波动过大"}
+
+### 常见误差来源排查表
+```text
+问题类型\t可能表现\t优先排查
+移液误差\t重复孔 Ct 差异大\t枪头、操作节奏、混匀
+模板质量差\t整体 Ct 偏高或波动大\tRNA 完整性、浓度、纯度
+逆转录不稳定\t不同样本整体偏移\t逆转录体系、酶失活、操作时间
+引物问题\t多峰、效率低\t二聚体、特异性、Tm 不合适
+污染\tNTC 扩增\t体系污染、模板交叉污染
+内参不稳定\tΔCt 波动大\t内参选择不合适
+```
+
+### 当前推测原因
+{possible_causes or "- 待补充"}
+
+### 建议纠正措施
+{corrective_actions or "- 待补充"}
+
+### 误差分析写作模板
+- The raw Ct data were reviewed before formal statistical analysis.
+- Samples or replicate sets with unacceptable amplification consistency were rechecked and flagged during quality control.
+- Potential sources of technical variation, including pipetting inconsistency, template quality, and primer specificity, were considered during data interpretation.
+
+### 复测建议
+- [ ] 是否需要补做 RNA 质检
+- [ ] 是否需要重做逆转录
+- [ ] 是否需要更换引物
+- [ ] 是否需要替换内参基因
+- [ ] 是否需要剔除异常重复孔并记录依据
+"""
+
+
 def build_molecular_validation_summary(current_project: dict):
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
@@ -8618,6 +8780,134 @@ def qpcr_primer_table_new(title: str = Form(...)):
 
     if not file_path.exists():
         content = f"""# qPCR 引物信息标准表｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/primer-design/new")
+def qpcr_primer_design_new(
+    title: str = Form(...),
+    species: str = Form(""),
+    target_genes: str = Form(""),
+    housekeeping_gene: str = Form(""),
+    amplicon_range: str = Form(""),
+    tm_range: str = Form(""),
+    gc_range: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Primer_Design.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    bundle = build_qpcr_primer_design_bundle(
+        project_name,
+        species,
+        target_genes,
+        housekeeping_gene,
+        amplicon_range,
+        tm_range,
+        gc_range,
+    )
+
+    if not file_path.exists():
+        content = f"""# qPCR 引物设计建议包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/curve-interpretation/new")
+def qpcr_curve_interpretation_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    amplification_notes: str = Form(""),
+    melting_notes: str = Form(""),
+    ntc_status: str = Form(""),
+    efficiency_notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Curve_Interpretation.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    bundle = build_qpcr_curve_interpretation_bundle(
+        project_name,
+        target_genes,
+        amplification_notes,
+        melting_notes,
+        ntc_status,
+        efficiency_notes,
+    )
+
+    if not file_path.exists():
+        content = f"""# qPCR 图谱讲解包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/error-analysis/new")
+def qpcr_error_analysis_new(
+    title: str = Form(...),
+    issue_summary: str = Form(""),
+    raw_ct_pattern: str = Form(""),
+    possible_causes: str = Form(""),
+    corrective_actions: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Error_Analysis.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_error_analysis_bundle(
+        project_name,
+        disease_name,
+        issue_summary,
+        raw_ct_pattern,
+        possible_causes,
+        corrective_actions,
+    )
+
+    if not file_path.exists():
+        content = f"""# qPCR 误差分析与排错包｜{title}
 
 ## 日期
 {today}

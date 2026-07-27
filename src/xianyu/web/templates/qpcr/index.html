@@ -5,7 +5,7 @@
 {% block content %}
 <header class="page-header">
   <h2>🧪 qPCR 工作台</h2>
-  <p>自动生成实验记录、Ct 数据模板、2^-ΔΔCt 骨架、Figure Legend 和 Methods 骨架</p>
+  <p>自动生成实验记录、Ct 数据模板、2^-ΔΔCt 骨架、引物设计建议、图谱讲解、误差分析、Figure Legend 和 Methods 骨架</p>
 </header>
 
 {% if active_project %}
@@ -77,6 +77,45 @@
   <form method="post" action="/qpcr/primer-table/new">
     <p><label>引物表名称</label><br><input name="title" placeholder="例如：qPCR_Primer_Table_Standard" required></p>
     <button type="submit">生成 引物信息标准表</button>
+  </form>
+</section>
+
+<section>
+  <h3>引物设计建议包</h3>
+  <form method="post" action="/qpcr/primer-design/new">
+    <p><label>设计包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR引物设计建议" required></p>
+    <p><label>物种 / 样本来源</label><br><input name="species" placeholder="例如：Homo sapiens / 大鼠皮层组织 / H/R细胞"></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>内参基因</label><br><input name="housekeeping_gene" placeholder="例如：GAPDH / ACTB / 18S"></p>
+    <p><label>推荐产物长度</label><br><input name="amplicon_range" placeholder="例如：80-200 bp"></p>
+    <p><label>推荐 Tm 范围</label><br><input name="tm_range" placeholder="例如：58-62°C"></p>
+    <p><label>推荐 GC 含量</label><br><input name="gc_range" placeholder="例如：40%-60%"></p>
+    <button type="submit">生成 引物设计建议包</button>
+  </form>
+</section>
+
+<section>
+  <h3>图谱讲解包</h3>
+  <form method="post" action="/qpcr/curve-interpretation/new">
+    <p><label>图谱包名称</label><br><input name="title" placeholder="例如：AKT1_qPCR扩增与熔解曲线解读" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1"></textarea></p>
+    <p><label>扩增曲线观察</label><br><textarea name="amplification_notes" rows="5" placeholder="例如：重复孔起跳位置一致，模型组 Ct 略提前；某一重复孔波动较大"></textarea></p>
+    <p><label>熔解曲线观察</label><br><textarea name="melting_notes" rows="5" placeholder="例如：AKT1 单峰；BAX 出现轻微肩峰；HMOX1 低温小峰需要关注"></textarea></p>
+    <p><label>NTC 情况</label><br><textarea name="ntc_status" rows="3" placeholder="例如：NTC 无明显扩增；或 NTC 晚期扩增 Ct > 35"></textarea></p>
+    <p><label>扩增效率 / 标准曲线备注</label><br><textarea name="efficiency_notes" rows="4" placeholder="例如：AKT1 效率 96%，R²=0.998；BAX 效率偏低需复核"></textarea></p>
+    <button type="submit">生成 图谱讲解包</button>
+  </form>
+</section>
+
+<section>
+  <h3>误差分析与排错包</h3>
+  <form method="post" action="/qpcr/error-analysis/new">
+    <p><label>排错包名称</label><br><input name="title" placeholder="例如：AKT1_qPCR误差分析" required></p>
+    <p><label>当前问题概述</label><br><textarea name="issue_summary" rows="4" placeholder="例如：重复孔离散度大，NTC 有轻度扩增，Model 组内参波动偏大"></textarea></p>
+    <p><label>原始 Ct 异常模式</label><br><textarea name="raw_ct_pattern" rows="4" placeholder="例如：AKT1 在 High 组 Rep3 比其余重复孔高 1.2 Ct；GAPDH 在 Model 组波动明显"></textarea></p>
+    <p><label>推测原因</label><br><textarea name="possible_causes" rows="4" placeholder="例如：移液误差、RNA 质量不一致、引物二聚体、逆转录效率波动"></textarea></p>
+    <p><label>纠正措施</label><br><textarea name="corrective_actions" rows="4" placeholder="例如：补做 RNA 质检、重配引物、重新逆转录、剔除异常重复孔并说明依据"></textarea></p>
+    <button type="submit">生成 误差分析与排错包</button>
   </form>
 </section>
 
