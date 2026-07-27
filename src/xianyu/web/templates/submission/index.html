@@ -18,6 +18,58 @@
 
 {% if checklist %}
 <section>
+  <h3>按期刊模板切换要求</h3>
+  <form method="get" action="/submission" class="toolbar">
+    <p>
+      <label>目标期刊模板</label><br>
+      <select name="journal">
+        {% for option in journal_context.journal_options %}
+        <option value="{{ option.value }}" {% if option.value == journal_context.selected_journal %}selected{% endif %}>
+          {{ option.label }}
+        </option>
+        {% endfor %}
+      </select>
+    </p>
+    <button type="submit">切换模板要求</button>
+  </form>
+
+  <div class="summary-grid">
+    <article class="file-card">
+      <h3>当前模板</h3>
+      <p class="metric-number submission-journal-label">{{ journal_context.journal_label }}</p>
+      <p>下面所有投稿建议会围绕这个模板展示</p>
+    </article>
+  </div>
+
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>期刊模板总要求</h3>
+      <pre>{{ journal_context.preset_bundle }}</pre>
+    </article>
+    <article class="file-card">
+      <h3>Cover Letter 风格</h3>
+      <pre>{{ journal_context.cover_bundle }}</pre>
+    </article>
+    <article class="file-card">
+      <h3>Highlights 风格</h3>
+      <pre>{{ journal_context.highlights_bundle }}</pre>
+    </article>
+    <article class="file-card">
+      <h3>Graphical Abstract 风格</h3>
+      <pre>{{ journal_context.graphical_bundle }}</pre>
+    </article>
+    <article class="file-card">
+      <h3>Cover Letter 参考成稿</h3>
+      <pre>{{ journal_context.cover_full_bundle }}</pre>
+    </article>
+    <article class="file-card">
+      <h3>Highlights 参考成稿</h3>
+      <pre>{{ journal_context.highlights_full_bundle }}</pre>
+    </article>
+  </div>
+</section>
+
+<section>
   <h3>投稿材料自动汇总</h3>
   <div class="summary-grid">
     <article class="file-card">

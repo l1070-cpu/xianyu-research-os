@@ -168,6 +168,11 @@ aside nav a:hover {
   background: linear-gradient(90deg, #2563eb, #16a34a);
 }
 
+.submission-journal-label {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
 @media (max-width: 900px) {
   .summary-grid,
   .project-grid,

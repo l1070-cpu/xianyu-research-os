@@ -4299,13 +4299,41 @@ def build_submission_toolkit_bundle(project_name: str, disease_name: str):
 """
 
 
+def build_submission_journal_template_context(journal: str, project_name: str, disease_name: str):
+    journal_labels = {
+        "generic": "通用投稿模板",
+        "phytomedicine": "Phytomedicine",
+        "joe": "Journal of Ethnopharmacology",
+    }
+    selected_journal = journal if journal in journal_labels else "generic"
+    return {
+        "selected_journal": selected_journal,
+        "journal_label": journal_labels[selected_journal],
+        "journal_options": [
+            {"value": "generic", "label": "通用投稿模板"},
+            {"value": "phytomedicine", "label": "Phytomedicine"},
+            {"value": "joe", "label": "Journal of Ethnopharmacology"},
+        ],
+        "preset_bundle": build_journal_preset_bundle(selected_journal, project_name, disease_name),
+        "cover_bundle": build_journal_cover_letter_style_bundle(selected_journal, project_name, disease_name),
+        "highlights_bundle": build_journal_highlights_style_bundle(selected_journal, project_name, disease_name),
+        "graphical_bundle": build_journal_graphical_abstract_style_bundle(selected_journal, project_name, disease_name),
+        "cover_full_bundle": build_journal_cover_letter_full_draft_bundle(selected_journal, project_name, disease_name),
+        "highlights_full_bundle": build_journal_highlights_full_draft_bundle(selected_journal, project_name, disease_name),
+    }
+
+
 @app.get("/submission", response_class=HTMLResponse)
-def submission_index():
+def submission_index(journal: str = "generic"):
     files = list_md("06_论文写作")
     current_project = get_current_project()
+    current_project = current_project or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
     recent_figure_packages = get_recent_figure_packages(limit=5)
     recent_network = get_recent_notes("02_项目管理/网络药理学", limit=5)
     checklist = build_submission_checklist_summary()
+    journal_context = build_submission_journal_template_context(journal, project_name, disease_name)
     items = []
     for file in files[:30]:
         lower = file.name.lower()
@@ -4335,6 +4363,7 @@ def submission_index():
         recent_figure_packages=recent_figure_packages,
         recent_network=recent_network,
         checklist=checklist,
+        journal_context=journal_context,
     )
 
 
