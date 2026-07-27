@@ -1178,6 +1178,101 @@ Total RNA was extracted from {sample_type or "the indicated samples"} in each gr
 """
 
 
+def build_qpcr_group_stats_template_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    groups: str,
+):
+    return f"""## qPCR 分组统计表模板
+
+### 实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+
+### 目标基因
+{target_genes or "- 待补充目标基因"}
+
+### 分组设计
+```text
+{groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
+```
+
+### 统计主表模板
+```text
+Gene\tGroup\tMean\tSD\tN\tP value\tPost hoc\tSignificance
+AKT1\tControl
+AKT1\tModel
+AKT1\tTreatment-Low
+AKT1\tTreatment-High
+```
+
+### 推荐统计说明
+- 如果只有两组，优先整理 t test 结果。
+- 如果多组比较，优先整理 one-way ANOVA + post hoc。
+- 结果稿中只保留最终用于出图的均值、SD、P 值和显著性标记。
+
+### Results 句式模板
+- The relative mRNA expression levels were compared among the experimental groups.
+- Statistical analysis showed that the model group exhibited a significant change relative to the control group.
+- Treatment with {project_name} partially or significantly reversed the transcriptional alterations of the selected genes.
+
+### 核对清单
+- [ ] 是否写清统计方法
+- [ ] 是否补齐均值、SD 和 n
+- [ ] 是否统一显著性符号
+- [ ] 是否与 Figure 和 Supplementary 数值一致
+"""
+
+
+def build_qpcr_primer_table_bundle(project_name: str):
+    return f"""## qPCR 引物信息标准表
+
+### Primer Table 模板
+```text
+Gene\tForward primer (5'-3')\tReverse primer (5'-3')\tProduct size (bp)\tAnnealing temperature\tReference
+GAPDH
+ACTB
+AKT1
+NFE2L2
+HMOX1
+BAX
+BCL2
+CASP3
+```
+
+### 填写说明
+- Forward / Reverse primer 建议统一大写字母格式。
+- Product size、退火温度和来源文献尽量一起补齐。
+- 内参基因单独标记，避免后续正文与 Supplementary 混乱。
+
+### 推荐 Supplementary 放置方式
+- Supplementary Table S1：Primer information used for RT-qPCR in {project_name}
+
+### 核对清单
+- [ ] 引物序列方向是否正确
+- [ ] 基因名是否与正文一致
+- [ ] 内参基因是否明确标注
+- [ ] 是否补齐产物长度和退火温度
+"""
+
+
+def build_molecular_validation_summary(current_project: dict):
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    return f"""## 分子验证中心说明
+- 当前项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 本中心统一管理 WB、qPCR 及二者联合验证的记录、结果、图表、Supplementary 与投稿稿件。
+
+### 推荐流程
+1. 先整理 qPCR / WB 原始记录。
+2. 再完成 qPCR Ct 质控、WB 灰度统计。
+3. 输出各自 Results + Methods 初稿。
+4. 再生成 WB / qPCR 联合验证总包，用于正文与投稿材料。
+"""
+
+
 def build_wb_qpcr_package_bundle(
     project_name: str,
     disease_name: str,
@@ -8251,6 +8346,27 @@ def qpcr_index():
     )
 
 
+@app.get("/molecular-validation", response_class=HTMLResponse)
+def molecular_validation_index():
+    current_project = get_current_project() or {}
+    wb_records = get_recent_notes("03_实验记录/WB", limit=6)
+    qpcr_records = get_recent_notes("03_实验记录/qPCR", limit=6)
+    wb_results = get_recent_notes("05_数据分析/WB", limit=6)
+    qpcr_results = get_recent_notes("05_数据分析/qPCR", limit=6)
+    validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
+    summary = build_molecular_validation_summary(current_project)
+    template = env.get_template("molecular_validation/index.html")
+    return template.render(
+        active_project=current_project,
+        summary=summary,
+        wb_records=wb_records,
+        qpcr_records=qpcr_records,
+        wb_results=wb_results,
+        qpcr_results=qpcr_results,
+        validation_writing=validation_writing,
+    )
+
+
 @app.post("/qpcr/new")
 def qpcr_new(
     title: str = Form(...),
@@ -8451,6 +8567,67 @@ def qpcr_ct_qc_new(
 ## 质控备注
 
 ## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/group-stats/new")
+def qpcr_group_stats_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    groups: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Group_Stats.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_group_stats_template_bundle(project_name, disease_name, target_genes, groups)
+
+    if not file_path.exists():
+        content = f"""# qPCR 分组统计表模板｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/primer-table/new")
+def qpcr_primer_table_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Primer_Table.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    bundle = build_qpcr_primer_table_bundle(project_name)
+
+    if not file_path.exists():
+        content = f"""# qPCR 引物信息标准表｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
 """
         file_path.write_text(content, encoding="utf-8")
 

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}分子验证中心{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🧬 分子验证中心</h2>
+  <p>统一管理 WB、qPCR 及二者联合验证的记录、结果、Supplementary 和投稿稿件</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>中心说明</h3>
+  <pre>{{ summary }}</pre>
+</section>
+
+<section>
+  <h3>快捷入口</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>WB 工作台</h3>
+      <p><a href="/wb">前往 WB 工作台</a></p>
+    </article>
+    <article class="file-card">
+      <h3>qPCR 工作台</h3>
+      <p><a href="/qpcr">前往 qPCR 工作台</a></p>
+    </article>
+    <article class="file-card">
+      <h3>WB + qPCR 联合总包</h3>
+      <p><a href="/writing#wb-qpcr-full-package">前往 WB + qPCR 联合验证总包</a></p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>最近记录</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>WB 记录</h3>
+      {% if wb_records %}
+        {% for item in wb_records %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 WB 记录。</p>
+      {% endif %}
+    </article>
+
+    <article class="file-card">
+      <h3>qPCR 记录</h3>
+      {% if qpcr_records %}
+        {% for item in qpcr_records %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 qPCR 记录。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>最近结果分析</h3>
+  <div class="project-grid">
+    <article class="file-card">
+      <h3>WB 结果稿</h3>
+      {% if wb_results %}
+        {% for item in wb_results %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 WB 结果稿。</p>
+      {% endif %}
+    </article>
+
+    <article class="file-card">
+      <h3>qPCR 结果稿</h3>
+      {% if qpcr_results %}
+        {% for item in qpcr_results %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无最近 qPCR 结果稿。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>最近联合写作稿</h3>
+  {% if validation_writing %}
+    {% for item in validation_writing %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近分子验证写作稿。</p>
+  {% endif %}
+</section>
+{% endblock %}

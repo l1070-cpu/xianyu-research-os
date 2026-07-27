@@ -63,6 +63,24 @@
 </section>
 
 <section>
+  <h3>分组统计表模板</h3>
+  <form method="post" action="/qpcr/group-stats/new">
+    <p><label>统计模板名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR分组统计表" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <button type="submit">生成 分组统计表模板</button>
+  </form>
+</section>
+
+<section>
+  <h3>引物信息标准表</h3>
+  <form method="post" action="/qpcr/primer-table/new">
+    <p><label>引物表名称</label><br><input name="title" placeholder="例如：qPCR_Primer_Table_Standard" required></p>
+    <button type="submit">生成 引物信息标准表</button>
+  </form>
+</section>
+
+<section>
   <h3>qPCR 统计与 Supplementary</h3>
   <form method="post" action="/qpcr/stats-package/new">
     <p><label>统计包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR统计与补充材料" required></p>
@@ -132,6 +150,11 @@
       {% endif %}
     </article>
   </div>
+</section>
+
+<section>
+  <h3>统一入口</h3>
+  <p><a href="/molecular-validation">前往 分子验证中心（WB + qPCR）</a></p>
 </section>
 
 <section>
