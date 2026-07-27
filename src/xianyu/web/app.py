@@ -1155,6 +1155,7 @@ def build_qpcr_mapping_bundle(
     supp_tables: str,
 ):
     supp_figures_block = supp_figures or build_qpcr_supplementary_mapping_text(limit=12)
+    qpcr_bilingual_legend_block = build_qpcr_supplementary_bilingual_legend_section(limit=12)
     return f"""## qPCR 图表编号映射包
 
 ### Main Figures
@@ -1184,6 +1185,8 @@ def build_qpcr_mapping_bundle(
 
 ### 说明句模板
 - The main text presents the relative expression changes of the selected genes, while the primer details, raw Ct values, and full 2^-ΔΔCt calculation sheets are provided in the Supplementary Materials.
+
+{qpcr_bilingual_legend_block}
 
 ### 核对清单
 - [ ] 主文与补充材料编号是否连续
@@ -2469,6 +2472,11 @@ def build_wb_qpcr_mapping_bundle(
     main_tables: str,
     supp_tables: str,
 ):
+    supp_figures_block = supp_figures or (
+        "Supplementary Figure S1\tFull blot\n"
+        + build_qpcr_supplementary_mapping_text(limit=12)
+    )
+    qpcr_bilingual_legend_block = build_qpcr_supplementary_bilingual_legend_section(limit=12)
     return f"""## WB / qPCR 图表编号映射包
 
 ### 主文 Figure 清单
@@ -2478,7 +2486,7 @@ def build_wb_qpcr_mapping_bundle(
 
 ### Supplementary Figure 清单
 ```text
-{supp_figures or "Supplementary Figure S1\tFull blot\nSupplementary Figure S2\tqPCR质量控制"}
+{supp_figures_block}
 ```
 
 ### 主文 Table 清单
@@ -2496,6 +2504,8 @@ def build_wb_qpcr_mapping_bundle(
 - Supplementary Figure 主要放完整 WB 条带、熔解曲线、扩增曲线等支撑性图像。
 - 主文 Table 建议只保留统计结果总表。
 - Supplementary Table 用于放抗体、引物、原始值和计算表。
+
+{qpcr_bilingual_legend_block}
 
 ### 编号一致性核对清单
 - [ ] 主文 Figure 编号是否与正文引用一致
@@ -3408,6 +3418,30 @@ def build_qpcr_supplementary_legend_section(
             f"- {item['supplementary_label']}. {item['supplementary_title']} for the qPCR assay. This panel presents the {image_type} supporting the transcriptional validation workflow, and the corresponding raw image is archived at {item['path']}."
         )
     return "\n".join(lines) + "\n"
+
+
+def build_qpcr_supplementary_bilingual_legend_section(
+    limit: int | None = None,
+    heading: str = "qPCR Supplementary Figure Legend 中英双语稿",
+):
+    registry = build_qpcr_image_registry(limit=limit)
+    if not registry:
+        return f"""## {heading}
+- 当前暂无已归档的 qPCR 原始图片，暂无法生成双语图注。
+"""
+
+    lines = [f"## {heading}"]
+    for item in registry:
+        image_type = item["image_type"] or "qPCR supporting image"
+        lines.append(f"### {item['supplementary_label']}")
+        lines.append(
+            f"- 中文：{item['supplementary_title']}，用于展示 qPCR 实验中的{image_type}，对应原始图片归档路径为 {item['path']}。"
+        )
+        lines.append(
+            f"- English: {item['supplementary_title']} for the qPCR assay. This panel presents the {image_type} supporting the transcriptional validation workflow, and the corresponding raw image is archived at {item['path']}."
+        )
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
 
 
 def build_recent_image_writeback_section(items, heading: str = "最近 qPCR 图片回填草稿"):
@@ -5212,6 +5246,14 @@ def build_submission_rawdata_archive_bundle(project_name: str, disease_name: str
 
 
 def build_submission_final_checklist_bundle(project_name: str, disease_name: str):
+    qpcr_registry_block = build_qpcr_supplementary_registry_section(
+        limit=12,
+        heading="qPCR 图片 Supplementary 自动编号核对",
+    )
+    qpcr_bilingual_legend_block = build_qpcr_supplementary_bilingual_legend_section(
+        limit=12,
+        heading="qPCR Supplementary Figure Legend 中英双语核对稿",
+    )
     return f"""## 期刊提交前最终 Checklist
 
 ### 主文与基础文件
@@ -5223,6 +5265,7 @@ def build_submission_final_checklist_bundle(project_name: str, disease_name: str
 ### Figure 与 Supplementary
 - [ ] 所有主图编号、图注、正文引用一致
 - [ ] Supplementary Figure / Table 已编号完成
+- [ ] qPCR Supplementary Figure 的中英双语图注已核对
 - [ ] Figure 文件名已改为英文规范命名
 - [ ] 所有图片分辨率和格式符合期刊要求
 
@@ -5244,6 +5287,10 @@ def build_submission_final_checklist_bundle(project_name: str, disease_name: str
 - [ ] 建立 Raw_Data_{safe_name(project_name)} 目录
 - [ ] 建立 Supplementary_{safe_name(project_name)} 目录
 - [ ] 生成最终提交前版本号记录
+
+{qpcr_registry_block}
+
+{qpcr_bilingual_legend_block}
 
 ## 最终提交目录建议
 - Final_Submission/
