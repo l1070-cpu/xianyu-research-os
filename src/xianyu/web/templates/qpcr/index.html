@@ -221,7 +221,16 @@
         <h3>{{ item.name }}</h3>
         <p><a href="/media?path={{ item.path }}" target="_blank">打开图片</a></p>
         {% if item.note_path %}
+        <form method="post" action="/qpcr/ai-curve-from-image">
+          <input type="hidden" name="note_path" value="{{ item.note_path }}">
+          <button type="submit">一键 AI 图谱讲解</button>
+        </form>
+        {% endif %}
+        {% if item.note_path %}
         <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>
+        {% if item.image_type %}
+        <p><strong>类型：</strong>{{ item.image_type }}</p>
+        {% endif %}
         <pre>{{ item.note_content }}</pre>
         {% else %}
         <p>暂无图片备注。</p>

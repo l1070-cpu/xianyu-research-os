@@ -104,6 +104,12 @@ def safe_name(name):
     return name.replace(" ", "_").replace("/", "_")
 
 
+def extract_markdown_section(text: str, heading: str) -> str:
+    pattern = rf"## {re.escape(heading)}\n(.*?)(?=\n## |\Z)"
+    match = re.search(pattern, text, flags=re.S)
+    return match.group(1).strip() if match else ""
+
+
 def ai_json_or_prompt(system_prompt: str, user_prompt: str):
     base = os.getenv("AI_API_BASE", "").rstrip("/")
     key = os.getenv("AI_API_KEY", "")
@@ -8767,12 +8773,14 @@ def qpcr_index():
     image_items = []
     for file in image_files[:12]:
         note_path = file.with_suffix(".md")
+        note_text = read(note_path) if note_path.exists() else ""
         image_items.append(
             {
                 "name": file.name,
                 "path": str(file.relative_to(ROOT)),
                 "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
-                "note_content": read(note_path)[:240] if note_path.exists() else "",
+                "note_content": note_text[:240] if note_path.exists() else "",
+                "image_type": extract_markdown_section(note_text, "图片类型") if note_text else "",
             }
         )
     current_project = get_current_project() or {}
@@ -8846,6 +8854,74 @@ async def qpcr_image_upload(
     return RedirectResponse(url="/qpcr", status_code=303)
 
 
+@app.post("/qpcr/ai-curve-from-image")
+def qpcr_ai_curve_from_image(note_path: str = Form(...)):
+    note_file = ROOT / note_path
+    if not note_file.exists():
+        return HTMLResponse("图片备注不存在", status_code=404)
+
+    note_text = read(note_file)
+    image_type = extract_markdown_section(note_text, "图片类型")
+    observation = extract_markdown_section(note_text, "图谱观察")
+    image_rel_path = extract_markdown_section(note_text, "原始文件")
+    image_name = Path(image_rel_path).name if image_rel_path else note_file.stem
+
+    amplification_notes = ""
+    melting_notes = ""
+    lower_type = image_type.lower()
+    if "熔解" in image_type:
+        melting_notes = observation
+    elif "扩增" in image_type:
+        amplification_notes = observation
+    else:
+        amplification_notes = f"图片类型：{image_type or '未注明'}\n观察记录：{observation}"
+
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(image_name)}_qPCR_AI_Image_Curve.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+
+    system_prompt, user_prompt = build_qpcr_ai_curve_prompt(
+        project_name,
+        disease_name,
+        "",
+        amplification_notes,
+        melting_notes,
+        "",
+        f"来源图片类型：{image_type or '未注明'}",
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"qPCR 图片AI图谱讲解｜{image_name}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 来源图片
+{image_rel_path}
+
+## 来源备注
+{note_path}
+
+## 图片类型
+{image_type or "未注明"}
+
+## 人工观察
+{observation or "待补充"}
+
+{content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/molecular-validation", response_class=HTMLResponse)
 def molecular_validation_index():
     current_project = get_current_project() or {}
@@ -8853,6 +8929,23 @@ def molecular_validation_index():
     qpcr_records = get_recent_notes("03_实验记录/qPCR", limit=6)
     wb_results = get_recent_notes("05_数据分析/WB", limit=6)
     qpcr_results = get_recent_notes("05_数据分析/qPCR", limit=6)
+    qpcr_image_files = list_files(
+        "03_实验记录/qPCR_原始图片",
+        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
+    )
+    qpcr_images = []
+    for file in qpcr_image_files[:8]:
+        note_path = file.with_suffix(".md")
+        note_text = read(note_path) if note_path.exists() else ""
+        qpcr_images.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
+                "note_content": note_text[:220] if note_text else "",
+                "image_type": extract_markdown_section(note_text, "图片类型") if note_text else "",
+            }
+        )
     validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")
@@ -8863,6 +8956,7 @@ def molecular_validation_index():
         qpcr_records=qpcr_records,
         wb_results=wb_results,
         qpcr_results=qpcr_results,
+        qpcr_images=qpcr_images,
         validation_writing=validation_writing,
     )
 

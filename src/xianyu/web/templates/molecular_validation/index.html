@@ -94,6 +94,29 @@
 </section>
 
 <section>
+  <h3>最近 qPCR 原始图片</h3>
+  {% if qpcr_images %}
+    <div class="project-grid">
+      {% for item in qpcr_images %}
+      <article class="file-card">
+        <h3>{{ item.name }}</h3>
+        {% if item.image_type %}
+        <p><strong>类型：</strong>{{ item.image_type }}</p>
+        {% endif %}
+        <p><a href="/media?path={{ item.path }}" target="_blank">打开图片</a></p>
+        {% if item.note_path %}
+        <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>
+        <pre>{{ item.note_content }}</pre>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>暂无最近 qPCR 原始图片。</p>
+  {% endif %}
+</section>
+
+<section>
   <h3>最近联合写作稿</h3>
   {% if validation_writing %}
     {% for item in validation_writing %}
