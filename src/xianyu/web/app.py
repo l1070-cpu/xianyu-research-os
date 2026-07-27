@@ -3969,14 +3969,18 @@ def build_submission_checklist_summary():
     missing_count = 0
     sections = []
     missing_items = []
+    section_summaries = []
 
     for section in checklist_sections:
         rendered_items = []
+        section_ready = 0
+        section_total = len(section["items"])
         for item in section["items"]:
             matched = find_match(pool_mapping[item["pool"]], item["keywords"])
             status = "ready" if matched else "missing"
             if matched:
                 ready_count += 1
+                section_ready += 1
             else:
                 missing_count += 1
                 missing_items.append(item["label"])
@@ -3988,6 +3992,13 @@ def build_submission_checklist_summary():
         sections.append({
             "title": section["title"],
             "entries": rendered_items,
+        })
+        percent = int((section_ready / section_total) * 100) if section_total else 0
+        section_summaries.append({
+            "title": section["title"],
+            "ready": section_ready,
+            "total": section_total,
+            "percent": percent,
         })
 
     recent_submission_items = []
@@ -4005,13 +4016,58 @@ def build_submission_checklist_summary():
         if len(recent_submission_items) >= 8:
             break
 
+    grouped_recent_items = {
+        "主文 / 整合稿": [],
+        "Figure / Supplementary": [],
+        "投稿 / 返修": [],
+    }
+    for item in recent_submission_items:
+        normalized = item["normalized"]
+        if any(keyword in normalized for keyword in ["master", "submission", "methods", "validation"]):
+            grouped_recent_items["主文 / 整合稿"].append(item)
+        elif any(keyword in normalized for keyword in ["figure", "supplementary", "manifest", "rawdata"]):
+            grouped_recent_items["Figure / Supplementary"].append(item)
+        else:
+            grouped_recent_items["投稿 / 返修"].append(item)
+
+    next_action_map = {
+        "网络药理 + 实验验证整合总稿": "先生成整合总稿，把网络药理和实验验证主线串成同一份投稿底稿。",
+        "实验验证总控包": "补一份实验验证总控包，把 WB、qPCR、CCK-8 和功能验证统一归档。",
+        "投稿总包 Submission Package": "生成 Submission Package，把标题、摘要、Highlights、Cover Letter 一次集中。",
+        "Methods 初稿 / 方法整合": "优先补 Methods，避免投稿前还在回填实验与分析步骤。",
+        "网络药理图表包": "先整理网络药理图表包，后续 Figure Legend 和投稿图件会更顺。",
+        "Figure Legend / Results 草稿": "补 Figure Legend / Results 草稿，让图和正文同时成型。",
+        "WB / qPCR 全验证包": "生成 WB / qPCR 全验证包，把分子验证结果和补充材料一次整理好。",
+        "CCK-8 全包": "整理 CCK-8 全包，把细胞活力结果、统计和图注统一。",
+        "Figure 文件清单": "生成 Figure 文件清单，先统一主图、补充图和 legend 的交付编号。",
+        "Supplementary 清单": "生成 Supplementary 清单，防止投稿时遗漏表格和补充图。",
+        "Cover Letter": "先补 Cover Letter，投稿时可以直接复制调整。",
+        "Response Letter": "预先生成 Response Letter 模板，返修时能直接进入回复。",
+        "审稿意见拆分稿": "准备审稿意见拆分模板，后续返修会更快。",
+        "原始数据归档清单": "先做原始数据归档清单，避免投稿后找不到对应底稿。",
+        "最终投稿 Checklist": "最后生成最终投稿 Checklist，作为提交前总核对清单。",
+    }
+    next_actions = []
+    for label in missing_items[:5]:
+        next_actions.append({
+            "label": label,
+            "description": next_action_map.get(label, "建议优先补齐这一项，完善投稿材料链条。"),
+        })
+
+    total_count = ready_count + missing_count
+    readiness_percent = int((ready_count / total_count) * 100) if total_count else 0
+
     return {
-        "total_count": ready_count + missing_count,
+        "total_count": total_count,
         "ready_count": ready_count,
         "missing_count": missing_count,
+        "readiness_percent": readiness_percent,
         "sections": sections,
+        "section_summaries": section_summaries,
         "missing_items": missing_items,
         "recent_submission_items": recent_submission_items,
+        "grouped_recent_items": grouped_recent_items,
+        "next_actions": next_actions,
     }
 
 
@@ -4198,6 +4254,48 @@ def build_submission_final_checklist_bundle(project_name: str, disease_name: str
 - Raw_Data/
 - Response_Package/
 - Journal_Requirements/
+"""
+
+
+def build_submission_toolkit_bundle(project_name: str, disease_name: str):
+    return f"""## 投稿工具包总览
+
+### 主文与整合稿
+- Network_Validation_Master：网络药理与实验验证整合总稿
+- Full_Validation_Master：实验验证总控包
+- Submission_Package：投稿总包
+- Methods_Draft：方法学整合稿
+
+### Figure 与补充材料
+- Figure_Manifest：主图与补充图交付清单
+- Supplementary_Checklist：补充材料整理清单
+- Submission_Naming_Guide：统一命名规范
+- RawData_Archive：原始数据归档清单
+
+### 投稿与返修
+- Cover_Letter：投稿信
+- Response_Letter：返修回复
+- Reviewer_Split：审稿意见拆分稿
+- Final_Submission_Checklist：提交前最终核对单
+
+## 推荐使用顺序
+1. 先完成 {project_name} 针对 {disease_name} 的整合总稿。
+2. 再整理 Figure、Supplementary 和 Raw Data 归档。
+3. 最后生成 Cover Letter、Submission Package 和 Final Checklist。
+
+## 最终归档总目录
+- 01_Main_Manuscript/
+- 02_Figures/
+- 03_Supplementary/
+- 04_Raw_Data/
+- 05_Submission_Package/
+- 06_Response_Package/
+
+## 一键核对
+- [ ] 主文、图表、补充材料、原始数据均已齐全
+- [ ] 投稿文件命名已统一
+- [ ] 期刊要求的特殊文件已补齐
+- [ ] 可直接进入在线投稿系统提交
 """
 
 
@@ -4414,6 +4512,50 @@ def writing_submission_final_checklist_new(title: str = Form(...)):
 {bundle}
 
 ## 最终提交日期
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/submission-toolkit/new")
+def writing_submission_toolkit_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Submission_Toolkit.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    checklist = build_submission_checklist_summary()
+    bundle = build_submission_toolkit_bundle(project_name, disease_name)
+    missing_summary = "\n".join([f"- {item}" for item in checklist["missing_items"]]) if checklist["missing_items"] else "- 当前投稿核心材料已基本齐全。"
+
+    if not file_path.exists():
+        content = f"""# Submission Toolkit｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 当前完成度
+- 已就绪：{checklist['ready_count']}
+- 待补齐：{checklist['missing_count']}
+- 完成度：{checklist['readiness_percent']}%
+
+## 当前待补齐项
+{missing_summary}
+
+{bundle}
+
+## 最终提交备注
 
 ## 修改记录
 """

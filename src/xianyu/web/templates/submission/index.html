@@ -35,6 +35,30 @@
       <p class="metric-number">{{ checklist.total_count }}</p>
       <p>主文、图表、Supplementary、投稿与返修</p>
     </article>
+    <article class="file-card">
+      <h3>整体完成度</h3>
+      <p class="metric-number">{{ checklist.readiness_percent }}%</p>
+      <div class="progress-track">
+        <div class="progress-fill" style="width: {{ checklist.readiness_percent }}%;"></div>
+      </div>
+      <p>按当前已识别投稿材料自动估算</p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h3>分区进度</h3>
+  <div class="project-grid">
+    {% for section in checklist.section_summaries %}
+    <article class="file-card">
+      <h3>{{ section.title }}</h3>
+      <p class="metric-number">{{ section.percent }}%</p>
+      <div class="progress-track">
+        <div class="progress-fill" style="width: {{ section.percent }}%;"></div>
+      </div>
+      <p>{{ section.ready }} / {{ section.total }} 已完成</p>
+    </article>
+    {% endfor %}
   </div>
 </section>
 
@@ -72,6 +96,18 @@
     <span class="tag">{{ item }}</span>
     {% endfor %}
   </div>
+</section>
+{% endif %}
+
+{% if checklist.next_actions %}
+<section>
+  <h3>下一步建议</h3>
+  {% for item in checklist.next_actions %}
+  <div class="file-card">
+    <h3>{{ item.label }}</h3>
+    <p>{{ item.description }}</p>
+  </div>
+  {% endfor %}
 </section>
 {% endif %}
 {% endif %}
@@ -112,6 +148,14 @@
         <p><label>核心标志物</label><br><textarea name="core_markers" rows="3" placeholder="例如：AKT, p-AKT, Nrf2, HO-1, BAX, BCL2"></textarea></p>
         <p><label>核心读数</label><br><textarea name="key_readouts" rows="3" placeholder="例如：活力恢复、凋亡率下降、ROS降低、膜电位恢复"></textarea></p>
         <button type="submit">生成 实验验证总控包</button>
+      </form>
+    </article>
+
+    <article class="file-card">
+      <h3>一键投稿工具包</h3>
+      <form method="post" action="/writing/submission-toolkit/new">
+        <p><label>名称</label><br><input name="title" placeholder="例如：Submission_Toolkit_投稿总控台" required></p>
+        <button type="submit">生成 投稿工具包总稿</button>
       </form>
     </article>
   </div>
@@ -218,6 +262,26 @@
     <pre>{{ item.path }}</pre>
   </div>
   {% endfor %}
+</section>
+{% endif %}
+
+{% if checklist and checklist.grouped_recent_items %}
+<section>
+  <h3>最近稿件分组</h3>
+  <div class="project-grid">
+    {% for title, entries in checklist.grouped_recent_items.items() %}
+    <article class="file-card">
+      <h3>{{ title }}</h3>
+      {% if entries %}
+        {% for item in entries %}
+        <p><a href="/file?path={{ item.path }}">{{ item.name }}</a></p>
+        {% endfor %}
+      {% else %}
+        <p>暂无相关稿件。</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
 </section>
 {% endif %}
 
