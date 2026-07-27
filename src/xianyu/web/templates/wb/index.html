@@ -30,6 +30,17 @@
 </section>
 
 <section>
+  <h3>上传 WB 原始图片</h3>
+  <form method="post" action="/wb/image-upload" enctype="multipart/form-data">
+    <p><label>图片名称</label><br><input name="title" placeholder="例如：AKT_full_blot_2026-07-27" required></p>
+    <p><label>图片类型</label><br><input name="image_type" placeholder="例如：full blot / 原膜图 / 裁切条带 / 曝光截图"></p>
+    <p><label>上传图片</label><br><input type="file" name="file" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff" required></p>
+    <p><label>图谱观察备注</label><br><textarea name="observation" rows="5" placeholder="例如：p-AKT 条带较弱；GAPDH 清晰；High 组曝光略强"></textarea></p>
+    <button type="submit">上传 WB 原始图片并归档</button>
+  </form>
+</section>
+
+<section>
   <h3>生成 WB 结果分析稿</h3>
   <form method="post" action="/wb/results/new">
     <p><label>结果稿名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB结果分析" required></p>
@@ -50,6 +61,35 @@
     <p><label>归一化灰度数据</label><br><textarea name="normalized_data" rows="8" placeholder="例如：Protein\tControl\tModel\tLow\tHigh&#10;AKT\t1.00\t0.62\t0.78\t0.95"></textarea></p>
     <button type="submit">生成 WB Results + Methods 初稿</button>
   </form>
+</section>
+
+<section>
+  <h3>最近 WB 原始图片</h3>
+  {% if image_items %}
+    <div class="project-grid">
+      {% for item in image_items %}
+      <article class="file-card">
+        <h3>{{ item.name }}</h3>
+        {% if item.image_type %}
+        <p><strong>类型：</strong>{{ item.image_type }}</p>
+        {% endif %}
+        {% if item.supplementary_label %}
+        <p><strong>建议编号：</strong>{{ item.supplementary_label }}</p>
+        {% endif %}
+        {% if item.supplementary_title %}
+        <p><strong>建议标题：</strong>{{ item.supplementary_title }}</p>
+        {% endif %}
+        <p><a href="/media?path={{ item.path }}" target="_blank">打开图片</a></p>
+        {% if item.note_path %}
+        <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>
+        <pre>{{ item.note_content }}</pre>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>暂无 WB 原始图片。</p>
+  {% endif %}
 </section>
 
 <section>

@@ -905,6 +905,7 @@ def build_wb_full_draft_bundle(
     antibodies: str,
     normalized_data: str,
 ):
+    wb_registry_block = build_wb_supplementary_registry_section(limit=12)
     return f"""# WB Results + Methods 初稿
 
 ## 实验对象
@@ -946,6 +947,8 @@ Protein samples were prepared from {sample_type or "the indicated samples"} in e
 - [ ] 确认统计学检验
 - [ ] 写入主文 Results
 - [ ] 与 qPCR 结果进行联合讨论
+
+{wb_registry_block}
 """
 
 
@@ -1741,6 +1744,10 @@ def build_wb_qpcr_package_bundle(
     wb_data: str,
     qpcr_data: str,
 ):
+    wb_registry_block = build_wb_supplementary_registry_section(
+        limit=12,
+        heading="WB 图片 Supplementary Figure 自动编号",
+    )
     qpcr_registry_block = build_qpcr_supplementary_registry_section(
         limit=12,
         heading="qPCR 图片 Supplementary Figure 自动编号",
@@ -1802,6 +1809,8 @@ Compared with the model group, {project_name} modulated both the protein and mRN
 - [ ] WB 与 qPCR 目标是否与主文机制一致
 - [ ] Results 文字是否避免过度解释，仅基于真实结果
 
+{wb_registry_block}
+
 {qpcr_registry_block}
 
 {qpcr_legend_block}
@@ -1821,6 +1830,10 @@ def build_wb_qpcr_full_validation_bundle(
     wb_data: str,
     qpcr_data: str,
 ):
+    wb_registry_block = build_wb_supplementary_registry_section(
+        limit=12,
+        heading="WB 图片 Supplementary Figure 自动编号",
+    )
     qpcr_registry_block = build_qpcr_supplementary_registry_section(
         limit=12,
         heading="qPCR 图片 Supplementary Figure 自动编号",
@@ -1905,6 +1918,8 @@ For transcriptional validation, total RNA was extracted from {sample_type_qpcr o
 - [ ] 原始灰度值和原始 Ct 值是否已保存
 - [ ] 统计学方法与显著性标记是否统一
 - [ ] Results 是否避免超出真实数据的解释
+
+{wb_registry_block}
 
 {qpcr_registry_block}
 
@@ -3440,6 +3455,85 @@ def build_qpcr_supplementary_bilingual_legend_section(
         lines.append(
             f"- English: {item['supplementary_title']} for the qPCR assay. This panel presents the {image_type} supporting the transcriptional validation workflow, and the corresponding raw image is archived at {item['path']}."
         )
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def get_wb_image_type_bucket(image_type: str):
+    text = (image_type or "").strip()
+    lower = text.lower()
+    if "full" in lower or "原膜" in text or "原图" in text or "full blot" in lower:
+        return "S1", "Full-length WB images"
+    if "crop" in lower or "裁切" in text:
+        return "S2", "Cropped WB panels"
+    if "曝光" in text or "胶片" in text or "仪器" in text or "screenshot" in lower:
+        return "S3", "WB acquisition screenshots"
+    return "S4", "Other WB supporting images"
+
+
+def _format_wb_supplementary_suffix(index: int):
+    if index <= 26:
+        return chr(64 + index)
+    return f"-{index}"
+
+
+def build_wb_image_registry(limit: int | None = None):
+    image_files = list_files(
+        "03_实验记录/WB_原始图片",
+        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
+    )
+    if not image_files:
+        return []
+
+    ordered = sorted(image_files, key=lambda p: (p.stat().st_mtime, p.name))
+    counters = {}
+    registry = []
+    for file in ordered:
+        note_path = file.with_suffix(".md")
+        note_text = read(note_path) if note_path.exists() else ""
+        image_type = extract_markdown_section(note_text, "图片类型") if note_text else ""
+        supp_base, supp_title = get_wb_image_type_bucket(image_type)
+        counters[supp_base] = counters.get(supp_base, 0) + 1
+        suffix = _format_wb_supplementary_suffix(counters[supp_base])
+        registry.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
+                "note_content": note_text[:240] if note_text else "",
+                "image_type": image_type,
+                "supplementary_label": f"Supplementary Figure {supp_base}{suffix}",
+                "supplementary_title": supp_title,
+                "mtime": file.stat().st_mtime,
+            }
+        )
+
+    registry.sort(key=lambda item: item["mtime"], reverse=True)
+    if limit is not None:
+        registry = registry[:limit]
+    for item in registry:
+        item.pop("mtime", None)
+    return registry
+
+
+def build_wb_supplementary_registry_section(
+    limit: int | None = None,
+    heading: str = "WB 原始图片 Supplementary Figure 建议清单",
+):
+    registry = build_wb_image_registry(limit=limit)
+    if not registry:
+        return f"""## {heading}
+- 当前暂无已归档的 WB 原始图片。
+"""
+
+    lines = [f"## {heading}"]
+    for item in registry:
+        lines.append(f"### {item['supplementary_label']}")
+        lines.append(f"- 建议标题：{item['supplementary_title']}")
+        lines.append(f"- 图片类型：{item['image_type'] or '未注明'}")
+        lines.append(f"- 原始文件：{item['path']}")
+        if item["note_path"]:
+            lines.append(f"- 备注文件：{item['note_path']}")
         lines.append("")
     return "\n".join(lines).strip() + "\n"
 
@@ -8863,9 +8957,10 @@ def cck8_full_package_new(
 def wb_index():
     files = list_md("03_实验记录/WB")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    image_items = build_wb_image_registry(limit=12)
     current_project = get_current_project() or {}
     template = env.get_template("wb/index.html")
-    return template.render(items=items, active_project=current_project)
+    return template.render(items=items, image_items=image_items, active_project=current_project)
 
 
 @app.post("/wb/new")
@@ -8956,6 +9051,84 @@ Positive control
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/wb/image-upload")
+async def wb_image_upload(
+    title: str = Form(...),
+    image_type: str = Form(""),
+    observation: str = Form(""),
+    file: UploadFile = File(...),
+):
+    current_project = get_current_project() or {}
+    folder = ROOT / "03_实验记录" / "WB_原始图片"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"}:
+        return HTMLResponse("仅支持 png、jpg、jpeg、gif、webp、bmp、tif、tiff 图片。", status_code=400)
+
+    today = date.today().isoformat()
+    filename = f"{today}_{safe_name(title)}{suffix}"
+    file_path = folder / filename
+    content = await file.read()
+    file_path.write_bytes(content)
+
+    note_path = file_path.with_suffix(".md")
+    if not note_path.exists():
+        note_path.write_text(
+            f"""# WB 原始图片记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 图片类型
+{image_type or "待补充"}
+
+## 原始文件
+{file_path.relative_to(ROOT)}
+
+## 图谱观察
+{observation or "待补充"}
+
+## 推荐用途
+- [ ] Full blot 补充图
+- [ ] 裁切条带留档
+- [ ] 审稿补充材料
+- [ ] Figure 原始支持图
+
+## 下一步
+- [ ] 补充对应目标蛋白与组别信息
+- [ ] 如需正文写作，请补充与灰度分析结果的对应关系
+""",
+            encoding="utf-8",
+        )
+
+    registry = build_wb_image_registry()
+    current_item = next(
+        (item for item in registry if item["path"] == str(file_path.relative_to(ROOT))),
+        None,
+    )
+    if current_item:
+        note_text = read(note_path)
+        if "## Supplementary Figure 建议编号" not in note_text:
+            note_text = note_text.rstrip() + f"""
+
+## Supplementary Figure 建议编号
+{current_item['supplementary_label']}
+
+## Supplementary Figure 建议标题
+{current_item['supplementary_title']}
+"""
+            note_path.write_text(note_text + "\n", encoding="utf-8")
+
+    return RedirectResponse(url="/wb", status_code=303)
 
 
 @app.post("/wb/results/new")
@@ -9283,6 +9456,7 @@ def molecular_validation_index():
     qpcr_records = get_recent_notes("03_实验记录/qPCR", limit=6)
     wb_results = get_recent_notes("05_数据分析/WB", limit=6)
     qpcr_results = get_recent_notes("05_数据分析/qPCR", limit=6)
+    wb_images = build_wb_image_registry(limit=8)
     qpcr_images = build_qpcr_image_registry(limit=8)
     validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
     summary = build_molecular_validation_summary(current_project)
@@ -9294,6 +9468,7 @@ def molecular_validation_index():
         qpcr_records=qpcr_records,
         wb_results=wb_results,
         qpcr_results=qpcr_results,
+        wb_images=wb_images,
         qpcr_images=qpcr_images,
         validation_writing=validation_writing,
     )
