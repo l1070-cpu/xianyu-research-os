@@ -3256,6 +3256,65 @@ def get_recent_qpcr_image_writebacks(limit: int = 5):
     return items
 
 
+def get_qpcr_image_type_bucket(image_type: str):
+    text = (image_type or "").strip()
+    lower = text.lower()
+    if "扩增" in text:
+        return "S1", "扩增曲线补充图"
+    if "熔解" in text or "融解" in text:
+        return "S2", "熔解曲线补充图"
+    if "ct" in lower or "报告" in text:
+        return "S3", "原始 Ct 报告补充图"
+    if "仪器" in text or "截图" in text:
+        return "S4", "仪器结果截图补充图"
+    return "S5", "其他 qPCR 支持图片"
+
+
+def _format_qpcr_supplementary_suffix(index: int):
+    if index <= 26:
+        return chr(64 + index)
+    return f"-{index}"
+
+
+def build_qpcr_image_registry(limit: int | None = None):
+    image_files = list_files(
+        "03_实验记录/qPCR_原始图片",
+        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
+    )
+    if not image_files:
+        return []
+
+    ordered = sorted(image_files, key=lambda p: (p.stat().st_mtime, p.name))
+    counters = {}
+    registry = []
+    for file in ordered:
+        note_path = file.with_suffix(".md")
+        note_text = read(note_path) if note_path.exists() else ""
+        image_type = extract_markdown_section(note_text, "图片类型") if note_text else ""
+        supp_base, supp_title = get_qpcr_image_type_bucket(image_type)
+        counters[supp_base] = counters.get(supp_base, 0) + 1
+        suffix = _format_qpcr_supplementary_suffix(counters[supp_base])
+        registry.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
+                "note_content": note_text[:240] if note_text else "",
+                "image_type": image_type,
+                "supplementary_label": f"Supplementary Figure {supp_base}{suffix}",
+                "supplementary_title": supp_title,
+                "mtime": file.stat().st_mtime,
+            }
+        )
+
+    registry.sort(key=lambda item: item["mtime"], reverse=True)
+    if limit is not None:
+        registry = registry[:limit]
+    for item in registry:
+        item.pop("mtime", None)
+    return registry
+
+
 def build_recent_image_writeback_section(items, heading: str = "最近 qPCR 图片回填草稿"):
     if not items:
         return f"""## {heading}
@@ -8836,23 +8895,7 @@ def qpcr_index():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
     recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
-    image_files = list_files(
-        "03_实验记录/qPCR_原始图片",
-        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
-    )
-    image_items = []
-    for file in image_files[:12]:
-        note_path = file.with_suffix(".md")
-        note_text = read(note_path) if note_path.exists() else ""
-        image_items.append(
-            {
-                "name": file.name,
-                "path": str(file.relative_to(ROOT)),
-                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
-                "note_content": note_text[:240] if note_path.exists() else "",
-                "image_type": extract_markdown_section(note_text, "图片类型") if note_text else "",
-            }
-        )
+    image_items = build_qpcr_image_registry(limit=12)
     current_project = get_current_project() or {}
     template = env.get_template("qpcr/index.html")
     return template.render(
@@ -8921,6 +8964,24 @@ async def qpcr_image_upload(
             encoding="utf-8",
         )
 
+    registry = build_qpcr_image_registry()
+    current_item = next(
+        (item for item in registry if item["path"] == str(file_path.relative_to(ROOT))),
+        None,
+    )
+    if current_item:
+        note_text = read(note_path)
+        if "## Supplementary Figure 建议编号" not in note_text:
+            note_text = note_text.rstrip() + f"""
+
+## Supplementary Figure 建议编号
+{current_item['supplementary_label']}
+
+## Supplementary Figure 建议标题
+{current_item['supplementary_title']}
+"""
+            note_path.write_text(note_text + "\n", encoding="utf-8")
+
     return RedirectResponse(url="/qpcr", status_code=303)
 
 
@@ -8935,6 +8996,8 @@ def qpcr_ai_curve_from_image(note_path: str = Form(...)):
     observation = extract_markdown_section(note_text, "图谱观察")
     image_rel_path = extract_markdown_section(note_text, "原始文件")
     image_name = Path(image_rel_path).name if image_rel_path else note_file.stem
+    supplementary_label = extract_markdown_section(note_text, "Supplementary Figure 建议编号")
+    supplementary_title = extract_markdown_section(note_text, "Supplementary Figure 建议标题")
 
     amplification_notes = ""
     melting_notes = ""
@@ -8961,7 +9024,7 @@ def qpcr_ai_curve_from_image(note_path: str = Form(...)):
         amplification_notes,
         melting_notes,
         "",
-        f"来源图片类型：{image_type or '未注明'}",
+        f"来源图片类型：{image_type or '未注明'}；{supplementary_label or '未分配补充图编号'}；{supplementary_title or '未分配补充图标题'}",
     )
     result = ai_json_or_prompt(system_prompt, user_prompt)
     content = format_ai_analysis_markdown(f"qPCR 图片AI图谱讲解｜{image_name}", result)
@@ -8983,6 +9046,12 @@ def qpcr_ai_curve_from_image(note_path: str = Form(...)):
 ## 图片类型
 {image_type or "未注明"}
 
+## Supplementary Figure 建议编号
+{supplementary_label or "待补充"}
+
+## Supplementary Figure 建议标题
+{supplementary_title or "待补充"}
+
 ## 人工观察
 {observation or "待补充"}
 
@@ -9003,6 +9072,8 @@ def qpcr_image_writeback_new(note_path: str = Form(...)):
     observation = extract_markdown_section(note_text, "图谱观察")
     image_rel_path = extract_markdown_section(note_text, "原始文件")
     image_name = Path(image_rel_path).stem if image_rel_path else note_file.stem
+    supplementary_label = extract_markdown_section(note_text, "Supplementary Figure 建议编号")
+    supplementary_title = extract_markdown_section(note_text, "Supplementary Figure 建议标题")
 
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作" / "WB_qPCR验证"
@@ -9015,7 +9086,7 @@ def qpcr_image_writeback_new(note_path: str = Form(...)):
     system_prompt, user_prompt = build_qpcr_image_writeback_prompt(
         project_name,
         disease_name,
-        image_type or "未注明",
+        f"{image_type or '未注明'}｜{supplementary_label or '未分配补充图编号'}｜{supplementary_title or '未分配补充图标题'}",
         observation or "待补充",
     )
     result = ai_json_or_prompt(system_prompt, user_prompt)
@@ -9038,6 +9109,12 @@ def qpcr_image_writeback_new(note_path: str = Form(...)):
 ## 图片类型
 {image_type or '未注明'}
 
+## Supplementary Figure 建议编号
+{supplementary_label or '待补充'}
+
+## Supplementary Figure 建议标题
+{supplementary_title or '待补充'}
+
 ## 人工观察
 {observation or '待补充'}
 
@@ -9054,23 +9131,7 @@ def molecular_validation_index():
     qpcr_records = get_recent_notes("03_实验记录/qPCR", limit=6)
     wb_results = get_recent_notes("05_数据分析/WB", limit=6)
     qpcr_results = get_recent_notes("05_数据分析/qPCR", limit=6)
-    qpcr_image_files = list_files(
-        "03_实验记录/qPCR_原始图片",
-        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
-    )
-    qpcr_images = []
-    for file in qpcr_image_files[:8]:
-        note_path = file.with_suffix(".md")
-        note_text = read(note_path) if note_path.exists() else ""
-        qpcr_images.append(
-            {
-                "name": file.name,
-                "path": str(file.relative_to(ROOT)),
-                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
-                "note_content": note_text[:220] if note_text else "",
-                "image_type": extract_markdown_section(note_text, "图片类型") if note_text else "",
-            }
-        )
+    qpcr_images = build_qpcr_image_registry(limit=8)
     validation_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=12)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")

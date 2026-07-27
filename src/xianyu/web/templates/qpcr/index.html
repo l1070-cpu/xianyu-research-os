@@ -235,6 +235,12 @@
         {% if item.image_type %}
         <p><strong>类型：</strong>{{ item.image_type }}</p>
         {% endif %}
+        {% if item.supplementary_label %}
+        <p><strong>建议编号：</strong>{{ item.supplementary_label }}</p>
+        {% endif %}
+        {% if item.supplementary_title %}
+        <p><strong>建议标题：</strong>{{ item.supplementary_title }}</p>
+        {% endif %}
         <pre>{{ item.note_content }}</pre>
         {% else %}
         <p>暂无图片备注。</p>

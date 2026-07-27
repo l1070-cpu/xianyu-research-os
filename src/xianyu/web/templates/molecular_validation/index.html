@@ -103,6 +103,12 @@
         {% if item.image_type %}
         <p><strong>类型：</strong>{{ item.image_type }}</p>
         {% endif %}
+        {% if item.supplementary_label %}
+        <p><strong>建议编号：</strong>{{ item.supplementary_label }}</p>
+        {% endif %}
+        {% if item.supplementary_title %}
+        <p><strong>建议标题：</strong>{{ item.supplementary_title }}</p>
+        {% endif %}
         <p><a href="/media?path={{ item.path }}" target="_blank">打开图片</a></p>
         {% if item.note_path %}
         <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>
