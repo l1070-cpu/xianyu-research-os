@@ -225,6 +225,10 @@
           <input type="hidden" name="note_path" value="{{ item.note_path }}">
           <button type="submit">一键 AI 图谱讲解</button>
         </form>
+        <form method="post" action="/qpcr/image-writeback/new">
+          <input type="hidden" name="note_path" value="{{ item.note_path }}">
+          <button type="submit">生成 Results / 图注草稿</button>
+        </form>
         {% endif %}
         {% if item.note_path %}
         <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>

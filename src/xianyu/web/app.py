@@ -1614,6 +1614,33 @@ def build_qpcr_ai_error_prompt(
     return system_prompt, user_prompt
 
 
+def build_qpcr_image_writeback_prompt(
+    project_name: str,
+    disease_name: str,
+    image_type: str,
+    observation: str,
+):
+    system_prompt = (
+        "你是生物医药科研写作助手。"
+        "必须严格基于提供的图片类型和人工观察记录，不得虚构未提供的实验事实。"
+        "请只输出合法 JSON，字段包括：results_sentence,supplementary_figure_legend,main_text_note,discussion_note,risk_note。"
+    )
+    user_prompt = f"""项目：{project_name}
+疾病/模型：{disease_name}
+图片类型：{image_type}
+人工观察：
+{observation}
+
+请输出：
+1. 可直接用于 Results 的句子
+2. Supplementary Figure Legend 草稿
+3. 正文中如何引用这张图的备注
+4. 可写进 Discussion 的一句提醒
+5. 风险与保守表述
+"""
+    return system_prompt, user_prompt
+
+
 def format_ai_analysis_markdown(title: str, ai_result: dict):
     if ai_result.get("status") == "not_configured":
         return f"""# {title}
@@ -8915,6 +8942,61 @@ def qpcr_ai_curve_from_image(note_path: str = Form(...)):
 
 ## 人工观察
 {observation or "待补充"}
+
+{content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/image-writeback/new")
+def qpcr_image_writeback_new(note_path: str = Form(...)):
+    note_file = ROOT / note_path
+    if not note_file.exists():
+        return HTMLResponse("图片备注不存在", status_code=404)
+
+    note_text = read(note_file)
+    image_type = extract_markdown_section(note_text, "图片类型")
+    observation = extract_markdown_section(note_text, "图谱观察")
+    image_rel_path = extract_markdown_section(note_text, "原始文件")
+    image_name = Path(image_rel_path).stem if image_rel_path else note_file.stem
+
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(image_name)}_qPCR_Image_Writeback.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+
+    system_prompt, user_prompt = build_qpcr_image_writeback_prompt(
+        project_name,
+        disease_name,
+        image_type or "未注明",
+        observation or "待补充",
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"qPCR 图片回填草稿｜{image_name}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 来源图片
+{image_rel_path}
+
+## 来源备注
+{note_path}
+
+## 图片类型
+{image_type or '未注明'}
+
+## 人工观察
+{observation or '待补充'}
 
 {content}""",
         encoding="utf-8",
