@@ -1075,6 +1075,137 @@ def build_qpcr_results_bundle(project_name: str, disease_name: str, target_genes
 """
 
 
+def parse_qpcr_relative_data(ddct_data: str):
+    lines = [line.strip() for line in (ddct_data or "").splitlines() if line.strip()]
+    if len(lines) < 2:
+        return [], []
+
+    header = [cell.strip() for cell in re.split(r"\t|,", lines[0]) if cell.strip()]
+    rows = []
+    for line in lines[1:]:
+        parts = [cell.strip() for cell in re.split(r"\t|,", line)]
+        if not parts or not parts[0]:
+            continue
+        gene = parts[0]
+        values = {}
+        for idx, group in enumerate(header[1:], start=1):
+            raw = parts[idx] if idx < len(parts) else ""
+            try:
+                values[group] = float(raw)
+            except ValueError:
+                values[group] = None
+        rows.append({"gene": gene, "values": values})
+    return header[1:], rows
+
+
+def build_qpcr_trend_summary(rows):
+    summaries = []
+    for row in rows:
+        gene = row["gene"]
+        values = {k: v for k, v in row["values"].items() if isinstance(v, (int, float))}
+        if not values:
+            summaries.append(f"- {gene}：暂无可解析数值。")
+            continue
+        sorted_items = sorted(values.items(), key=lambda item: item[1])
+        low_group, low_value = sorted_items[0]
+        high_group, high_value = sorted_items[-1]
+        summaries.append(
+            f"- {gene}：最低为 {low_group} ({low_value:.2f})，最高为 {high_group} ({high_value:.2f})。"
+        )
+    return "\n".join(summaries) if summaries else "- 暂无趋势摘要。"
+
+
+def build_qpcr_main_figure_legend(project_name: str, disease_name: str, target_genes: str, ddct_data: str):
+    groups, rows = parse_qpcr_relative_data(ddct_data)
+    genes = [row["gene"] for row in rows] or [item.strip() for item in re.split(r"[,\n;/]+", target_genes or "") if item.strip()]
+    group_text = ", ".join(groups) if groups else "the indicated groups"
+    gene_text = ", ".join(genes) if genes else "the selected genes"
+    return (
+        f"Figure X. Effects of {project_name} on the mRNA expression related to {disease_name}. "
+        f"Relative expression levels of {gene_text} across {group_text} were calculated using the 2^-ΔΔCt method and are presented as mean ± SD."
+    )
+
+
+def build_qpcr_stats_note_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    ddct_data: str,
+    stats_summary: str,
+):
+    groups, rows = parse_qpcr_relative_data(ddct_data)
+    group_text = ", ".join(groups) if groups else "the indicated groups"
+    trend_summary = build_qpcr_trend_summary(rows)
+    return f"""## qPCR 统计学解释与显著性说明
+
+### 当前目标基因
+{target_genes or "- 待补充目标基因"}
+
+### 分组
+{group_text}
+
+### 相对表达趋势摘要
+{trend_summary}
+
+### 统计结果摘要
+{stats_summary or "- 待补充均值、SD、P 值、显著性符号和所用统计学方法。"}
+
+### Results 统计解释句
+- Relative expression analysis showed statistically significant differences among the indicated groups for the selected genes.
+- Compared with the model group, treatment with {project_name} significantly reversed the abnormal transcriptional pattern associated with {disease_name}.
+- These statistically supported changes strengthened the interpretation of gene-level pathway regulation.
+
+### 图注中的统计学写法
+- Data are presented as mean ± SD from at least three independent experiments.
+- Statistical significance was evaluated using the indicated method, and the corresponding significance symbols were annotated in the figure.
+
+### Methods 统计学补充句
+- Relative mRNA expression data were expressed as mean ± SD and statistically analyzed using the indicated method after 2^-ΔΔCt transformation.
+
+### 显著性标记核对
+- [ ] 是否明确 *、**、#、## 等符号含义
+- [ ] 是否说明比较对象是 Control 还是 Model
+- [ ] 是否保证正文、图注、统计表显著性符号一致
+"""
+
+
+def build_qpcr_image_chain_bundle(
+    project_name: str,
+    disease_name: str,
+    image_type: str,
+    observation: str,
+    supplementary_label: str,
+    supplementary_title: str,
+):
+    return f"""## qPCR 图片全链路整合包
+
+### 来源图片类型
+{image_type or "未注明"}
+
+### Supplementary 编号
+- 编号：{supplementary_label or "待补充"}
+- 标题：{supplementary_title or "待补充"}
+
+### 人工观察
+{observation or "待补充"}
+
+### Results 回填句
+- The qPCR quality-control image associated with {supplementary_label or "the supplementary panel"} supported the reliability of the transcriptional validation workflow for {project_name} against {disease_name}.
+
+### Supplementary Figure Legend 草稿
+- {supplementary_label or "Supplementary Figure Sx"}. {supplementary_title or "qPCR supporting image"} for the qPCR assay. This panel presents the {image_type or "supporting image"} supporting the transcriptional validation workflow.
+
+### Reviewer Response 句子
+- The related qPCR quality-control image has been reorganized and renumbered as {supplementary_label or "a supplementary figure"}, and the corresponding legend has been added to the revised supplementary materials.
+- This supplementary panel provides additional transparency for the qPCR validation workflow and does not alter the conclusions of the manuscript.
+
+### Submission Checklist
+- [ ] 是否已在 Supplementary 中标明该图编号
+- [ ] 是否已在图注中说明图片类型与用途
+- [ ] 是否已在审稿回复中写明该图的放置位置
+"""
+
+
 def build_wb_full_draft_bundle(
     project_name: str,
     disease_name: str,
@@ -3622,6 +3753,69 @@ def get_recent_qpcr_image_writebacks(limit: int = 5):
         return []
     files = sorted(
         folder.glob("*_qPCR_Image_Writeback.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_qpcr_figure_legends(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Figure_Legend.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_qpcr_stats_notes(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Stats_Note.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_qpcr_image_chains(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Image_Chain.md"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -10056,6 +10250,9 @@ def qpcr_index():
     recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
     recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
     image_items = build_qpcr_image_registry(limit=12)
+    recent_figure_legends = get_recent_qpcr_figure_legends(limit=6)
+    recent_stats_notes = get_recent_qpcr_stats_notes(limit=6)
+    recent_image_chains = get_recent_qpcr_image_chains(limit=6)
     current_project = get_current_project() or {}
     template = env.get_template("qpcr/index.html")
     return template.render(
@@ -10064,6 +10261,9 @@ def qpcr_index():
         recent_results=recent_results,
         recent_writing=recent_writing,
         image_items=image_items,
+        recent_figure_legends=recent_figure_legends,
+        recent_stats_notes=recent_stats_notes,
+        recent_image_chains=recent_image_chains,
     )
 
 
@@ -10279,6 +10479,152 @@ def qpcr_image_writeback_new(note_path: str = Form(...)):
 {observation or '待补充'}
 
 {content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/figure-legend/new")
+def qpcr_figure_legend_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    ddct_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Figure_Legend.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    legend = build_qpcr_main_figure_legend(project_name, disease_name, target_genes, ddct_data)
+
+    file_path.write_text(
+        f"""# qPCR 主图 Figure Legend 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 目标基因
+{target_genes or "待补充"}
+
+## 2^-ΔΔCt 数据
+```text
+{ddct_data or "Gene\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## Figure Legend 草稿
+- {legend}
+
+## 使用提醒
+- [ ] 确认最终 Figure 编号
+- [ ] 确认统计学描述与显著性标记
+- [ ] 确认图注中的基因列表与主图一致
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/stats-note/new")
+def qpcr_stats_note_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Stats_Note.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_stats_note_bundle(project_name, disease_name, target_genes, ddct_data, stats_summary)
+
+    file_path.write_text(
+        f"""# qPCR 统计学解释稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 目标基因
+{target_genes or "待补充"}
+
+## 2^-ΔΔCt 数据
+```text
+{ddct_data or "Gene\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## 统计摘要
+{stats_summary or "待补充"}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/image-chain/new")
+def qpcr_image_chain_new(note_path: str = Form(...)):
+    note_file = ROOT / note_path
+    if not note_file.exists():
+        return HTMLResponse("图片备注不存在", status_code=404)
+
+    note_text = read(note_file)
+    image_type = extract_markdown_section(note_text, "图片类型")
+    observation = extract_markdown_section(note_text, "图谱观察")
+    image_rel_path = extract_markdown_section(note_text, "原始文件")
+    image_name = Path(image_rel_path).stem if image_rel_path else note_file.stem
+    supplementary_label = extract_markdown_section(note_text, "Supplementary Figure 建议编号")
+    supplementary_title = extract_markdown_section(note_text, "Supplementary Figure 建议标题")
+
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(image_name)}_qPCR_Image_Chain.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_image_chain_bundle(
+        project_name,
+        disease_name,
+        image_type,
+        observation,
+        supplementary_label,
+        supplementary_title,
+    )
+
+    file_path.write_text(
+        f"""# qPCR 图片全链路整合稿｜{image_name}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 来源图片
+{image_rel_path}
+
+## 来源备注
+{note_path}
+
+{bundle}
+""",
         encoding="utf-8",
     )
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
