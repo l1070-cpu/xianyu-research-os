@@ -200,6 +200,46 @@
 </section>
 
 <section>
+  <h3>qPCR Methods 联动稿</h3>
+  <form method="post" action="/qpcr/methods-linked/new">
+    <p><label>联动稿名称</label><br><input name="title" placeholder="例如：AKT1_qPCR_Methods_联动稿" required></p>
+    <p><label>样本类型</label><br><input name="sample_type" placeholder="例如：H/R 细胞总RNA"></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>内参基因</label><br><input name="housekeeping_gene" placeholder="例如：GAPDH"></p>
+    <p><label>引物信息来源</label><br><input name="primer_source" placeholder="例如：Supplementary Table S1 / qPCR 引物设计说明"></p>
+    <p><label>原始 Ct 来源</label><br><input name="raw_ct_source" placeholder="例如：Raw Ct 表 / Ct 质控包"></p>
+    <p><label>2^-ΔΔCt 来源</label><br><input name="ddct_source" placeholder="例如：qPCR 结果分析稿 / 统计包"></p>
+    <button type="submit">生成 Methods 联动稿</button>
+  </form>
+</section>
+
+<section>
+  <h3>qPCR Results 联动稿</h3>
+  <form method="post" action="/qpcr/results-linked/new">
+    <p><label>联动稿名称</label><br><input name="title" placeholder="例如：AKT1_qPCR_Results_联动稿" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="6" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea></p>
+    <p><label>统计结果汇总</label><br><textarea name="stats_summary" rows="5" placeholder="例如：AKT1：ANOVA p=0.012；Model vs High, p<0.05"></textarea></p>
+    <p><label>主图编号</label><br><input name="figure_label" placeholder="例如：Figure 5A-C"></p>
+    <p><label>图片 / Supplementary 支撑</label><br><input name="image_support" placeholder="例如：Supplementary Figure S3 + qPCR 图片全链路整合稿"></p>
+    <button type="submit">生成 Results 联动稿</button>
+  </form>
+</section>
+
+<section>
+  <h3>qPCR Reviewer Response 联动稿</h3>
+  <form method="post" action="/qpcr/reviewer-linked/new">
+    <p><label>联动稿名称</label><br><input name="title" placeholder="例如：AKT1_qPCR_Reviewer_联动稿" required></p>
+    <p><label>审稿意见</label><br><textarea name="reviewer_comment" rows="5" placeholder="例如：Please provide primer information, supplementary images, and clearer statistical interpretation."></textarea></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>引物表编号</label><br><input name="primer_table" placeholder="例如：Supplementary Table S1"></p>
+    <p><label>Supplementary 图片编号</label><br><input name="supplementary_label" placeholder="例如：Supplementary Figure S3"></p>
+    <p><label>统计摘要</label><br><textarea name="stats_summary" rows="4" placeholder="例如：ANOVA + Tukey；Model vs High, p<0.05"></textarea></p>
+    <button type="submit">生成 Reviewer Response 联动稿</button>
+  </form>
+</section>
+
+<section>
   <h3>qPCR 图表映射与审稿答复</h3>
   <form method="post" action="/qpcr/mapping/new">
     <p><label>图表映射名称</label><br><input name="title" placeholder="例如：qPCR_Figure_Table_Mapping" required></p>
@@ -303,6 +343,48 @@
       {% endif %}
     </article>
   </div>
+</section>
+
+<section>
+  <h3>最近 qPCR Methods 联动稿</h3>
+  {% if recent_methods_linked %}
+    {% for item in recent_methods_linked %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR Methods 联动稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR Results 联动稿</h3>
+  {% if recent_results_linked %}
+    {% for item in recent_results_linked %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR Results 联动稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR Reviewer Response 联动稿</h3>
+  {% if recent_reviewer_linked %}
+    {% for item in recent_reviewer_linked %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR Reviewer Response 联动稿。</p>
+  {% endif %}
 </section>
 
 <section>

@@ -1206,6 +1206,131 @@ def build_qpcr_image_chain_bundle(
 """
 
 
+def build_qpcr_methods_link_bundle(
+    project_name: str,
+    disease_name: str,
+    sample_type: str,
+    target_genes: str,
+    housekeeping_gene: str,
+    primer_source: str,
+    raw_ct_source: str,
+    ddct_source: str,
+):
+    return f"""## qPCR Methods 联动稿
+
+### 实验对象
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- 样本类型：{sample_type or "待补充"}
+
+### 目标基因
+{target_genes or "待补充"}
+
+### 内参基因
+{housekeeping_gene or "待补充"}
+
+### 数据来源
+- 引物信息来源：{primer_source or "待补充"}
+- 原始 Ct 来源：{raw_ct_source or "待补充"}
+- 2^-ΔΔCt 来源：{ddct_source or "待补充"}
+
+### Methods 初稿
+Total RNA was extracted from {sample_type or "the indicated samples"} and reverse-transcribed into cDNA according to the manufacturer's instructions. Quantitative PCR was performed using gene-specific primers targeting {target_genes or "the selected genes"}, with {housekeeping_gene or "the designated housekeeping gene"} used as the internal reference. Amplification specificity was evaluated based on the primer-design record and quality-control workflow, and relative mRNA expression levels were calculated using the 2^-ΔΔCt method.
+
+### Supplementary / Methods 衔接句
+- Detailed primer information should be organized in a dedicated supplementary table and cited in the Methods section.
+- Raw Ct values and the 2^-ΔΔCt calculation basis should remain traceable to the corresponding quality-control files.
+
+### Methods 核对清单
+- [ ] 是否补齐 RNA 提取与逆转录试剂信息
+- [ ] 是否写明 PCR 体系和循环参数
+- [ ] 是否写明内参基因
+- [ ] 是否写明 2^-ΔΔCt 计算方法
+- [ ] 是否在补充材料中保留引物来源和 Ct 依据
+"""
+
+
+def build_qpcr_results_link_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    ddct_data: str,
+    stats_summary: str,
+    figure_label: str,
+    image_support: str,
+):
+    groups, rows = parse_qpcr_relative_data(ddct_data)
+    trend_summary = build_qpcr_trend_summary(rows)
+    return f"""## qPCR Results 联动稿
+
+### 目标基因
+{target_genes or "待补充"}
+
+### 分组
+{", ".join(groups) if groups else "待补充分组"}
+
+### 趋势摘要
+{trend_summary}
+
+### 统计摘要
+{stats_summary or "待补充"}
+
+### Figure 对应
+- 主图编号：{figure_label or "待补充"}
+- 图片 / Supplementary 支撑：{image_support or "待补充"}
+
+### Results 初稿
+RT-qPCR analysis demonstrated that {project_name} modulated the transcriptional profile associated with {disease_name}. The relative expression of {target_genes or "the selected genes"} showed a treatment-responsive pattern, and the direction of change was consistent with the proposed mechanism. These transcriptional findings, together with the corresponding figure presentation in {figure_label or "the main figure"} and the supporting supplementary image materials, strengthen the gene-level interpretation of pathway regulation.
+
+### Figure Legend 承接句
+- The statistical interpretation in the main text should remain consistent with the figure legend and significance symbols used in {figure_label or "the target figure"}.
+
+### Results 核对清单
+- [ ] 是否保证 Results 与图注的基因列表一致
+- [ ] 是否保证 Results 与统计结论一致
+- [ ] 是否补充与 Supplementary 图片的对应关系
+"""
+
+
+def build_qpcr_reviewer_link_bundle(
+    project_name: str,
+    disease_name: str,
+    reviewer_comment: str,
+    target_genes: str,
+    primer_table: str,
+    supplementary_label: str,
+    stats_summary: str,
+):
+    return f"""## qPCR Reviewer Response 联动稿
+
+### 审稿意见
+{reviewer_comment or "待补充"}
+
+### 目标基因
+{target_genes or "待补充"}
+
+### 对应补充材料
+- 引物表：{primer_table or "待补充"}
+- Supplementary 图片：{supplementary_label or "待补充"}
+
+### 统计摘要
+{stats_summary or "待补充"}
+
+### Reviewer Response 草稿
+We thank the reviewer for the helpful comment regarding the qPCR validation workflow in the {project_name} study related to {disease_name}. In the revised materials, we have reorganized the primer information for {target_genes or "the selected genes"} into {primer_table or "the supplementary primer table"}, and the corresponding quality-control / supporting image has been arranged as {supplementary_label or "the indicated supplementary figure"}. In addition, the statistical interpretation has been clarified to ensure consistency between the Results text, figure legend, and significance annotation. These revisions improve the transparency and reproducibility of the qPCR validation procedure without changing the overall conclusions of the manuscript.
+
+### 回复信补充句
+- The related primer information, supplementary image, and statistical interpretation have now been cross-referenced in the revised manuscript and supplementary materials.
+- We have also checked the consistency among the Results description, figure legend, and qPCR statistical notes.
+
+### 回复核对清单
+- [ ] 是否写清补充表编号
+- [ ] 是否写清补充图编号
+- [ ] 是否提到统计解释已统一
+- [ ] 是否说明结论未发生改变
+"""
+
+
 def build_wb_full_draft_bundle(
     project_name: str,
     disease_name: str,
@@ -3829,6 +3954,63 @@ def get_recent_qpcr_image_chains(limit: int = 5):
             }
         )
     return items
+
+
+def get_recent_qpcr_methods_linked(limit: int = 6):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Methods_Linked.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_results_linked(limit: int = 6):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Results_Linked.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_reviewer_linked(limit: int = 6):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Reviewer_Linked.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
 
 
 def get_recent_wb_image_writebacks(limit: int = 5):
@@ -10345,6 +10527,9 @@ def qpcr_index():
     recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
     recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
     image_items = build_qpcr_image_registry(limit=12)
+    recent_methods_linked = get_recent_qpcr_methods_linked(limit=6)
+    recent_results_linked = get_recent_qpcr_results_linked(limit=6)
+    recent_reviewer_linked = get_recent_qpcr_reviewer_linked(limit=6)
     recent_figure_legends = get_recent_qpcr_figure_legends(limit=6)
     recent_stats_notes = get_recent_qpcr_stats_notes(limit=6)
     recent_image_chains = get_recent_qpcr_image_chains(limit=6)
@@ -10356,6 +10541,9 @@ def qpcr_index():
         recent_results=recent_results,
         recent_writing=recent_writing,
         image_items=image_items,
+        recent_methods_linked=recent_methods_linked,
+        recent_results_linked=recent_results_linked,
+        recent_reviewer_linked=recent_reviewer_linked,
         recent_figure_legends=recent_figure_legends,
         recent_stats_notes=recent_stats_notes,
         recent_image_chains=recent_image_chains,
@@ -10725,6 +10913,140 @@ def qpcr_image_chain_new(note_path: str = Form(...)):
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
+@app.post("/qpcr/methods-linked/new")
+def qpcr_methods_linked_new(
+    title: str = Form(...),
+    sample_type: str = Form(""),
+    target_genes: str = Form(""),
+    housekeeping_gene: str = Form(""),
+    primer_source: str = Form(""),
+    raw_ct_source: str = Form(""),
+    ddct_source: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Methods_Linked.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_methods_link_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        target_genes,
+        housekeeping_gene,
+        primer_source,
+        raw_ct_source,
+        ddct_source,
+    )
+
+    file_path.write_text(
+        f"""# qPCR Methods 联动稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/results-linked/new")
+def qpcr_results_linked_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+    figure_label: str = Form(""),
+    image_support: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Results_Linked.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_results_link_bundle(
+        project_name,
+        disease_name,
+        target_genes,
+        ddct_data,
+        stats_summary,
+        figure_label,
+        image_support,
+    )
+
+    file_path.write_text(
+        f"""# qPCR Results 联动稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/reviewer-linked/new")
+def qpcr_reviewer_linked_new(
+    title: str = Form(...),
+    reviewer_comment: str = Form(""),
+    target_genes: str = Form(""),
+    primer_table: str = Form(""),
+    supplementary_label: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_Reviewer_Linked.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_qpcr_reviewer_link_bundle(
+        project_name,
+        disease_name,
+        reviewer_comment,
+        target_genes,
+        primer_table,
+        supplementary_label,
+        stats_summary,
+    )
+
+    file_path.write_text(
+        f"""# qPCR Reviewer Response 联动稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
 @app.get("/molecular-validation", response_class=HTMLResponse)
 def molecular_validation_index():
     current_project = get_current_project() or {}
@@ -10743,6 +11065,9 @@ def molecular_validation_index():
     qpcr_error_notes = get_recent_qpcr_error_notes(limit=6)
     qpcr_ai_curve_notes = get_recent_qpcr_ai_curve_notes(limit=6)
     qpcr_ai_error_notes = get_recent_qpcr_ai_error_notes(limit=6)
+    qpcr_methods_linked = get_recent_qpcr_methods_linked(limit=6)
+    qpcr_results_linked = get_recent_qpcr_results_linked(limit=6)
+    qpcr_reviewer_linked = get_recent_qpcr_reviewer_linked(limit=6)
     qpcr_figure_legends = get_recent_qpcr_figure_legends(limit=8)
     qpcr_stats_notes = get_recent_qpcr_stats_notes(limit=8)
     qpcr_image_chains = get_recent_qpcr_image_chains(limit=8)
@@ -10766,6 +11091,9 @@ def molecular_validation_index():
         qpcr_error_notes=qpcr_error_notes,
         qpcr_ai_curve_notes=qpcr_ai_curve_notes,
         qpcr_ai_error_notes=qpcr_ai_error_notes,
+        qpcr_methods_linked=qpcr_methods_linked,
+        qpcr_results_linked=qpcr_results_linked,
+        qpcr_reviewer_linked=qpcr_reviewer_linked,
         qpcr_figure_legends=qpcr_figure_legends,
         qpcr_stats_notes=qpcr_stats_notes,
         qpcr_image_chains=qpcr_image_chains,
