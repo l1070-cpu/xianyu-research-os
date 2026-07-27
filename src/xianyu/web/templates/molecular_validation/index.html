@@ -219,6 +219,48 @@
 </section>
 
 <section>
+  <h3>最近 qPCR 引物设计说明</h3>
+  {% if qpcr_primer_designs %}
+    {% for item in qpcr_primer_designs %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR 引物设计说明。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR 图谱讲解稿</h3>
+  {% if qpcr_curve_notes %}
+    {% for item in qpcr_curve_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR 图谱讲解稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR 误差分析稿</h3>
+  {% if qpcr_error_notes %}
+    {% for item in qpcr_error_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR 误差分析稿。</p>
+  {% endif %}
+</section>
+
+<section>
   <h3>最近 qPCR 主图图注草稿</h3>
   {% if qpcr_figure_legends %}
     {% for item in qpcr_figure_legends %}
@@ -257,6 +299,34 @@
     {% endfor %}
   {% else %}
     <p>暂无最近 qPCR 图片全链路整合稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR AI 图谱讲解稿</h3>
+  {% if qpcr_ai_curve_notes %}
+    {% for item in qpcr_ai_curve_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR AI 图谱讲解稿。</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>最近 qPCR AI 误差诊断稿</h3>
+  {% if qpcr_ai_error_notes %}
+    {% for item in qpcr_ai_error_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无最近 qPCR AI 误差诊断稿。</p>
   {% endif %}
 </section>
 

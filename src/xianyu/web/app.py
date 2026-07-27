@@ -3977,6 +3977,101 @@ def get_recent_qpcr_ai_support_notes(limit: int = 6):
     return items
 
 
+def get_recent_qpcr_primer_designs(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Primer_Design.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_curve_notes(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Curve_Interpretation.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_error_notes(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Error_Analysis.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_ai_curve_notes(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_AI_Curve.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_qpcr_ai_error_notes(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_AI_Error.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
 def get_qpcr_image_type_bucket(image_type: str):
     text = (image_type or "").strip()
     lower = text.lower()
@@ -10643,6 +10738,11 @@ def molecular_validation_index():
     integrated_results = get_recent_wb_qpcr_integrated_results(limit=6)
     qpcr_support_notes = get_recent_qpcr_support_notes(limit=8)
     qpcr_ai_support_notes = get_recent_qpcr_ai_support_notes(limit=8)
+    qpcr_primer_designs = get_recent_qpcr_primer_designs(limit=6)
+    qpcr_curve_notes = get_recent_qpcr_curve_notes(limit=6)
+    qpcr_error_notes = get_recent_qpcr_error_notes(limit=6)
+    qpcr_ai_curve_notes = get_recent_qpcr_ai_curve_notes(limit=6)
+    qpcr_ai_error_notes = get_recent_qpcr_ai_error_notes(limit=6)
     qpcr_figure_legends = get_recent_qpcr_figure_legends(limit=8)
     qpcr_stats_notes = get_recent_qpcr_stats_notes(limit=8)
     qpcr_image_chains = get_recent_qpcr_image_chains(limit=8)
@@ -10661,6 +10761,11 @@ def molecular_validation_index():
         integrated_results=integrated_results,
         qpcr_support_notes=qpcr_support_notes,
         qpcr_ai_support_notes=qpcr_ai_support_notes,
+        qpcr_primer_designs=qpcr_primer_designs,
+        qpcr_curve_notes=qpcr_curve_notes,
+        qpcr_error_notes=qpcr_error_notes,
+        qpcr_ai_curve_notes=qpcr_ai_curve_notes,
+        qpcr_ai_error_notes=qpcr_ai_error_notes,
         qpcr_figure_legends=qpcr_figure_legends,
         qpcr_stats_notes=qpcr_stats_notes,
         qpcr_image_chains=qpcr_image_chains,
