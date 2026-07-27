@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import re
 import csv
 import os
+import json
+import httpx
 from pypdf import PdfReader
 from datetime import date
 from fastapi import FastAPI, Form, UploadFile, File
@@ -89,6 +91,56 @@ def list_md(folder):
 
 def safe_name(name):
     return name.replace(" ", "_").replace("/", "_")
+
+
+def ai_json_or_prompt(system_prompt: str, user_prompt: str):
+    base = os.getenv("AI_API_BASE", "").rstrip("/")
+    key = os.getenv("AI_API_KEY", "")
+    model = os.getenv("AI_MODEL", "")
+    full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+    if not (base and key and model):
+        return {
+            "status": "not_configured",
+            "prompt": full_prompt,
+        }
+
+    try:
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            "temperature": 0.1,
+        }
+        response = httpx.post(
+            base + "/chat/completions",
+            headers={"Authorization": f"Bearer {key}"},
+            json=payload,
+            timeout=120,
+        )
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"]
+        try:
+            return json.loads(content)
+        except Exception:
+            return {
+                "status": "raw",
+                "raw": content,
+            }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error": str(exc),
+            "prompt": full_prompt,
+        }
 
 
 def load_projects_v2():
@@ -1417,6 +1469,182 @@ def build_qpcr_error_analysis_bundle(
 - [ ] 是否需要替换内参基因
 - [ ] 是否需要剔除异常重复孔并记录依据
 """
+
+
+def build_qpcr_ai_results_prompt(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    groups: str,
+    ddct_data: str,
+    stats_summary: str,
+):
+    system_prompt = (
+        "你是生物医药科研 qPCR 数据解读助手。"
+        "必须严格基于用户提供的数据，不得虚构。"
+        "请只输出合法 JSON，字段包括：overall_judgment,key_findings,gene_by_gene_interpretation,"
+        "results_paragraph,figure_legend,discussion_points,risk_notes,next_steps。"
+    )
+    user_prompt = f"""项目：{project_name}
+疾病/模型：{disease_name}
+目标基因：{target_genes}
+实验分组：{groups}
+
+2^-ΔΔCt 数据：
+{ddct_data}
+
+统计结果：
+{stats_summary}
+
+请输出：
+1. 总体判断
+2. 关键发现
+3. 按基因逐条解释
+4. 可直接用于论文的 Results 段
+5. Figure legend 草稿
+6. 可写进 Discussion 的点
+7. 风险与保守解释
+8. 下一步建议
+"""
+    return system_prompt, user_prompt
+
+
+def build_qpcr_ai_curve_prompt(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    amplification_notes: str,
+    melting_notes: str,
+    ntc_status: str,
+    efficiency_notes: str,
+):
+    system_prompt = (
+        "你是生物医药科研 qPCR 图谱讲解助手。"
+        "必须严格基于提供的图谱观察记录进行解释，不得虚构未提供的实验事实。"
+        "请只输出合法 JSON，字段包括：curve_judgment,amplification_interpretation,melting_interpretation,"
+        "ntc_interpretation,efficiency_interpretation,figure_caption,methods_qc_sentence,risk_notes,next_steps。"
+    )
+    user_prompt = f"""项目：{project_name}
+疾病/模型：{disease_name}
+目标基因：{target_genes}
+
+扩增曲线观察：
+{amplification_notes}
+
+熔解曲线观察：
+{melting_notes}
+
+NTC 情况：
+{ntc_status}
+
+扩增效率/标准曲线备注：
+{efficiency_notes}
+
+请输出：
+1. 图谱总体判断
+2. 扩增曲线解释
+3. 熔解曲线解释
+4. NTC 解释
+5. 扩增效率解释
+6. Figure caption 草稿
+7. Methods 里的质控句式
+8. 风险提示
+9. 下一步建议
+"""
+    return system_prompt, user_prompt
+
+
+def build_qpcr_ai_error_prompt(
+    project_name: str,
+    disease_name: str,
+    issue_summary: str,
+    raw_ct_pattern: str,
+    possible_causes: str,
+    corrective_actions: str,
+):
+    system_prompt = (
+        "你是生物医药科研 qPCR 误差诊断助手。"
+        "必须严格基于用户提供的问题现象进行排查分析，不得虚构。"
+        "请只输出合法 JSON，字段包括：problem_summary,most_likely_causes,cause_ranking,"
+        "diagnostic_reasoning,corrective_plan,can_use_current_data,retest_priority,writing_note,next_steps。"
+    )
+    user_prompt = f"""项目：{project_name}
+疾病/模型：{disease_name}
+
+当前问题概述：
+{issue_summary}
+
+原始 Ct 异常模式：
+{raw_ct_pattern}
+
+已怀疑原因：
+{possible_causes}
+
+已考虑纠正措施：
+{corrective_actions}
+
+请输出：
+1. 问题总结
+2. 最可能原因
+3. 原因排序
+4. 诊断逻辑
+5. 纠正方案
+6. 当前数据是否还可用于结果展示
+7. 哪些样本/步骤应优先复测
+8. 写进实验记录的说明
+9. 下一步建议
+"""
+    return system_prompt, user_prompt
+
+
+def format_ai_analysis_markdown(title: str, ai_result: dict):
+    if ai_result.get("status") == "not_configured":
+        return f"""# {title}
+
+## AI 状态
+未配置 AI API。
+
+## 可复制提示词
+```text
+{ai_result.get("prompt", "")}
+```
+"""
+
+    if ai_result.get("status") == "error":
+        return f"""# {title}
+
+## AI 状态
+调用失败：{ai_result.get("error", "")}
+
+## 可复制提示词
+```text
+{ai_result.get("prompt", "")}
+```
+"""
+
+    if ai_result.get("status") == "raw":
+        return f"""# {title}
+
+## AI 原始输出
+{ai_result.get("raw", "")}
+"""
+
+    blocks = [f"# {title}", "", "## AI 结构化结果", ""]
+    for key, value in ai_result.items():
+        blocks.append(f"### {key}")
+        if isinstance(value, list):
+            if value:
+                blocks.extend([f"- {item}" for item in value])
+            else:
+                blocks.append("-")
+        elif isinstance(value, dict):
+            blocks.append("```json")
+            blocks.append(json.dumps(value, ensure_ascii=False, indent=2))
+            blocks.append("```")
+        else:
+            blocks.append(str(value))
+        blocks.append("")
+    return "\n".join(blocks).strip() + "\n"
 
 
 def build_molecular_validation_summary(current_project: dict):
@@ -8921,6 +9149,123 @@ def qpcr_error_analysis_new(
 """
         file_path.write_text(content, encoding="utf-8")
 
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/ai-results/new")
+def qpcr_ai_results_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    groups: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_AI_Results.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    system_prompt, user_prompt = build_qpcr_ai_results_prompt(
+        project_name, disease_name, target_genes, groups, ddct_data, stats_summary
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"qPCR AI结果解读｜{title}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/ai-curve/new")
+def qpcr_ai_curve_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    amplification_notes: str = Form(""),
+    melting_notes: str = Form(""),
+    ntc_status: str = Form(""),
+    efficiency_notes: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_AI_Curve.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    system_prompt, user_prompt = build_qpcr_ai_curve_prompt(
+        project_name,
+        disease_name,
+        target_genes,
+        amplification_notes,
+        melting_notes,
+        ntc_status,
+        efficiency_notes,
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"qPCR AI图谱讲解｜{title}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{content}""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/qpcr/ai-error/new")
+def qpcr_ai_error_new(
+    title: str = Form(...),
+    issue_summary: str = Form(""),
+    raw_ct_pattern: str = Form(""),
+    possible_causes: str = Form(""),
+    corrective_actions: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "qPCR"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_qPCR_AI_Error.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    system_prompt, user_prompt = build_qpcr_ai_error_prompt(
+        project_name,
+        disease_name,
+        issue_summary,
+        raw_ct_pattern,
+        possible_causes,
+        corrective_actions,
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"qPCR AI误差诊断｜{title}", result)
+    file_path.write_text(
+        f"""## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{content}""",
+        encoding="utf-8",
+    )
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 

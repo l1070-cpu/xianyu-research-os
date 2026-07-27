@@ -120,6 +120,43 @@
 </section>
 
 <section>
+  <h3>AI 结果解读</h3>
+  <form method="post" action="/qpcr/ai-results/new">
+    <p><label>AI解读名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR_AI结果解读" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
+    <p><label>实验分组</label><br><textarea name="groups" rows="4" placeholder="例如：Control / Model / Low / High / Positive"></textarea></p>
+    <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="7" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea></p>
+    <p><label>统计结果汇总</label><br><textarea name="stats_summary" rows="5" placeholder="例如：AKT1：ANOVA p=0.012；Model vs High 有显著差异"></textarea></p>
+    <button type="submit">生成 AI 结果解读</button>
+  </form>
+</section>
+
+<section>
+  <h3>AI 图谱讲解</h3>
+  <form method="post" action="/qpcr/ai-curve/new">
+    <p><label>AI图谱名称</label><br><input name="title" placeholder="例如：AKT1_qPCR_AI图谱讲解" required></p>
+    <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1"></textarea></p>
+    <p><label>扩增曲线观察</label><br><textarea name="amplification_notes" rows="4" placeholder="例如：重复孔曲线接近，Model 组起跳更早"></textarea></p>
+    <p><label>熔解曲线观察</label><br><textarea name="melting_notes" rows="4" placeholder="例如：AKT1 单峰，BAX 有肩峰"></textarea></p>
+    <p><label>NTC 情况</label><br><textarea name="ntc_status" rows="3" placeholder="例如：NTC 无明显扩增"></textarea></p>
+    <p><label>扩增效率 / 标准曲线</label><br><textarea name="efficiency_notes" rows="4" placeholder="例如：效率 96%，R²=0.998"></textarea></p>
+    <button type="submit">生成 AI 图谱讲解</button>
+  </form>
+</section>
+
+<section>
+  <h3>AI 误差诊断</h3>
+  <form method="post" action="/qpcr/ai-error/new">
+    <p><label>AI诊断名称</label><br><input name="title" placeholder="例如：AKT1_qPCR_AI误差诊断" required></p>
+    <p><label>当前问题概述</label><br><textarea name="issue_summary" rows="4" placeholder="例如：重复孔离散度大，内参波动明显"></textarea></p>
+    <p><label>原始 Ct 异常模式</label><br><textarea name="raw_ct_pattern" rows="4" placeholder="例如：Rep3 高 1.2 Ct；GAPDH 在 Model 组不稳定"></textarea></p>
+    <p><label>已怀疑原因</label><br><textarea name="possible_causes" rows="4" placeholder="例如：移液误差、RNA质量差、引物二聚体"></textarea></p>
+    <p><label>已考虑措施</label><br><textarea name="corrective_actions" rows="4" placeholder="例如：重做逆转录、补做 RNA 质检、复测异常孔"></textarea></p>
+    <button type="submit">生成 AI 误差诊断</button>
+  </form>
+</section>
+
+<section>
   <h3>qPCR 统计与 Supplementary</h3>
   <form method="post" action="/qpcr/stats-package/new">
     <p><label>统计包名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR统计与补充材料" required></p>
