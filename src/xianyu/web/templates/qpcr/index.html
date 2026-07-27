@@ -17,6 +17,17 @@
 {% endif %}
 
 <section>
+  <h3>上传 qPCR 原始图片</h3>
+  <form method="post" action="/qpcr/image-upload" enctype="multipart/form-data">
+    <p><label>图片名称</label><br><input name="title" placeholder="例如：AKT1_熔解曲线_2026-07-27" required></p>
+    <p><label>图片类型</label><br><input name="image_type" placeholder="例如：扩增曲线 / 熔解曲线 / 仪器结果截图 / 原始Ct报告截图"></p>
+    <p><label>上传图片</label><br><input type="file" name="file" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff" required></p>
+    <p><label>图谱观察备注</label><br><textarea name="observation" rows="5" placeholder="例如：AKT1 为单峰，BAX 有轻微肩峰；NTC 无明显扩增；Model 组曲线起跳更早"></textarea></p>
+    <button type="submit">上传原始图片并归档</button>
+  </form>
+</section>
+
+<section>
   <h3>新建 qPCR 记录</h3>
   <form method="post" action="/qpcr/new">
     <p><label>实验名称</label><br><input name="title" placeholder="例如：AKT1_BAX_qPCR验证" required></p>
@@ -199,6 +210,28 @@
     <p><label>统计结果汇总</label><br><textarea name="stats_summary" rows="6" placeholder="例如：AKT1&#10;ANOVA p=0.012 Tukey Model vs High"></textarea></p>
     <button type="submit">生成 qPCR 投稿级全包</button>
   </form>
+</section>
+
+<section>
+  <h3>最近 qPCR 原始图片</h3>
+  {% if image_items %}
+    <div class="project-grid">
+      {% for item in image_items %}
+      <article class="file-card">
+        <h3>{{ item.name }}</h3>
+        <p><a href="/media?path={{ item.path }}" target="_blank">打开图片</a></p>
+        {% if item.note_path %}
+        <p><a href="/file?path={{ item.note_path }}">查看图片备注</a></p>
+        <pre>{{ item.note_content }}</pre>
+        {% else %}
+        <p>暂无图片备注。</p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>暂无 qPCR 原始图片。</p>
+  {% endif %}
 </section>
 
 <section>

@@ -89,6 +89,17 @@ def list_md(folder):
         return []
     return sorted(base.rglob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
 
+
+def list_files(folder, suffixes=None):
+    base = ROOT / folder
+    if not base.exists():
+        return []
+    files = [p for p in base.rglob("*") if p.is_file()]
+    if suffixes:
+        suffixes = {s.lower() for s in suffixes}
+        files = [p for p in files if p.suffix.lower() in suffixes]
+    return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
+
 def safe_name(name):
     return name.replace(" ", "_").replace("/", "_")
 
@@ -3705,6 +3716,29 @@ def file_page(path: str):
     p = ROOT / path
     template = env.get_template("file.html")
     return template.render(path=path, content=read(p), modules=MODULES)
+
+
+@app.get("/media")
+def media_file(path: str):
+    p = ROOT / path
+    if not p.exists() or not p.is_file():
+        return HTMLResponse("文件不存在", status_code=404)
+
+    suffix = p.suffix.lower()
+    media_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".bmp": "image/bmp",
+        ".tif": "image/tiff",
+        ".tiff": "image/tiff",
+    }
+    media_type = media_types.get(suffix)
+    if not media_type:
+        return HTMLResponse("当前文件不是支持预览的图片格式", status_code=400)
+    return FileResponse(p, media_type=media_type, filename=p.name)
 
 @app.get("/new", response_class=HTMLResponse)
 def new_page():
@@ -8726,6 +8760,21 @@ def qpcr_index():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
     recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
+    image_files = list_files(
+        "03_实验记录/qPCR_原始图片",
+        suffixes={".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"},
+    )
+    image_items = []
+    for file in image_files[:12]:
+        note_path = file.with_suffix(".md")
+        image_items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
+                "note_content": read(note_path)[:240] if note_path.exists() else "",
+            }
+        )
     current_project = get_current_project() or {}
     template = env.get_template("qpcr/index.html")
     return template.render(
@@ -8733,7 +8782,68 @@ def qpcr_index():
         active_project=current_project,
         recent_results=recent_results,
         recent_writing=recent_writing,
+        image_items=image_items,
     )
+
+
+@app.post("/qpcr/image-upload")
+async def qpcr_image_upload(
+    title: str = Form(...),
+    image_type: str = Form(""),
+    observation: str = Form(""),
+    file: UploadFile = File(...),
+):
+    current_project = get_current_project() or {}
+    folder = ROOT / "03_实验记录" / "qPCR_原始图片"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"}:
+        return HTMLResponse("仅支持 png、jpg、jpeg、gif、webp、bmp、tif、tiff 图片。", status_code=400)
+
+    today = date.today().isoformat()
+    filename = f"{today}_{safe_name(title)}{suffix}"
+    file_path = folder / filename
+    content = await file.read()
+    file_path.write_bytes(content)
+
+    note_path = file_path.with_suffix(".md")
+    if not note_path.exists():
+        note_path.write_text(
+            f"""# qPCR 原始图片记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 图片类型
+{image_type or "待补充"}
+
+## 原始文件
+{file_path.relative_to(ROOT)}
+
+## 图谱观察
+{observation or "待补充"}
+
+## 推荐用途
+- [ ] 扩增曲线解读
+- [ ] 熔解曲线解读
+- [ ] Supplementary Figure
+- [ ] 审稿补充材料
+
+## 下一步
+- [ ] 如需 AI 解读，请把主要观察复制到 qPCR 工作台的 AI 图谱讲解模块
+- [ ] 如需写正文，请补充与 Ct / 2^-ΔΔCt 数据的对应关系
+""",
+            encoding="utf-8",
+        )
+
+    return RedirectResponse(url="/qpcr", status_code=303)
 
 
 @app.get("/molecular-validation", response_class=HTMLResponse)
