@@ -865,6 +865,96 @@ def build_wb_results_bundle(project_name: str, disease_name: str, target_protein
 """
 
 
+def parse_wb_normalized_data(normalized_data: str):
+    lines = [line.strip() for line in (normalized_data or "").splitlines() if line.strip()]
+    if len(lines) < 2:
+        return [], []
+
+    header = [cell.strip() for cell in re.split(r"\t|,", lines[0]) if cell.strip()]
+    rows = []
+    for line in lines[1:]:
+        parts = [cell.strip() for cell in re.split(r"\t|,", line)]
+        if not parts or not parts[0]:
+            continue
+        protein = parts[0]
+        values = {}
+        for idx, group in enumerate(header[1:], start=1):
+            raw = parts[idx] if idx < len(parts) else ""
+            try:
+                values[group] = float(raw)
+            except ValueError:
+                values[group] = None
+        rows.append({"protein": protein, "values": values})
+    return header[1:], rows
+
+
+def build_wb_trend_summary(rows):
+    summaries = []
+    for row in rows:
+        protein = row["protein"]
+        values = {k: v for k, v in row["values"].items() if isinstance(v, (int, float))}
+        if not values:
+            summaries.append(f"- {protein}：暂无可解析数值。")
+            continue
+        sorted_items = sorted(values.items(), key=lambda item: item[1])
+        low_group, low_value = sorted_items[0]
+        high_group, high_value = sorted_items[-1]
+        summaries.append(
+            f"- {protein}：最低为 {low_group} ({low_value:.2f})，最高为 {high_group} ({high_value:.2f})。"
+        )
+    return "\n".join(summaries) if summaries else "- 暂无趋势摘要。"
+
+
+def build_wb_main_figure_legend(project_name: str, disease_name: str, target_proteins: str, normalized_data: str):
+    groups, rows = parse_wb_normalized_data(normalized_data)
+    proteins = [row["protein"] for row in rows] or [item.strip() for item in re.split(r"[,\n;/]+", target_proteins or "") if item.strip()]
+    group_text = ", ".join(groups) if groups else "the indicated groups"
+    protein_text = ", ".join(proteins) if proteins else "the selected proteins"
+    return (
+        f"Figure X. Effects of {project_name} on the protein expression related to {disease_name}. "
+        f"Representative immunoblot bands and quantitative analysis of normalized gray values are shown for {protein_text} across {group_text}. "
+        "Data are presented as mean ± SD."
+    )
+
+
+def build_wb_results_writeback_bundle(project_name: str, disease_name: str, target_proteins: str, normalized_data: str):
+    groups, rows = parse_wb_normalized_data(normalized_data)
+    group_text = ", ".join(groups) if groups else "the indicated groups"
+    trend_summary = build_wb_trend_summary(rows)
+    figure_legend = build_wb_main_figure_legend(project_name, disease_name, target_proteins, normalized_data)
+    return f"""## WB 灰度统计回填总包
+
+### 当前目标蛋白
+{target_proteins or "- 待补充目标蛋白"}
+
+### 分组
+{group_text}
+
+### 灰度趋势自动摘要
+{trend_summary}
+
+### Results 段落草稿
+Western blot analysis was performed to evaluate the protein-level changes associated with {disease_name}. Compared with the control group, the model group showed a dysregulated protein-expression pattern in the selected targets. Across {group_text}, treatment with {project_name} partially or markedly reversed these abnormalities, supporting regulation of the proposed signaling pathway at the protein level.
+
+### Results 句库
+- The protein expression profile was markedly altered in the model group compared with the control group.
+- Treatment with {project_name} restored the abnormal expression trend of the selected proteins to different extents.
+- These results provided protein-level evidence supporting the protective mechanism of {project_name} against {disease_name}.
+
+### 主图 Figure Legend 草稿
+- {figure_legend}
+
+### Discussion 提醒
+- 需结合 qPCR、功能实验或通路预测结果解释蛋白变化方向。
+- 对磷酸化蛋白的解释应明确其归一化方式是否基于总蛋白。
+
+### 风险提示
+- [ ] 是否已完成生物重复统计
+- [ ] 是否已确认内参与目标条带在线性曝光范围内
+- [ ] 是否避免根据单张代表条带过度解释
+"""
+
+
 def build_qpcr_results_bundle(project_name: str, disease_name: str, target_genes: str, ddct_data: str):
     return f"""## qPCR 结果分析总包
 
@@ -3395,6 +3485,48 @@ def get_recent_wb_image_writebacks(limit: int = 5):
         return []
     files = sorted(
         folder.glob("*_WB_Image_Writeback.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_wb_results_writebacks(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_Results_Writeback.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_wb_figure_legends(limit: int = 5):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_Figure_Legend.md"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -9081,12 +9213,16 @@ def wb_index():
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     image_items = build_wb_image_registry(limit=12)
     recent_writebacks = get_recent_wb_image_writebacks(limit=6)
+    recent_results_writebacks = get_recent_wb_results_writebacks(limit=6)
+    recent_figure_legends = get_recent_wb_figure_legends(limit=6)
     current_project = get_current_project() or {}
     template = env.get_template("wb/index.html")
     return template.render(
         items=items,
         image_items=image_items,
         recent_writebacks=recent_writebacks,
+        recent_results_writebacks=recent_results_writebacks,
+        recent_figure_legends=recent_figure_legends,
         active_project=current_project,
     )
 
@@ -9358,6 +9494,94 @@ def wb_results_new(
 """
         file_path.write_text(content, encoding="utf-8")
 
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/wb/results-writeback/new")
+def wb_results_writeback_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    normalized_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_Results_Writeback.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_results_writeback_bundle(project_name, disease_name, target_proteins, normalized_data)
+
+    file_path.write_text(
+        f"""# WB 灰度统计回填草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 输入目标蛋白
+{target_proteins or "待补充"}
+
+## 输入灰度数据
+```text
+{normalized_data or "Protein\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+{bundle}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/wb/figure-legend/new")
+def wb_figure_legend_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    normalized_data: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_Figure_Legend.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    legend = build_wb_main_figure_legend(project_name, disease_name, target_proteins, normalized_data)
+
+    file_path.write_text(
+        f"""# WB 主图 Figure Legend 草稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+## 目标蛋白
+{target_proteins or "待补充"}
+
+## 归一化灰度数据
+```text
+{normalized_data or "Protein\\tControl\\tModel\\tTreatment-Low\\tTreatment-High"}
+```
+
+## Figure Legend 草稿
+- {legend}
+
+## 使用提醒
+- [ ] 确认最终 Figure 编号
+- [ ] 确认统计学描述与显著性标记
+- [ ] 如含磷酸化蛋白，确认是否已在图注中说明归一化逻辑
+""",
+        encoding="utf-8",
+    )
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
