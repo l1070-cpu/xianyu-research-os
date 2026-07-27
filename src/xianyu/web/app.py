@@ -3915,6 +3915,16 @@ def build_submission_checklist_summary():
                     "keywords": ["cck8", "full", "package"],
                     "pool": "writing",
                 },
+                {
+                    "label": "Figure 文件清单",
+                    "keywords": ["figure", "manifest"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "Supplementary 清单",
+                    "keywords": ["supplementary", "checklist"],
+                    "pool": "writing",
+                },
             ],
         },
         {
@@ -3933,6 +3943,16 @@ def build_submission_checklist_summary():
                 {
                     "label": "审稿意见拆分稿",
                     "keywords": ["reviewer"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "原始数据归档清单",
+                    "keywords": ["rawdata", "archive"],
+                    "pool": "writing",
+                },
+                {
+                    "label": "最终投稿 Checklist",
+                    "keywords": ["final", "submission", "checklist"],
                     "pool": "writing",
                 },
             ],
@@ -4076,6 +4096,111 @@ def build_submission_naming_guide_bundle(project_name: str, disease_name: str):
 """
 
 
+def build_submission_figure_manifest_bundle(project_name: str, disease_name: str):
+    return f"""## Figure 文件清单
+| Figure 编号 | 建议文件名 | 主要内容 | 建议格式 |
+|---|---|---|---|
+| Figure 1 | Figure1_Study_Design.tif | 研究流程、技术路线、整体设计 | TIFF / PDF |
+| Figure 2 | Figure2_Component_Target_Network.tif | 成分-靶点网络与关键成分信息 | TIFF / SVG |
+| Figure 3 | Figure3_PPI_and_Enrichment.tif | PPI、GO、KEGG 结果主图 | TIFF / SVG |
+| Figure 4 | Figure4_Docking_and_Core_Targets.tif | 核心靶点与分子对接结果 | TIFF / PDF |
+| Figure 5 | Figure5_Functional_Validation.tif | CCK-8、WB、qPCR、功能验证 | TIFF / PDF |
+
+## Figure 配套材料
+- Figure_Legends_{safe_name(project_name)}.docx
+- Graphical_Abstract_{safe_name(project_name)}.pptx
+- Supplementary_Figure_S1_to_S5.pdf
+
+## Figure 交付核对
+- [ ] 每张 Figure 都有最终编号
+- [ ] 每张 Figure 都有对应 legend
+- [ ] 主图与补充图编号不混淆
+- [ ] 图片分辨率满足期刊要求
+- [ ] 所有统计标记与结果段一致
+- [ ] 文件名与正文引用完全一致
+
+## 推荐归档目录
+- Figures/Main_Figures/
+- Figures/Supplementary_Figures/
+- Figures/Graphical_Abstract/
+- Figures/Figure_Legends/
+"""
+
+
+def build_submission_rawdata_archive_bundle(project_name: str, disease_name: str):
+    return f"""## 原始数据归档清单
+| 数据类型 | 建议文件名 | 说明 |
+|---|---|---|
+| UPLC / 成分原始数据 | RawData_UPLC_{safe_name(project_name)}.zip | 原始谱图、峰表、成分识别记录 |
+| 网络药理输入表 | RawData_Network_Input_{safe_name(project_name)}.xlsx | 成分、靶点、疾病靶点、交集表 |
+| 富集分析结果 | RawData_Enrichment_{safe_name(project_name)}.xlsx | GO / KEGG / Reactome 明细 |
+| Docking 原始结果 | RawData_Docking_{safe_name(project_name)}.csv | 对接能量、相互作用、候选排序 |
+| CCK-8 原始数据 | RawData_CCK8_{safe_name(disease_name)}.xlsx | OD 值、均值、SD、统计结果 |
+| WB 原始图像 | RawData_WB_{safe_name(disease_name)}.zip | 原膜、裁切图、定量表 |
+| qPCR 原始数据 | RawData_qPCR_{safe_name(disease_name)}.xlsx | Ct 值、2^-ΔΔCt 计算、统计结果 |
+| 其他功能验证 | RawData_Functional_{safe_name(disease_name)}.zip | ROS、JC-1、流式、IF 等 |
+
+## 原始数据归档原则
+- [ ] 每类数据保留原始文件与整理后文件
+- [ ] Excel / CSV 中保留原始数值，不只保留图片
+- [ ] 图片类原始数据与统计表一一对应
+- [ ] 每个归档文件包含简短 readme 说明
+- [ ] 文件名与论文图号、实验名称保持一致
+
+## 推荐目录结构
+- Raw_Data/UPLC/
+- Raw_Data/Network/
+- Raw_Data/Docking/
+- Raw_Data/CCK8/
+- Raw_Data/WB/
+- Raw_Data/qPCR/
+- Raw_Data/Functional/
+"""
+
+
+def build_submission_final_checklist_bundle(project_name: str, disease_name: str):
+    return f"""## 期刊提交前最终 Checklist
+
+### 主文与基础文件
+- [ ] Main manuscript 已定稿
+- [ ] Title / Abstract / Keywords 已最终确认
+- [ ] Cover Letter 已按目标期刊调整
+- [ ] Highlights / Graphical Abstract 已完成
+
+### Figure 与 Supplementary
+- [ ] 所有主图编号、图注、正文引用一致
+- [ ] Supplementary Figure / Table 已编号完成
+- [ ] Figure 文件名已改为英文规范命名
+- [ ] 所有图片分辨率和格式符合期刊要求
+
+### 数据与方法
+- [ ] 原始数据归档包已整理
+- [ ] Methods 细节足以支持重复实验
+- [ ] 统计学方法、软件版本、阈值已写清
+- [ ] WB / qPCR / CCK-8 / 其他功能验证数据与正文一致
+
+### 投稿与返修准备
+- [ ] Submission Package 已整理
+- [ ] 文件命名规范已统一
+- [ ] 作者信息、单位、基金号已核对
+- [ ] 利益冲突、伦理、数据可用性声明已补齐
+- [ ] 返修模板与 Reviewer Response 模板已预留
+
+### 最终归档
+- [ ] 建立 Final_Submission_{safe_name(project_name)} 目录
+- [ ] 建立 Raw_Data_{safe_name(project_name)} 目录
+- [ ] 建立 Supplementary_{safe_name(project_name)} 目录
+- [ ] 生成最终提交前版本号记录
+
+## 最终提交目录建议
+- Final_Submission/
+- Supplementary/
+- Raw_Data/
+- Response_Package/
+- Journal_Requirements/
+"""
+
+
 @app.get("/submission", response_class=HTMLResponse)
 def submission_index():
     files = list_md("06_论文写作")
@@ -4187,6 +4312,108 @@ def writing_submission_naming_guide_new(title: str = Form(...)):
 {bundle}
 
 ## 最终文件归档路径
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/submission-figure-manifest/new")
+def writing_submission_figure_manifest_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Figure_Manifest.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_submission_figure_manifest_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Figure Manifest｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终 Figure 交付记录
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/submission-rawdata-archive/new")
+def writing_submission_rawdata_archive_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_RawData_Archive.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_submission_rawdata_archive_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Raw Data Archive｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终原始数据归档路径
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/submission-final-checklist/new")
+def writing_submission_final_checklist_new(title: str = Form(...)):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Final_Submission_Checklist.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_submission_final_checklist_bundle(project_name, disease_name)
+
+    if not file_path.exists():
+        content = f"""# Final Submission Checklist｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终提交日期
 
 ## 修改记录
 """
