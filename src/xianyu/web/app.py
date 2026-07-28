@@ -7394,6 +7394,13 @@ def writing_wb_qpcr_full_package_new(
     primers: str = Form(""),
     wb_data: str = Form(""),
     qpcr_data: str = Form(""),
+    stats_summary: str = Form(""),
+    housekeeping_gene: str = Form(""),
+    figure_label: str = Form(""),
+    image_support: str = Form(""),
+    primer_table: str = Form(""),
+    supplementary_label: str = Form(""),
+    reviewer_comment: str = Form(""),
 ):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
@@ -7416,6 +7423,34 @@ def writing_wb_qpcr_full_package_new(
         wb_data,
         qpcr_data,
     )
+    qpcr_methods_linked = build_qpcr_methods_link_bundle(
+        project_name,
+        disease_name,
+        sample_type_qpcr,
+        target_genes,
+        housekeeping_gene,
+        primer_table or "Supplementary Table S2 / qPCR primer record",
+        "Supplementary raw Ct record",
+        "2^-ΔΔCt summary used in the integrated package",
+    )
+    qpcr_results_linked = build_qpcr_results_link_bundle(
+        project_name,
+        disease_name,
+        target_genes,
+        qpcr_data,
+        stats_summary,
+        figure_label or "Figure Y",
+        image_support or supplementary_label or "Supplementary qPCR supporting figures",
+    )
+    qpcr_reviewer_linked = build_qpcr_reviewer_link_bundle(
+        project_name,
+        disease_name,
+        reviewer_comment,
+        target_genes,
+        primer_table or "Supplementary Table S2",
+        supplementary_label or "Supplementary Figure S2",
+        stats_summary,
+    )
     image_writeback_block = build_recent_image_writeback_section(
         image_writebacks,
         heading="最近 qPCR 图片回填草稿（自动并入）",
@@ -7434,6 +7469,15 @@ def writing_wb_qpcr_full_package_new(
 - 当前阶段：{current_project.get('stage', '')}
 
 {bundle}
+
+## 自动并入的 qPCR Methods 联动稿
+{qpcr_methods_linked}
+
+## 自动并入的 qPCR Results 联动稿
+{qpcr_results_linked}
+
+## 自动并入的 qPCR Reviewer Response 联动稿
+{qpcr_reviewer_linked}
 
 {image_writeback_block}
 
@@ -11724,6 +11768,12 @@ def qpcr_full_package_new(
     raw_ct_data: str = Form(""),
     ddct_data: str = Form(""),
     stats_summary: str = Form(""),
+    housekeeping_gene: str = Form(""),
+    figure_label: str = Form(""),
+    image_support: str = Form(""),
+    primer_table: str = Form(""),
+    supplementary_label: str = Form(""),
+    reviewer_comment: str = Form(""),
 ):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作" / "WB_qPCR验证"
@@ -11744,6 +11794,34 @@ def qpcr_full_package_new(
         ddct_data,
         stats_summary,
     )
+    methods_linked = build_qpcr_methods_link_bundle(
+        project_name,
+        disease_name,
+        sample_type,
+        target_genes,
+        housekeeping_gene,
+        primer_table or "Supplementary Table S1 / qPCR primer record",
+        "Raw Ct record / Ct QC note",
+        "2^-ΔΔCt summary used in this full package",
+    )
+    results_linked = build_qpcr_results_link_bundle(
+        project_name,
+        disease_name,
+        target_genes,
+        ddct_data,
+        stats_summary,
+        figure_label or "Figure X",
+        image_support or supplementary_label or "Supplementary qPCR support materials",
+    )
+    reviewer_linked = build_qpcr_reviewer_link_bundle(
+        project_name,
+        disease_name,
+        reviewer_comment,
+        target_genes,
+        primer_table or "Supplementary Table S1",
+        supplementary_label or "Supplementary Figure S1",
+        stats_summary,
+    )
     image_writeback_block = build_recent_image_writeback_section(
         image_writebacks,
         heading="最近 qPCR 图片回填草稿（自动并入）",
@@ -11761,6 +11839,15 @@ def qpcr_full_package_new(
 - 疾病 / 模型：{current_project.get('disease', '')}
 
 {bundle}
+
+## 自动并入的 qPCR Methods 联动稿
+{methods_linked}
+
+## 自动并入的 qPCR Results 联动稿
+{results_linked}
+
+## 自动并入的 qPCR Reviewer Response 联动稿
+{reviewer_linked}
 
 {image_writeback_block}
 """
