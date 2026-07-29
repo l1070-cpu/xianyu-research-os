@@ -277,6 +277,34 @@
       <label>qPCR 相对表达数据</label><br>
       <textarea name="qpcr_data" rows="6" placeholder="例如：Gene&#10;AKT1 1.00 0.54 0.77 0.96"></textarea>
     </p>
+    <p>
+      <label>统计结果汇总</label><br>
+      <textarea name="stats_summary" rows="5" placeholder="例如：WB 与 qPCR 均采用 one-way ANOVA；Model vs High, p&lt;0.05"></textarea>
+    </p>
+    <p>
+      <label>qPCR 内参基因</label><br>
+      <input name="housekeeping_gene" placeholder="例如：GAPDH">
+    </p>
+    <p>
+      <label>主图编号</label><br>
+      <input name="figure_label" placeholder="例如：Figure 5A-F">
+    </p>
+    <p>
+      <label>Supplementary 图片编号</label><br>
+      <input name="supplementary_label" placeholder="例如：Supplementary Figure S2">
+    </p>
+    <p>
+      <label>图片 / Supplementary 支撑</label><br>
+      <input name="image_support" placeholder="例如：Supplementary Figure S2 + qPCR 图片全链路整合稿">
+    </p>
+    <p>
+      <label>引物表编号</label><br>
+      <input name="primer_table" placeholder="例如：Supplementary Table S2">
+    </p>
+    <p>
+      <label>审稿意见（可选）</label><br>
+      <textarea name="reviewer_comment" rows="4" placeholder="例如：Please provide integrated qPCR supplementary evidence and clearer statistical interpretation."></textarea>
+    </p>
     <button type="submit">生成 联合 Results + Methods + Figure Legend 总包</button>
   </form>
   <form method="post" action="/writing/wb-qpcr-stats/new">
