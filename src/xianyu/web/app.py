@@ -1115,6 +1115,183 @@ def build_qpcr_trend_summary(rows):
     return "\n".join(summaries) if summaries else "- 暂无趋势摘要。"
 
 
+def build_qpcr_plot_note_lines(stats_summary: str):
+    lines = [line.strip() for line in (stats_summary or "").splitlines() if line.strip()]
+    if not lines:
+        return ["- 待补充统计结果、显著性比较对象和符号说明。"]
+    return [f"- {line}" for line in lines[:12]]
+
+
+def generate_qpcr_plot_assets(
+    title: str,
+    project_name: str,
+    disease_name: str,
+    groups,
+    rows,
+    output_dir: Path,
+    figure_label: str,
+    stats_summary: str,
+):
+    os.environ.setdefault("MPLCONFIGDIR", str((ROOT / ".cache" / "matplotlib").resolve()))
+    Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
+
+    import math
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    valid_rows = []
+    for row in rows:
+        ordered_values = []
+        ordered_groups = []
+        for group in groups:
+            value = row["values"].get(group)
+            if isinstance(value, (int, float)):
+                ordered_groups.append(group)
+                ordered_values.append(float(value))
+        if ordered_values:
+            valid_rows.append(
+                {
+                    "gene": row["gene"],
+                    "groups": ordered_groups,
+                    "values": ordered_values,
+                }
+            )
+
+    if not valid_rows:
+        raise ValueError("没有可用于作图的 qPCR 数值。请检查 2^-ΔΔCt 数据格式。")
+
+    cols = 2 if len(valid_rows) > 1 else 1
+    nrows = math.ceil(len(valid_rows) / cols)
+    fig, axes = plt.subplots(
+        nrows=nrows,
+        ncols=cols,
+        figsize=(7.5 * cols, 4.8 * nrows),
+        squeeze=False,
+    )
+    fig.patch.set_facecolor("white")
+
+    palette = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#14b8a6", "#f97316"]
+    flat_axes = axes.flatten()
+
+    for idx, row in enumerate(valid_rows):
+        ax = flat_axes[idx]
+        x = list(range(len(row["groups"])))
+        colors = [palette[i % len(palette)] for i in range(len(row["groups"]))]
+        bars = ax.bar(x, row["values"], color=colors, edgecolor="#1f2937", linewidth=0.8)
+        ax.set_title(row["gene"], fontsize=12, fontweight="bold")
+        ax.set_xticks(x)
+        ax.set_xticklabels(row["groups"], rotation=20, ha="right")
+        ax.set_ylabel("Relative expression (2^-ΔΔCt)")
+        ymax = max(row["values"]) if row["values"] else 1.0
+        ax.set_ylim(0, max(1.2, ymax * 1.28))
+        ax.grid(axis="y", linestyle="--", alpha=0.25)
+        ax.set_axisbelow(True)
+        for bar, value in zip(bars, row["values"]):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(0.03, ymax * 0.04),
+                f"{value:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
+
+    for extra_ax in flat_axes[len(valid_rows):]:
+        extra_ax.axis("off")
+
+    fig_title = figure_label or "qPCR relative expression plot"
+    fig.suptitle(
+        f"{fig_title}\n{project_name} · {disease_name}",
+        fontsize=14,
+        fontweight="bold",
+        y=0.99,
+    )
+
+    stats_text = "\n".join(build_qpcr_plot_note_lines(stats_summary))
+    fig.text(
+        0.02,
+        0.01,
+        "统计 / 显著性备注：\n" + stats_text,
+        ha="left",
+        va="bottom",
+        fontsize=9,
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 0.95))
+
+    safe_title = safe_name(title)
+    png_path = output_dir / f"{safe_title}_qPCR_plot.png"
+    svg_path = output_dir / f"{safe_title}_qPCR_plot.svg"
+    pdf_path = output_dir / f"{safe_title}_qPCR_plot.pdf"
+    fig.savefig(png_path, dpi=300, bbox_inches="tight")
+    fig.savefig(svg_path, bbox_inches="tight")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    plt.close(fig)
+    return {
+        "png": png_path,
+        "svg": svg_path,
+        "pdf": pdf_path,
+    }
+
+
+def build_qpcr_plot_package_bundle(
+    project_name: str,
+    disease_name: str,
+    target_genes: str,
+    ddct_data: str,
+    stats_summary: str,
+    figure_label: str,
+    image_paths: dict,
+):
+    groups, rows = parse_qpcr_relative_data(ddct_data)
+    trend_summary = build_qpcr_trend_summary(rows)
+    notes = "\n".join(build_qpcr_plot_note_lines(stats_summary))
+    image_lines = "\n".join(
+        [
+            f"- PNG：{image_paths['png'].relative_to(ROOT)}",
+            f"- SVG：{image_paths['svg'].relative_to(ROOT)}",
+            f"- PDF：{image_paths['pdf'].relative_to(ROOT)}",
+        ]
+    )
+    return f"""## qPCR 自动作图包
+
+### 图编号 / 图题
+- 图编号：{figure_label or "Figure X"}
+- 图题：{figure_label or "qPCR relative expression plot"}
+
+### 当前目标基因
+{target_genes or "- 待补充目标基因"}
+
+### 分组
+{", ".join(groups) if groups else "- 待补充分组"}
+
+### 2^-ΔΔCt 数据
+```text
+{ddct_data or "待补充"}
+```
+
+### 趋势摘要
+{trend_summary}
+
+### 统计与显著性备注
+{notes}
+
+### 已生成图文件
+{image_lines}
+
+### 标准 Figure Legend 草稿
+- {figure_label or "Figure X"}. Effects of {project_name} on the relative mRNA expression associated with {disease_name}. Relative expression levels were calculated using the 2^-ΔΔCt method and are presented as mean values in each indicated group. Statistical annotations should be interpreted according to the supplied comparison notes.
+
+### 作图核对清单
+- [ ] 是否确认所有分组顺序与正文一致
+- [ ] 是否确认基因名拼写与 qPCR Results 一致
+- [ ] 是否补齐 mean ± SD / mean ± SEM 的最终统计写法
+- [ ] 是否把显著性符号与统计解释稿统一
+- [ ] 是否把 PNG / SVG / PDF 同步归档到投稿目录
+"""
+
+
 def build_qpcr_main_figure_legend(project_name: str, disease_name: str, target_genes: str, ddct_data: str):
     groups, rows = parse_qpcr_relative_data(ddct_data)
     genes = [row["gene"] for row in rows] or [item.strip() for item in re.split(r"[,\n;/]+", target_genes or "") if item.strip()]
@@ -3989,6 +4166,27 @@ def get_recent_qpcr_image_chains(limit: int = 5):
         return []
     files = sorted(
         folder.glob("*_qPCR_Image_Chain.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_recent_qpcr_plot_packages(limit: int = 6):
+    folder = ROOT / "05_数据分析" / "qPCR"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_qPCR_Plot_Package.md"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -10697,6 +10895,7 @@ def qpcr_index():
     files = list_md("03_实验记录/qPCR")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
     recent_results = get_recent_notes("05_数据分析/qPCR", limit=5)
+    recent_qpcr_plots = get_recent_qpcr_plot_packages(limit=6)
     recent_writing = get_recent_notes("06_论文写作/WB_qPCR验证", limit=8)
     image_items = build_qpcr_image_registry(limit=12)
     recent_methods_linked = get_recent_qpcr_methods_linked(limit=6)
@@ -10711,6 +10910,7 @@ def qpcr_index():
         items=items,
         active_project=current_project,
         recent_results=recent_results,
+        recent_qpcr_plots=recent_qpcr_plots,
         recent_writing=recent_writing,
         image_items=image_items,
         recent_methods_linked=recent_methods_linked,
@@ -10720,6 +10920,75 @@ def qpcr_index():
         recent_stats_notes=recent_stats_notes,
         recent_image_chains=recent_image_chains,
     )
+
+
+@app.post("/qpcr/plot/new")
+def qpcr_plot_new(
+    title: str = Form(...),
+    target_genes: str = Form(""),
+    ddct_data: str = Form(""),
+    stats_summary: str = Form(""),
+    figure_label: str = Form(""),
+):
+    today = date.today().isoformat()
+    plot_folder = ROOT / "05_数据分析" / "qPCR" / "plots"
+    plot_folder.mkdir(parents=True, exist_ok=True)
+    note_folder = ROOT / "05_数据分析" / "qPCR"
+    note_folder.mkdir(parents=True, exist_ok=True)
+    file_path = note_folder / f"{today}_{safe_name(title)}_qPCR_Plot_Package.md"
+
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    groups, rows = parse_qpcr_relative_data(ddct_data)
+    try:
+        image_paths = generate_qpcr_plot_assets(
+            title=title,
+            project_name=project_name,
+            disease_name=disease_name,
+            groups=groups,
+            rows=rows,
+            output_dir=plot_folder,
+            figure_label=figure_label,
+            stats_summary=stats_summary,
+        )
+    except ValueError as exc:
+        return HTMLResponse(str(exc), status_code=400)
+    bundle = build_qpcr_plot_package_bundle(
+        project_name,
+        disease_name,
+        target_genes,
+        ddct_data,
+        stats_summary,
+        figure_label,
+        image_paths,
+    )
+
+    file_path.write_text(
+        f"""# qPCR 自动作图包｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+
+{bundle}
+
+## 图文件快速预览
+- [查看 PNG](/file?path={image_paths['png'].relative_to(ROOT)})
+- [查看 SVG](/file?path={image_paths['svg'].relative_to(ROOT)})
+- [查看 PDF](/file?path={image_paths['pdf'].relative_to(ROOT)})
+
+## 自定义备注
+
+## 修改记录
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
 @app.post("/qpcr/image-upload")
@@ -11244,6 +11513,7 @@ def molecular_validation_index():
     qpcr_figure_legends = get_recent_qpcr_figure_legends(limit=8)
     qpcr_stats_notes = get_recent_qpcr_stats_notes(limit=8)
     qpcr_image_chains = get_recent_qpcr_image_chains(limit=8)
+    qpcr_plot_packages = get_recent_qpcr_plot_packages(limit=8)
     summary = build_molecular_validation_summary(current_project)
     template = env.get_template("molecular_validation/index.html")
     return template.render(
@@ -11271,6 +11541,7 @@ def molecular_validation_index():
         qpcr_figure_legends=qpcr_figure_legends,
         qpcr_stats_notes=qpcr_stats_notes,
         qpcr_image_chains=qpcr_image_chains,
+        qpcr_plot_packages=qpcr_plot_packages,
     )
 
 
