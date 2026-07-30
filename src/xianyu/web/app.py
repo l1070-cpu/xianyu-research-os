@@ -2467,6 +2467,54 @@ For transcriptional validation, total RNA was extracted from {sample_type_qpcr o
 """
 
 
+def build_wb_qpcr_submission_checklist_bundle(
+    project_name: str,
+    disease_name: str,
+    target_proteins: str,
+    target_genes: str,
+    figure_label: str,
+    supplementary_label: str,
+    primer_table: str,
+):
+    return f"""## WB + qPCR 联合投稿最终核对清单
+
+### 项目与机制目标
+- 项目：{project_name}
+- 疾病 / 模型：{disease_name}
+- WB 目标蛋白：{target_proteins or "待补充"}
+- qPCR 目标基因：{target_genes or "待补充"}
+
+### 主文核对
+- [ ] 主文 Results 已同时覆盖 WB 和 qPCR 证据
+- [ ] 联合 Methods 已说明蛋白和转录层面的验证流程
+- [ ] 主图编号 {figure_label or "待补充"} 已在正文和图注中一致引用
+
+### Figure / Supplementary 核对
+- [ ] Supplementary 图片编号 {supplementary_label or "待补充"} 已在正文或回复信中说明用途
+- [ ] 引物表编号 {primer_table or "待补充"} 已在 Methods 或 Supplementary 中正确引用
+- [ ] WB 原始条带、qPCR 原始 Ct、2^-ΔΔCt 计算依据均已保留
+- [ ] 图注、统计解释、Supplementary 图注之间术语一致
+
+### 数据与统计核对
+- [ ] WB 与 qPCR 分组命名完全一致
+- [ ] 显著性符号在主图、正文和统计说明中一致
+- [ ] 内参 / 归一化逻辑已在 Methods 中写清
+- [ ] 所有用于作图的数据与归档表一致
+
+### 投稿与返修准备
+- [ ] Cover Letter 已提及联合机制验证亮点
+- [ ] Reviewer Response 已预留 WB + qPCR 联合答复段
+- [ ] 最终投稿文件命名已统一
+- [ ] 期刊要求的 Supplementary / Raw Data 文件已准备
+
+### 最后确认
+- [ ] 可以单独解释 WB 结果
+- [ ] 可以单独解释 qPCR 结果
+- [ ] 可以解释 WB 与 qPCR 一致或不一致的原因
+- [ ] 可以直接进入在线投稿系统提交
+"""
+
+
 def build_wb_qpcr_stats_bundle(
     project_name: str,
     disease_name: str,
@@ -4000,6 +4048,25 @@ def get_recent_qpcr_reviewer_linked(limit: int = 6):
         return []
     files = sorted(
         folder.glob("*_qPCR_Reviewer_Linked.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return [
+        {
+            "name": file.name,
+            "path": str(file.relative_to(ROOT)),
+            "content": read(file)[:500],
+        }
+        for file in files[:limit]
+    ]
+
+
+def get_recent_wb_qpcr_submission_checklists(limit: int = 6):
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    if not folder.exists():
+        return []
+    files = sorted(
+        folder.glob("*_WB_qPCR_Submission_Checklist.md"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -7451,6 +7518,15 @@ def writing_wb_qpcr_full_package_new(
         supplementary_label or "Supplementary Figure S2",
         stats_summary,
     )
+    submission_checklist = build_wb_qpcr_submission_checklist_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        target_genes,
+        figure_label or "Figure Y",
+        supplementary_label or "Supplementary Figure S2",
+        primer_table or "Supplementary Table S2",
+    )
     image_writeback_block = build_recent_image_writeback_section(
         image_writebacks,
         heading="最近 qPCR 图片回填草稿（自动并入）",
@@ -7479,7 +7555,59 @@ def writing_wb_qpcr_full_package_new(
 ## 自动并入的 qPCR Reviewer Response 联动稿
 {qpcr_reviewer_linked}
 
+## 自动并入的最终核对清单
+{submission_checklist}
+
 {image_writeback_block}
+
+## 修改记录
+"""
+        file_path.write_text(content, encoding="utf-8")
+
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/writing/wb-qpcr-submission-checklist/new")
+def writing_wb_qpcr_submission_checklist_new(
+    title: str = Form(...),
+    target_proteins: str = Form(""),
+    target_genes: str = Form(""),
+    figure_label: str = Form(""),
+    supplementary_label: str = Form(""),
+    primer_table: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "06_论文写作" / "WB_qPCR验证"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_WB_qPCR_Submission_Checklist.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
+    disease_name = current_project.get("disease", "") or "the disease model"
+    bundle = build_wb_qpcr_submission_checklist_bundle(
+        project_name,
+        disease_name,
+        target_proteins,
+        target_genes,
+        figure_label,
+        supplementary_label,
+        primer_table,
+    )
+
+    if not file_path.exists():
+        content = f"""# WB + qPCR 最终核对清单｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+{bundle}
+
+## 最终提交日期
 
 ## 修改记录
 """
@@ -11112,6 +11240,7 @@ def molecular_validation_index():
     qpcr_methods_linked = get_recent_qpcr_methods_linked(limit=6)
     qpcr_results_linked = get_recent_qpcr_results_linked(limit=6)
     qpcr_reviewer_linked = get_recent_qpcr_reviewer_linked(limit=6)
+    wb_qpcr_submission_checklists = get_recent_wb_qpcr_submission_checklists(limit=6)
     qpcr_figure_legends = get_recent_qpcr_figure_legends(limit=8)
     qpcr_stats_notes = get_recent_qpcr_stats_notes(limit=8)
     qpcr_image_chains = get_recent_qpcr_image_chains(limit=8)
@@ -11138,6 +11267,7 @@ def molecular_validation_index():
         qpcr_methods_linked=qpcr_methods_linked,
         qpcr_results_linked=qpcr_results_linked,
         qpcr_reviewer_linked=qpcr_reviewer_linked,
+        wb_qpcr_submission_checklists=wb_qpcr_submission_checklists,
         qpcr_figure_legends=qpcr_figure_legends,
         qpcr_stats_notes=qpcr_stats_notes,
         qpcr_image_chains=qpcr_image_chains,

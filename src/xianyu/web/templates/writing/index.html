@@ -307,6 +307,33 @@
     </p>
     <button type="submit">生成 联合 Results + Methods + Figure Legend 总包</button>
   </form>
+  <form method="post" action="/writing/wb-qpcr-submission-checklist/new">
+    <p>
+      <label>WB / qPCR 最终核对清单名称</label><br>
+      <input name="title" placeholder="例如：WB_qPCR_最终核对清单" required>
+    </p>
+    <p>
+      <label>WB 目标蛋白</label><br>
+      <textarea name="target_proteins" rows="4" placeholder="例如：AKT, p-AKT, Nrf2, HO-1"></textarea>
+    </p>
+    <p>
+      <label>qPCR 目标基因</label><br>
+      <textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea>
+    </p>
+    <p>
+      <label>主图编号</label><br>
+      <input name="figure_label" placeholder="例如：Figure 5A-F">
+    </p>
+    <p>
+      <label>Supplementary 图片编号</label><br>
+      <input name="supplementary_label" placeholder="例如：Supplementary Figure S2">
+    </p>
+    <p>
+      <label>引物表编号</label><br>
+      <input name="primer_table" placeholder="例如：Supplementary Table S2">
+    </p>
+    <button type="submit">生成 最终核对清单</button>
+  </form>
   <form method="post" action="/writing/wb-qpcr-stats/new">
     <p>
       <label>WB / qPCR 统计包名称</label><br>
