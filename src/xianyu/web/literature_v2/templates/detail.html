@@ -113,6 +113,16 @@
     {% if record.ai_summary.status == "not_configured" %}
       <p>尚未配置 AI API，以下内容可复制到其他模型中使用：</p>
       <pre>{{ record.ai_summary.prompt }}</pre>
+    {% elif record.ai_summary.status == "error" %}
+      <p><strong>AI 阅读请求失败。</strong></p>
+      <p>{{ record.ai_summary.error or "未返回具体错误信息。" }}</p>
+      <details>
+        <summary>查看可手动复制的阅读提示词</summary>
+        <pre>{{ record.ai_summary.prompt }}</pre>
+      </details>
+    {% elif record.ai_summary.status == "raw" %}
+      <p><strong>AI 已返回内容，但不是标准结构化结果。</strong></p>
+      <pre>{{ record.ai_summary.raw }}</pre>
     {% else %}
       {% for key, value in record.ai_summary.items() %}
       <article class="analysis-block">
@@ -131,7 +141,7 @@
       {% endfor %}
     {% endif %}
   {% else %}
-    <p>尚未进行 AI 阅读。</p>
+    <p>尚未进行 AI 阅读。点击上面的“AI 阅读”即可生成。</p>
   {% endif %}
 </section>
 
