@@ -1145,6 +1145,45 @@ def build_qpcr_significance_map(stats_summary: str):
     return by_gene, generic
 
 
+def normalize_group_label(label: str):
+    return re.sub(r"[\s_\-]+", "", (label or "").strip().lower())
+
+
+def parse_qpcr_significance_pairs(note_lines, group_names):
+    pairs = []
+    if not note_lines:
+        return pairs
+
+    group_lookup = {normalize_group_label(name): idx for idx, name in enumerate(group_names)}
+    pair_pattern = re.compile(
+        r"([A-Za-z0-9_\-+/ ]+?)\s+vs\s+([A-Za-z0-9_\-+/ ]+?)(?:[,，;；]\s*|\s+)(.*?)(\*{1,4}|ns)\b",
+        re.I,
+    )
+
+    for line in note_lines:
+        for match in pair_pattern.finditer(line):
+            left = normalize_group_label(match.group(1))
+            right = normalize_group_label(match.group(2))
+            mark = match.group(4)
+            if left in group_lookup and right in group_lookup:
+                start = group_lookup[left]
+                end = group_lookup[right]
+                if start == end:
+                    continue
+                if start > end:
+                    start, end = end, start
+                pairs.append((start, end, mark))
+
+    unique_pairs = []
+    seen = set()
+    for item in pairs:
+        key = (item[0], item[1], item[2])
+        if key not in seen:
+            seen.add(key)
+            unique_pairs.append(item)
+    return unique_pairs
+
+
 def generate_qpcr_plot_assets(
     title: str,
     project_name: str,
@@ -1214,19 +1253,52 @@ def generate_qpcr_plot_assets(
         ax.set_xticklabels(row["groups"], rotation=22, ha="right", fontsize=9)
         ax.set_ylabel("Relative expression (2^-ΔΔCt)")
         ymax = max(row["values"]) if row["values"] else 1.0
-        ax.set_ylim(0, max(1.2, ymax * 1.42))
         ax.grid(axis="y", linestyle="--", alpha=0.25)
         ax.set_axisbelow(True)
+        note_lines = significance_by_gene.get(row["gene"]) or generic_significance
+        significance_pairs = parse_qpcr_significance_pairs(note_lines, row["groups"])
+
+        top_text_offset = max(0.03, ymax * 0.04)
+        bracket_base = ymax * 1.05
+        bracket_step = max(0.08, ymax * 0.12)
+        bracket_cap = max(0.03, ymax * 0.04)
+        top_limit = max(
+            1.2,
+            ymax * 1.42,
+            bracket_base + bracket_step * max(len(significance_pairs), 0) + bracket_cap * 2,
+        )
+        ax.set_ylim(0, top_limit)
+
         for bar, value in zip(bars, row["values"]):
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(0.03, ymax * 0.04),
+                bar.get_height() + top_text_offset,
                 f"{value:.2f}",
                 ha="center",
                 va="bottom",
                 fontsize=9,
             )
-        note_lines = significance_by_gene.get(row["gene"]) or generic_significance
+
+        for pair_idx, (start, end, mark) in enumerate(significance_pairs[:5]):
+            y = bracket_base + pair_idx * bracket_step
+            x1 = x[start]
+            x2 = x[end]
+            ax.plot(
+                [x1, x1, x2, x2],
+                [y, y + bracket_cap, y + bracket_cap, y],
+                color="#111827",
+                linewidth=1.0,
+            )
+            ax.text(
+                (x1 + x2) / 2,
+                y + bracket_cap + max(0.01, ymax * 0.02),
+                mark,
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+            )
+
         if note_lines:
             note_text = "\n".join([f"• {item}" for item in note_lines[:4]])
             ax.text(

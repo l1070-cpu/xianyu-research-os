@@ -206,7 +206,7 @@
     <p><label>图编号 / 图题</label><br><input name="figure_label" placeholder="例如：Figure 5A-C / AKT1_BAX_qPCR"></p>
     <p><label>目标基因</label><br><textarea name="target_genes" rows="4" placeholder="例如：AKT1, NFE2L2, HMOX1, BAX, BCL2"></textarea></p>
     <p><label>2^-ΔΔCt 数据</label><br><textarea name="ddct_data" rows="8" placeholder="例如：Gene\tControl\tModel\tLow\tHigh&#10;AKT1\t1.00\t0.54\t0.77\t0.96&#10;BAX\t1.00\t1.88\t1.42\t1.11" required></textarea></p>
-    <p><label>统计与显著性备注</label><br><textarea name="stats_summary" rows="6" placeholder="建议一行一个基因，例如：&#10;AKT1：ANOVA p=0.012；Model vs High, p<0.05 *&#10;BAX：Model vs Control, p<0.01 **；High vs Model, p<0.05 *"></textarea></p>
+    <p><label>统计与显著性备注</label><br><textarea name="stats_summary" rows="6" placeholder="建议一行一个基因。若想自动画括号和星号，请写成：&#10;AKT1：Model vs High, p<0.05 *&#10;BAX：Model vs Control, p<0.01 **；High vs Model, p<0.05 *"></textarea></p>
     <button type="submit">生成 PNG / SVG / PDF 自动作图包</button>
   </form>
 </section>
