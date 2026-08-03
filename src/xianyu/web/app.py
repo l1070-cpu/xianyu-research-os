@@ -1122,6 +1122,29 @@ def build_qpcr_plot_note_lines(stats_summary: str):
     return [f"- {line}" for line in lines[:12]]
 
 
+def build_qpcr_significance_map(stats_summary: str):
+    lines = [line.strip() for line in (stats_summary or "").splitlines() if line.strip()]
+    by_gene = {}
+    generic = []
+    for line in lines:
+        gene = ""
+        detail = line
+        for sep in ("：", ":"):
+            if sep in line:
+                left, right = line.split(sep, 1)
+                left = left.strip()
+                right = right.strip()
+                if left and len(left) <= 40 and not any(ch.isspace() for ch in left):
+                    gene = left
+                    detail = right or line
+                    break
+        if gene:
+            by_gene.setdefault(gene, []).append(detail)
+        else:
+            generic.append(detail)
+    return by_gene, generic
+
+
 def generate_qpcr_plot_assets(
     title: str,
     project_name: str,
@@ -1140,6 +1163,7 @@ def generate_qpcr_plot_assets(
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    significance_by_gene, generic_significance = build_qpcr_significance_map(stats_summary)
 
     valid_rows = []
     for row in rows:
@@ -1162,12 +1186,17 @@ def generate_qpcr_plot_assets(
     if not valid_rows:
         raise ValueError("没有可用于作图的 qPCR 数值。请检查 2^-ΔΔCt 数据格式。")
 
-    cols = 2 if len(valid_rows) > 1 else 1
+    if len(valid_rows) >= 6:
+        cols = 3
+    elif len(valid_rows) > 1:
+        cols = 2
+    else:
+        cols = 1
     nrows = math.ceil(len(valid_rows) / cols)
     fig, axes = plt.subplots(
         nrows=nrows,
         ncols=cols,
-        figsize=(7.5 * cols, 4.8 * nrows),
+        figsize=(7.2 * cols, 5.3 * nrows),
         squeeze=False,
     )
     fig.patch.set_facecolor("white")
@@ -1182,10 +1211,10 @@ def generate_qpcr_plot_assets(
         bars = ax.bar(x, row["values"], color=colors, edgecolor="#1f2937", linewidth=0.8)
         ax.set_title(row["gene"], fontsize=12, fontweight="bold")
         ax.set_xticks(x)
-        ax.set_xticklabels(row["groups"], rotation=20, ha="right")
+        ax.set_xticklabels(row["groups"], rotation=22, ha="right", fontsize=9)
         ax.set_ylabel("Relative expression (2^-ΔΔCt)")
         ymax = max(row["values"]) if row["values"] else 1.0
-        ax.set_ylim(0, max(1.2, ymax * 1.28))
+        ax.set_ylim(0, max(1.2, ymax * 1.42))
         ax.grid(axis="y", linestyle="--", alpha=0.25)
         ax.set_axisbelow(True)
         for bar, value in zip(bars, row["values"]):
@@ -1196,6 +1225,24 @@ def generate_qpcr_plot_assets(
                 ha="center",
                 va="bottom",
                 fontsize=9,
+            )
+        note_lines = significance_by_gene.get(row["gene"]) or generic_significance
+        if note_lines:
+            note_text = "\n".join([f"• {item}" for item in note_lines[:4]])
+            ax.text(
+                0.98,
+                0.96,
+                note_text,
+                transform=ax.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8.5,
+                bbox={
+                    "boxstyle": "round,pad=0.32",
+                    "facecolor": "white",
+                    "edgecolor": "#d1d5db",
+                    "alpha": 0.92,
+                },
             )
 
     for extra_ax in flat_axes[len(valid_rows):]:
@@ -1276,6 +1323,10 @@ def build_qpcr_plot_package_bundle(
 
 ### 统计与显著性备注
 {notes}
+
+### 图内标注说明
+- 每个基因子图右上角会优先显示该基因对应的统计 / 显著性备注。
+- 若未按基因分别填写，将显示通用备注。
 
 ### 已生成图文件
 {image_lines}
