@@ -17,6 +17,19 @@
 {% endif %}
 
 <section>
+  <h3>🤖 AI 中台：qPCR 下一步</h3>
+  <p>结合 Ct、2^-ΔΔCt、图谱观察和误差线索，自动生成 qPCR 下一步推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="qPCR">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：qPCR_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：完成 AKT1 / NFE2L2 / HMOX1 / BAX / BCL2 的表达验证、主图和统计解释" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有 Ct 质控、2^-ΔΔCt 结果、自动图包、熔解曲线观察、引物设计说明"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：补实验建议、图谱解释、误差分析、Methods / Results / Reviewer Response 草稿"></textarea></p>
+    <button type="submit">生成 qPCR 推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>上传 qPCR 原始图片</h3>
   <form method="post" action="/qpcr/image-upload" enctype="multipart/form-data">
     <p><label>图片名称</label><br><input name="title" placeholder="例如：AKT1_熔解曲线_2026-07-27" required></p>

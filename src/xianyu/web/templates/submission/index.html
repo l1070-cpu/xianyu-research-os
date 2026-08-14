@@ -16,6 +16,19 @@
 </section>
 {% endif %}
 
+<section>
+  <h3>🤖 AI 中台：投稿推进</h3>
+  <p>结合当前期刊模板、已完成材料和缺失项，自动生成投稿下一步推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="投稿打包中心">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：投稿中心_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：按期刊模板补齐 submission package、supplementary、response letter 和最终核对清单" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有 Cover Letter、Highlights、Graphical Abstract、submission checklist、Figure manifest"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：缺失材料清单、优先补齐顺序、投稿前最终核对和返修预案"></textarea></p>
+    <button type="submit">生成投稿推进稿</button>
+  </form>
+</section>
+
 {% if checklist %}
 <section>
   <h3>按期刊模板切换要求</h3>

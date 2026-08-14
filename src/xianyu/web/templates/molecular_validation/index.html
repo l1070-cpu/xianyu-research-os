@@ -17,6 +17,19 @@
 {% endif %}
 
 <section>
+  <h3>🤖 AI 中台：分子验证总推进</h3>
+  <p>把 WB、qPCR 和联合验证目标一起交给 DeepSeek，自动生成综合推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="分子验证中心">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：分子验证_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：整合 WB 与 qPCR 结果，补齐机制验证证据链，并输出写作与投稿材料" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有 WB 灰度数据、qPCR 结果图、Supplementary 图片、统计结论、部分正文草稿"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：联合 Results、Methods、Figure Legend、submission checklist、补实验建议"></textarea></p>
+    <button type="submit">生成分子验证推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>中心说明</h3>
   <pre>{{ summary }}</pre>
 </section>

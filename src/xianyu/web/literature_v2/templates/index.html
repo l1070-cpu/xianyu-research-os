@@ -9,6 +9,19 @@
 </header>
 
 <section>
+  <h3>🤖 AI 中台：文献推进</h3>
+  <p>把当前文献阅读进度、机制线索和写作目标交给 DeepSeek，自动生成下一步推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="文献中心">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：文献中心_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：围绕 PI3K/AKT、Nrf2、氧化应激与缺血性脑卒中梳理机制文献，并服务于网络药理与验证实验" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已上传若干篇 PDF，已有 AI 阅读结果、机制标签、Introduction / Discussion 文献池"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：优先阅读顺序、Research Gap、网络药理候选通路、Docking / WB / qPCR 推荐指标"></textarea></p>
+    <button type="submit">生成文献推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>上传 PDF</h3>
 
   <form
@@ -77,6 +90,9 @@
           >
             预览 PDF
           </a>
+        </p>
+        <p class="storage-note">
+          保存位置：{{ item.storage.location }}
         </p>
       {% endif %}
     </article>

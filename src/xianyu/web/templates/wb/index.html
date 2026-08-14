@@ -17,6 +17,19 @@
 {% endif %}
 
 <section>
+  <h3>🤖 AI 中台：WB 下一步</h3>
+  <p>根据当前 WB 设计、灰度数据和图像观察，自动生成下一步实验或写作推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="Western blot">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：WB_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：完成 AKT / p-AKT / Nrf2 / HO-1 的 WB 验证，并整理主图和统计说明" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有原始膜图、灰度分析数据、统计比较结果、Supplementary 编号"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：下一步补实验建议、Figure Legend、Results 正文回填、审稿回复要点"></textarea></p>
+    <button type="submit">生成 WB 推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>新建 WB 记录</h3>
   <form method="post" action="/wb/new">
     <p><label>实验名称</label><br><input name="title" placeholder="例如：AKT_Nrf2_WB验证" required></p>

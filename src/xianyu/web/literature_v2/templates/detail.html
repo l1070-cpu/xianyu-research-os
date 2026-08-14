@@ -107,6 +107,24 @@
 </section>
 
 <section>
+  <h3>🤖 AI 中台：基于当前文献生成推进稿</h3>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="文献单篇推进">
+    <p><label>推进稿名称</label><br><input name="title" value="{{ record.title }}_推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" required>围绕当前文献提取核心机制、Research Gap、与当前项目的关联，并生成后续网络药理、Docking、WB、qPCR 推进建议。</textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="8">标题：{{ record.title }}
+期刊：{{ record.journal or "未识别" }}
+年份：{{ record.year or "未识别" }}
+DOI：{{ record.doi or "未识别" }}
+PMID：{{ record.pmid or "未识别" }}
+机制标签：{{ record.mechanism_tags | join(", ") }}
+用途标签：{{ record.usage_tags | join(", ") }}</textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4">输出单篇文献的阅读优先级、可写入 Introduction / Discussion 的关键点、可进入网络药理的靶点 / 通路，以及建议验证的 WB / qPCR 指标。</textarea></p>
+    <button type="submit">生成单篇文献推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>AI 阅读结果</h3>
 
   {% if record.ai_summary %}

@@ -17,6 +17,19 @@
 {% endif %}
 
 <section>
+  <h3>🤖 AI 中台：论文写作推进</h3>
+  <p>把当前稿件状态、已有图表和目标期刊要求交给 DeepSeek，自动生成写作下一步推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="论文写作中心">
+    <p><label>推进稿名称</label><br><input name="title" placeholder="例如：论文写作_下一步推进稿" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：完成 Results、Discussion、Figure Legend、Submission Package 与返修材料" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有网络药理图表包、WB/qPCR 结果稿、Methods 草稿、Cover Letter 模板"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：章节优先级、缺失材料清单、图文对应关系、投稿前核对建议"></textarea></p>
+    <button type="submit">生成论文写作推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>＋ 新建写作模板</h3>
   <p><a href="/submission">前往 投稿打包中心</a></p>
   <form method="post" action="/writing/new">

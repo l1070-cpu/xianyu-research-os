@@ -17,6 +17,31 @@
 {% endif %}
 
 <section>
+  <h3>🤖 AI 中台：网络药理下一步</h3>
+  <p>把当前网络药理数据、目标和预期产出交给 DeepSeek，自动生成下一步推进稿。</p>
+  <form method="post" action="/ai-center/module-plan/new">
+    <input type="hidden" name="module_name" value="网络药理">
+    <p>
+      <label>推进稿名称</label><br>
+      <input name="title" placeholder="例如：网络药理_下一步推进稿" required>
+    </p>
+    <p>
+      <label>当前目标</label><br>
+      <textarea name="goal" rows="4" placeholder="例如：完成交集靶点筛选、网络药理图表包、Docking 候选和 Results 草稿" required></textarea>
+    </p>
+    <p>
+      <label>当前已有数据</label><br>
+      <textarea name="current_data" rows="5" placeholder="例如：已导入成分靶点表、疾病靶点表、DEG 表、交集结果、部分 GO/KEGG 结果"></textarea>
+    </p>
+    <p>
+      <label>期望产出</label><br>
+      <textarea name="expected_output" rows="4" placeholder="例如：交集分析建议、图表清单、Discussion 连接段、Docking / WB / qPCR 验证建议"></textarea>
+    </p>
+    <button type="submit">生成网络药理推进稿</button>
+  </form>
+</section>
+
+<section>
   <h3>＋ 新建网络药理任务</h3>
   <form method="post" action="/network/new">
     <p>
