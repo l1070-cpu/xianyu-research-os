@@ -5638,14 +5638,7 @@ def create_record(record_type: str = Form(...), name: str = Form(...)):
 
 @app.get("/project", response_class=HTMLResponse)
 def project_page():
-    overview_path = ROOT / "02_项目管理" / "金毛狗脊_IS_项目总览.md"
-    overview = read(overview_path)
-    done = overview.count("- [x]")
-    todo = overview.count("- [ ]")
-    total = done + todo
-    progress = int(done / total * 100) if total else 0
-    template = env.get_template("project.html")
-    return template.render(overview=overview, progress=progress, modules=MODULES)
+    return RedirectResponse(url="/projects-v2", status_code=307)
 
 
 @app.get("/search", response_class=HTMLResponse)
@@ -5806,16 +5799,7 @@ def data_import_upload(
 
 @app.get("/literature", response_class=HTMLResponse)
 def literature_index():
-    files = list_md("04_文献笔记")
-    items = []
-    for file in files[:30]:
-        items.append({
-            "name": file.name,
-            "path": str(file.relative_to(ROOT)),
-            "content": read(file)[:500]
-        })
-    template = env.get_template("literature/index.html")
-    return template.render(items=items, modules=MODULES)
+    return RedirectResponse(url="/literature-v2", status_code=307)
 
 @app.post("/literature/new")
 def literature_new(title: str = Form(...), keywords: str = Form("")):
@@ -10157,8 +10141,7 @@ def backup_project():
 
 @app.get("/upload-pdf", response_class=HTMLResponse)
 def upload_pdf_page():
-    template = env.get_template("upload_pdf.html")
-    return template.render(modules=MODULES)
+    return RedirectResponse(url="/literature-v2", status_code=307)
 
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -10171,17 +10154,12 @@ async def upload_pdf(file: UploadFile = File(...)):
     content = await file.read()
     out_path.write_bytes(content)
 
-    return RedirectResponse(url="/literature", status_code=303)
+    return RedirectResponse(url="/literature-v2", status_code=303)
 
 
 @app.get("/pdf-library", response_class=HTMLResponse)
 def pdf_library():
-    folder = ROOT / "04_文献笔记" / "PDF库"
-    folder.mkdir(parents=True, exist_ok=True)
-    files = sorted(folder.glob("*.pdf"), key=lambda p: p.stat().st_mtime, reverse=True)
-    items = [{"name": f.name, "path": str(f.relative_to(ROOT))} for f in files]
-    template = env.get_template("pdf_library.html")
-    return template.render(items=items, modules=MODULES)
+    return RedirectResponse(url="/literature-v2", status_code=307)
 
 
 @app.get("/pdf")
