@@ -1,44 +1,32 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>上传PDF</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<aside>
-<h1><a href="/">🐟 咸鱼 OS</a></h1>
-<a href="/new">＋ 新建记录</a>
-<a href="/project">📌 项目中心</a>
-<a href="/search">🔍 全局搜索</a>
-<a href="/upload-pdf">📄 上传PDF</a>
-<a href="/pdf-library">📚 PDF库</a>
-<a href="/literature-v2">📚 文献中心V2</a>
-<a href="/literature-pool">🗂️ 文献用途池</a>
-<a href="/literature-keywords">🧬 机制关键词池</a>
-<a href="/help">❓ 使用说明</a>
-{% for key, item in modules.items() %}
-<a href="/module/{{ key }}">{{ item[1] }}</a>
-{% endfor %}
-</aside>
+{% extends "base.html" %}
 
-<main>
-<h2>📄 上传文献 PDF</h2>
+{% block title %}上传 PDF{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>📄 上传文献 PDF</h2>
+  <p>旧版 PDF 上传入口，建议优先使用文献中心 V2。</p>
+</header>
 
 <section>
-<form method="post" action="/upload-pdf" enctype="multipart/form-data">
-  <p>
-    <label>选择 PDF 文件</label><br>
-    <input type="file" name="file" accept=".pdf" required>
-  </p>
-  <button type="submit">上传 PDF</button>
-</form>
+  <div class="file-card">
+    <h3>推荐入口</h3>
+    <p><a href="/literature-v2">前往 文献中心 V2</a></p>
+  </div>
 </section>
 
 <section>
-<p>上传后文件会保存到：</p>
-<pre>04_文献笔记/PDF库/</pre>
+  <form method="post" action="/upload-pdf" enctype="multipart/form-data">
+    <p>
+      <label>选择 PDF 文件</label><br>
+      <input type="file" name="file" accept=".pdf" required>
+    </p>
+    <button type="submit">上传 PDF</button>
+  </form>
 </section>
-</main>
-</body>
-</html>
+
+<section>
+  <p>上传后文件会保存到：</p>
+  <pre>04_文献笔记/PDF库/</pre>
+</section>
+{% endblock %}

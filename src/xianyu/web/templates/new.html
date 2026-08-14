@@ -1,54 +1,30 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>新建记录</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<aside>
-<h1><a href="/">🐟 咸鱼 OS</a></h1>
-<a href="/new">＋ 新建记录</a><a href="/project">📌 项目中心</a>
-<a href="/search">🔍 全局搜索</a>
-<a href="/upload-pdf">📄 上传PDF</a>
-<a href="/pdf-library">📚 PDF库</a>
-<a href="/literature-v2">📚 文献中心V2</a>
-<a href="/literature-pool">🗂️ 文献用途池</a>
-<a href="/literature-keywords">🧬 机制关键词池</a>
-<a href="/help">❓ 使用说明</a>
-<form method="post" action="/snapshot" style="margin:10px 0;">
-  <button type="submit">保存Git快照</button>
-</form>
-<form method="post" action="/backup" style="margin:10px 0;">
-  <button type="submit">一键备份</button>
-</form>
-{% for key, item in modules.items() %}
-<a href="/module/{{ key }}">{{ item[1] }}</a>
-{% endfor %}
-</aside>
+{% extends "base.html" %}
 
-<main>
-<h2>＋ 新建科研记录</h2>
+{% block title %}新建记录{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>＋ 新建科研记录</h2>
+  <p>统一创建文献、实验、数据、图表和写作记录。</p>
+</header>
 
 <section>
-<form method="post" action="/new">
-  <p>
-    <label>记录类型</label><br>
-    <select name="record_type">
-      {% for key, item in create_map.items() %}
-      <option value="{{ key }}">{{ item[1] }}</option>
-      {% endfor %}
-    </select>
-  </p>
+  <form method="post" action="/new">
+    <p>
+      <label>记录类型</label><br>
+      <select name="record_type">
+        {% for key, item in create_map.items() %}
+        <option value="{{ key }}">{{ item[1] }}</option>
+        {% endfor %}
+      </select>
+    </p>
 
-  <p>
-    <label>名称</label><br>
-    <input name="name" placeholder="例如：CCK8 / Discussion / 槲皮素_AKT1" required>
-  </p>
+    <p>
+      <label>名称</label><br>
+      <input name="name" placeholder="例如：CCK8 / Discussion / 槲皮素_AKT1" required>
+    </p>
 
-  <button type="submit">生成记录</button>
-</form>
+    <button type="submit">生成记录</button>
+  </form>
 </section>
-</main>
-</body>
-</html>
+{% endblock %}
