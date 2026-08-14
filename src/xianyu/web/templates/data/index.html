@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析中心{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>📊 数据分析中心</h2>
+  <p>管理 CCK-8、WB、qPCR、流式和图像定量等分析记录。</p>
+</header>
+
+<section>
+  <h3>＋ 新建数据分析记录</h3>
+  <form method="post" action="/data/new">
+    <p>
+      <label>数据名称</label><br>
+      <input name="title" placeholder="例如：CCK8_24h / WB_AKT / qPCR_BAX" required>
+    </p>
+
+    <p>
+      <label>数据类型</label><br>
+      <select name="data_type">
+        <option value="cck8">CCK-8</option>
+        <option value="wb">Western Blot 灰度</option>
+        <option value="qpcr">RT-qPCR</option>
+        <option value="flow">流式细胞术</option>
+        <option value="image">ImageJ 图像定量</option>
+        <option value="prism">GraphPad Prism</option>
+        <option value="general">通用数据</option>
+      </select>
+    </p>
+
+    <button type="submit">生成数据分析记录</button>
+  </form>
+  <form method="post" action="/backup" style="margin:10px 0;">
+    <button type="submit">一键备份</button>
+  </form>
+</section>
+
+<section>
+  <h3>最近数据分析记录</h3>
+  {% if items %}
+    {% for item in items %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <p>{{ item.path }}</p>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无数据分析记录。</p>
+  {% endif %}
+</section>
+{% endblock %}
