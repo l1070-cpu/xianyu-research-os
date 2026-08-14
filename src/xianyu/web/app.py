@@ -32,6 +32,73 @@ def get_runtime_status():
         "runtime_dir": runtime_dir,
     }
 
+
+def infer_ai_provider(base: str):
+    low = (base or "").lower()
+    if "deepseek" in low:
+        return "DeepSeek"
+    if "openai" in low:
+        return "OpenAI Compatible"
+    if "siliconflow" in low:
+        return "SiliconFlow"
+    if "openrouter" in low:
+        return "OpenRouter"
+    if "localhost" in low or "127.0.0.1" in low or "ollama" in low:
+        return "Local / Ollama Compatible"
+    return "Custom Compatible"
+
+
+def mask_secret(value: str):
+    if not value:
+        return ""
+    if len(value) <= 8:
+        return "*" * len(value)
+    return value[:4] + "*" * (len(value) - 8) + value[-4:]
+
+
+def get_ai_runtime_status():
+    base = os.getenv("AI_API_BASE", "").rstrip("/")
+    key = os.getenv("AI_API_KEY", "")
+    model = os.getenv("AI_MODEL", "")
+    configured = bool(base and key and model)
+    return {
+        "configured": configured,
+        "provider": infer_ai_provider(base),
+        "base": base,
+        "model": model,
+        "key_masked": mask_secret(key),
+    }
+
+
+def get_recent_ai_center_notes(limit: int = 8):
+    folder = ROOT / "09_AI中台"
+    if not folder.exists():
+        return []
+    files = sorted(folder.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+    items = []
+    for file in files[:limit]:
+        items.append(
+            {
+                "name": file.name,
+                "path": str(file.relative_to(ROOT)),
+                "content": read(file)[:500],
+            }
+        )
+    return items
+
+
+def get_ai_module_matrix():
+    return [
+        {"name": "文献中心 V2", "route": "/literature-v2", "ability": "PDF 解析、AI 阅读、结构化卡片、研究空白提取"},
+        {"name": "网络药理", "route": "/network", "ability": "交集分析、网络草稿、结果说明、图表支撑"},
+        {"name": "分子验证中心", "route": "/molecular-validation", "ability": "WB + qPCR 联合结果、联动写作、投稿检查"},
+        {"name": "qPCR 工作台", "route": "/qpcr", "ability": "AI 结果解读、图谱讲解、误差诊断、自动作图"},
+        {"name": "WB 工作台", "route": "/wb", "ability": "结果写回、图注、统计说明、完整验证草稿"},
+        {"name": "科研作图", "route": "/figure", "ability": "网络药理图包、Figure Legend、结果段衔接"},
+        {"name": "论文写作", "route": "/writing", "ability": "摘要、引言、讨论、投稿包、回复信"},
+        {"name": "投稿打包", "route": "/submission", "ability": "清单、命名、原始数据归档、最终核对"},
+    ]
+
 MODULES = {
     "today": ("01_今日打工", "📋 今日打工"),
     "project": ("02_项目管理", "📁 项目管理"),
@@ -5351,6 +5418,7 @@ def suggest_dataset_type(path: Path, headers: list[str]):
 
 env.globals["current_project"] = get_current_project
 env.globals["runtime_status"] = get_runtime_status
+env.globals["ai_runtime_status"] = get_ai_runtime_status
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -5390,7 +5458,127 @@ def index():
         modules=MODULES,
         recent=recent,
         active_project=current_project,
+        ai_status=get_ai_runtime_status(),
     )
+
+
+@app.get("/ai-center", response_class=HTMLResponse)
+def ai_center_index():
+    current_project = get_current_project() or {}
+    template = env.get_template("ai_center/index.html")
+    return template.render(
+        active_project=current_project,
+        ai_status=get_ai_runtime_status(),
+        recent_ai_notes=get_recent_ai_center_notes(limit=8),
+        ai_modules=get_ai_module_matrix(),
+    )
+
+
+@app.post("/ai-center/test")
+def ai_center_test(
+    title: str = Form("DeepSeek_Connection_Test"),
+    prompt: str = Form("请用中文简要确认你已连通，并给出当前项目下一步最值得优先推进的 3 项工作。"),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "09_AI中台"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_AI_Test.md"
+    current_project = get_current_project() or {}
+    project_name = current_project.get("name", "") or "当前项目"
+    project_context = (
+        f"项目名称：{current_project.get('name', '')}\n"
+        f"研究对象：{current_project.get('research_object', '')}\n"
+        f"疾病/模型：{current_project.get('disease', '')}\n"
+        f"当前阶段：{current_project.get('stage', '')}"
+    )
+    system_prompt = "你是生物医药科研工作台的统一 AI 中台助手。回答要具体、可执行、简洁。"
+    user_prompt = f"{project_context}\n\n请完成以下任务：\n{prompt}"
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"AI 中台连通测试｜{project_name}", result)
+    file_path.write_text(
+        f"""# AI 中台连通测试｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## AI 运行状态
+- Provider：{get_ai_runtime_status().get('provider')}
+- Model：{get_ai_runtime_status().get('model')}
+
+{content}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/ai-center/module-plan/new")
+def ai_center_module_plan_new(
+    title: str = Form(...),
+    module_name: str = Form(...),
+    goal: str = Form(...),
+    current_data: str = Form(""),
+    expected_output: str = Form(""),
+):
+    today = date.today().isoformat()
+    folder = ROOT / "09_AI中台"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_AI_Module_Plan.md"
+    current_project = get_current_project() or {}
+    project_context = (
+        f"项目名称：{current_project.get('name', '')}\n"
+        f"研究对象：{current_project.get('research_object', '')}\n"
+        f"疾病/模型：{current_project.get('disease', '')}\n"
+        f"当前阶段：{current_project.get('stage', '')}"
+    )
+    system_prompt = (
+        "你是科研工作台的模块统筹助手。请严格基于当前模块目标，"
+        "输出结构化 JSON：current_goal,required_inputs,step_by_step_plan,expected_outputs,common_risks,next_actions。"
+    )
+    user_prompt = (
+        f"{project_context}\n\n"
+        f"模块名称：{module_name}\n"
+        f"当前目标：{goal}\n"
+        f"当前已有数据：{current_data}\n"
+        f"期望产出：{expected_output}\n"
+    )
+    result = ai_json_or_prompt(system_prompt, user_prompt)
+    content = format_ai_analysis_markdown(f"AI 模块推进稿｜{module_name}", result)
+    file_path.write_text(
+        f"""# AI 模块推进稿｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 模块名称
+{module_name}
+
+## 当前目标
+{goal}
+
+## 当前已有数据
+{current_data or "待补充"}
+
+## 期望产出
+{expected_output or "待补充"}
+
+{content}
+""",
+        encoding="utf-8",
+    )
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 @app.get("/module/{key}", response_class=HTMLResponse)
 def module_page(key: str):

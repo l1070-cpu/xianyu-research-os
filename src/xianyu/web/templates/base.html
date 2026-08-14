@@ -14,9 +14,11 @@
 </main>
 
 {% set rs = runtime_status() %}
+{% set ai = ai_runtime_status() %}
 <footer class="runtime-status">
   <span>运行目录：{{ rs.project_root }}</span>
   <span>源码目录：{{ rs.source_root }}</span>
+  <span>AI：{{ ai.provider }}｜{{ ai.model or "未配置" }}</span>
 </footer>
 
 </body>

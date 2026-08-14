@@ -39,8 +39,38 @@ def runtime_status():
  }
 
 
+def ai_runtime_status():
+ base = os.getenv("AI_API_BASE", "").rstrip("/")
+ key = os.getenv("AI_API_KEY", "")
+ model = os.getenv("AI_MODEL", "")
+ low = base.lower()
+ if "deepseek" in low:
+  provider = "DeepSeek"
+ elif "openai" in low:
+  provider = "OpenAI Compatible"
+ elif "siliconflow" in low:
+  provider = "SiliconFlow"
+ elif "openrouter" in low:
+  provider = "OpenRouter"
+ elif "localhost" in low or "127.0.0.1" in low or "ollama" in low:
+  provider = "Local / Ollama Compatible"
+ else:
+  provider = "Custom Compatible"
+ masked = ""
+ if key:
+  masked = "*" * len(key) if len(key) <= 8 else key[:4] + "*" * (len(key) - 8) + key[-4:]
+ return {
+  "configured": bool(base and key and model),
+  "provider": provider,
+  "base": base,
+  "model": model,
+  "key_masked": masked,
+ }
+
+
 templates.env.globals["current_project"]=current_project
 templates.env.globals["runtime_status"]=runtime_status
+templates.env.globals["ai_runtime_status"]=ai_runtime_status
 
 def valid(path):
  p=(ROOT/path).resolve()

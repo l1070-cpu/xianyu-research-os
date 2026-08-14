@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}AI 中台{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h2>🤖 AI 中台</h2>
+  <p>统一管理 DeepSeek 调用、模块推进和全局 AI 状态</p>
+</header>
+
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
+<section>
+  <h3>AI 状态</h3>
+  <div class="metadata-grid">
+    <div>
+      <strong>Provider</strong>
+      <p>{{ ai_status.provider }}</p>
+    </div>
+    <div>
+      <strong>Model</strong>
+      <p>{{ ai_status.model or "未配置" }}</p>
+    </div>
+    <div>
+      <strong>Base URL</strong>
+      <p>{{ ai_status.base or "未配置" }}</p>
+    </div>
+    <div>
+      <strong>Key 状态</strong>
+      <p>{{ ai_status.key_masked or "未配置" }}</p>
+    </div>
+  </div>
+  <p>
+    {% if ai_status.configured %}
+    当前 AI 已配置完成，可以直接用于文献、qPCR、WB、论文写作和投稿打包。
+    {% else %}
+    当前 AI 尚未完整配置，相关模块会退回到提示词模式。
+    {% endif %}
+  </p>
+</section>
+
+<section>
+  <h3>DeepSeek 连通测试</h3>
+  <form method="post" action="/ai-center/test">
+    <p><label>测试名称</label><br><input name="title" value="DeepSeek_Connection_Test" required></p>
+    <p><label>测试指令</label><br><textarea name="prompt" rows="5" placeholder="例如：请根据当前项目给出最值得优先推进的 3 项工作。">请用中文简要确认你已连通，并给出当前项目下一步最值得优先推进的 3 项工作。</textarea></p>
+    <button type="submit">运行 AI 连通测试</button>
+  </form>
+</section>
+
+<section>
+  <h3>模块推进稿</h3>
+  <form method="post" action="/ai-center/module-plan/new">
+    <p><label>稿件名称</label><br><input name="title" placeholder="例如：网络药理_下一步推进稿" required></p>
+    <p><label>模块名称</label><br><input name="module_name" placeholder="例如：网络药理 / qPCR / WB / 投稿打包" required></p>
+    <p><label>当前目标</label><br><textarea name="goal" rows="4" placeholder="例如：完成交集靶点、图包和 Results 草稿" required></textarea></p>
+    <p><label>当前已有数据</label><br><textarea name="current_data" rows="5" placeholder="例如：已有成分靶点表、疾病靶点表、交集结果、部分 KEGG 结果"></textarea></p>
+    <p><label>期望产出</label><br><textarea name="expected_output" rows="4" placeholder="例如：生成图、Results、Methods、Figure Legend 和下一步实验建议"></textarea></p>
+    <button type="submit">生成模块推进稿</button>
+  </form>
+</section>
+
+<section>
+  <h3>AI 已覆盖模块</h3>
+  <div class="project-grid">
+    {% for item in ai_modules %}
+    <article class="file-card">
+      <h3><a href="{{ item.route }}">{{ item.name }}</a></h3>
+      <p>{{ item.ability }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <h3>最近 AI 中台记录</h3>
+  {% if recent_ai_notes %}
+    {% for item in recent_ai_notes %}
+    <div class="file-card">
+      <h3><a href="/file?path={{ item.path }}">{{ item.name }}</a></h3>
+      <pre>{{ item.content }}</pre>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无 AI 中台记录。</p>
+  {% endif %}
+</section>
+{% endblock %}
