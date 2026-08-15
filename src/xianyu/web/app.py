@@ -12,6 +12,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 from xianyu.web.literature_v2 import router as literature_v2_router
+from xianyu.web.ai_config import (
+    infer_ai_provider,
+    load_ai_config,
+    provider_presets,
+    reset_ai_config,
+    save_ai_config,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(ROOT / ".env")
@@ -33,41 +40,8 @@ def get_runtime_status():
     }
 
 
-def infer_ai_provider(base: str):
-    low = (base or "").lower()
-    if "deepseek" in low:
-        return "DeepSeek"
-    if "openai" in low:
-        return "OpenAI Compatible"
-    if "siliconflow" in low:
-        return "SiliconFlow"
-    if "openrouter" in low:
-        return "OpenRouter"
-    if "localhost" in low or "127.0.0.1" in low or "ollama" in low:
-        return "Local / Ollama Compatible"
-    return "Custom Compatible"
-
-
-def mask_secret(value: str):
-    if not value:
-        return ""
-    if len(value) <= 8:
-        return "*" * len(value)
-    return value[:4] + "*" * (len(value) - 8) + value[-4:]
-
-
 def get_ai_runtime_status():
-    base = os.getenv("AI_API_BASE", "").rstrip("/")
-    key = os.getenv("AI_API_KEY", "")
-    model = os.getenv("AI_MODEL", "")
-    configured = bool(base and key and model)
-    return {
-        "configured": configured,
-        "provider": infer_ai_provider(base),
-        "base": base,
-        "model": model,
-        "key_masked": mask_secret(key),
-    }
+    return load_ai_config(ROOT)
 
 
 def get_recent_ai_center_notes(limit: int = 8):
@@ -178,9 +152,10 @@ def extract_markdown_section(text: str, heading: str) -> str:
 
 
 def ai_json_or_prompt(system_prompt: str, user_prompt: str):
-    base = os.getenv("AI_API_BASE", "").rstrip("/")
-    key = os.getenv("AI_API_KEY", "")
-    model = os.getenv("AI_MODEL", "")
+    ai_config = load_ai_config(ROOT)
+    base = ai_config["base"]
+    key = ai_config["key"]
+    model = ai_config["model"]
     full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
     if not (base and key and model):
@@ -5466,17 +5441,51 @@ def index():
 def ai_center_index():
     current_project = get_current_project() or {}
     template = env.get_template("ai_center/index.html")
+    ai_status = get_ai_runtime_status()
     return template.render(
         active_project=current_project,
-        ai_status=get_ai_runtime_status(),
+        ai_status=ai_status,
         recent_ai_notes=get_recent_ai_center_notes(limit=8),
         ai_modules=get_ai_module_matrix(),
+        provider_presets=provider_presets(),
     )
+
+
+@app.post("/ai-center/model-config/save")
+def ai_center_model_config_save(
+    provider_preset: str = Form("deepseek"),
+    provider_label: str = Form(""),
+    base: str = Form(""),
+    model: str = Form(""),
+    key: str = Form(""),
+):
+    presets = provider_presets()
+    preset = presets.get(provider_preset, presets["custom"])
+    resolved_base = (base or preset.get("base", "")).strip()
+    resolved_model = (model or preset.get("model", "")).strip()
+    resolved_label = (provider_label or preset.get("label", "")).strip() or infer_ai_provider(resolved_base)
+    current_key = load_ai_config(ROOT).get("key", "")
+    resolved_key = (key or current_key).strip()
+    save_ai_config(
+        ROOT,
+        provider_preset=provider_preset,
+        provider_label=resolved_label,
+        base=resolved_base,
+        model=resolved_model,
+        key=resolved_key,
+    )
+    return RedirectResponse(url="/ai-center", status_code=303)
+
+
+@app.post("/ai-center/model-config/reset")
+def ai_center_model_config_reset():
+    reset_ai_config(ROOT)
+    return RedirectResponse(url="/ai-center", status_code=303)
 
 
 @app.post("/ai-center/test")
 def ai_center_test(
-    title: str = Form("DeepSeek_Connection_Test"),
+    title: str = Form("AI_Connection_Test"),
     prompt: str = Form("请用中文简要确认你已连通，并给出当前项目下一步最值得优先推进的 3 项工作。"),
 ):
     today = date.today().isoformat()
@@ -5485,6 +5494,7 @@ def ai_center_test(
     file_path = folder / f"{today}_{safe_name(title)}_AI_Test.md"
     current_project = get_current_project() or {}
     project_name = current_project.get("name", "") or "当前项目"
+    ai_status = load_ai_config(ROOT)
     project_context = (
         f"项目名称：{current_project.get('name', '')}\n"
         f"研究对象：{current_project.get('research_object', '')}\n"
@@ -5508,8 +5518,10 @@ def ai_center_test(
 - 当前阶段：{current_project.get('stage', '')}
 
 ## AI 运行状态
-- Provider：{get_ai_runtime_status().get('provider')}
-- Model：{get_ai_runtime_status().get('model')}
+- Provider：{ai_status.get('provider')}
+- Model：{ai_status.get('model')}
+- Base URL：{ai_status.get('base')}
+- 配置来源：{ai_status.get('source')}
 
 {content}
 """,

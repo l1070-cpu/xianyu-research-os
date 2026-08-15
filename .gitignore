@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .env
+09_AI中台/ai_model_config.json
 .DS_Store
 .ipynb_checkpoints/
 data/

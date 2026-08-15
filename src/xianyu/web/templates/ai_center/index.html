@@ -5,7 +5,7 @@
 {% block content %}
 <header class="page-header">
   <h2>🤖 AI 中台</h2>
-  <p>统一管理 DeepSeek 调用、模块推进和全局 AI 状态</p>
+  <p>统一管理全局 AI 模型切换、调用、模块推进和运行状态</p>
 </header>
 
 {% if active_project %}
@@ -35,6 +35,14 @@
       <strong>Key 状态</strong>
       <p>{{ ai_status.key_masked or "未配置" }}</p>
     </div>
+    <div>
+      <strong>配置来源</strong>
+      <p>{{ "全局切换配置" if ai_status.source == "override" else ".env 默认配置" }}</p>
+    </div>
+    <div>
+      <strong>配置文件</strong>
+      <p>{{ ai_status.config_path }}</p>
+    </div>
   </div>
   <p>
     {% if ai_status.configured %}
@@ -46,9 +54,56 @@
 </section>
 
 <section>
-  <h3>DeepSeek 连通测试</h3>
+  <h3>总模型切换</h3>
+  <form method="post" action="/ai-center/model-config/save">
+    <div class="metadata-grid">
+      <div>
+        <label><strong>预设服务商</strong></label>
+        <select name="provider_preset">
+          {% for preset_key, preset in provider_presets.items() %}
+          <option value="{{ preset_key }}" {% if ai_status.provider_preset == preset_key %}selected{% endif %}>
+            {{ preset.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label><strong>显示名称</strong></label>
+        <input name="provider_label" value="{{ ai_status.provider_label or ai_status.provider }}" placeholder="例如：DeepSeek / OpenAI / 课题组本地模型">
+      </div>
+      <div>
+        <label><strong>Base URL</strong></label>
+        <input name="base" value="{{ ai_status.base }}" placeholder="例如：https://api.deepseek.com/v1">
+      </div>
+      <div>
+        <label><strong>模型名</strong></label>
+        <input name="model" value="{{ ai_status.model }}" placeholder="例如：deepseek-v4-flash / gpt-5">
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label><strong>API Key</strong></label>
+        <input name="key" value="" placeholder="留空则沿用当前 Key，不会清空已有配置">
+        <p class="form-hint">当前显示为掩码：{{ ai_status.key_masked or "未配置" }}</p>
+      </div>
+    </div>
+    <div class="record-actions">
+      <button type="submit">保存全局模型配置</button>
+    </div>
+  </form>
+
+  <form method="post" action="/ai-center/model-config/reset" style="margin-top: 12px;">
+    <div class="record-actions">
+      <button type="submit">恢复 .env 默认配置</button>
+    </div>
+  </form>
+  <p class="form-hint">
+    这里保存的是整个工作台的总模型配置。文献中心、qPCR、WB、论文写作等模块会统一读取这套配置。
+  </p>
+</section>
+
+<section>
+  <h3>AI 连通测试</h3>
   <form method="post" action="/ai-center/test">
-    <p><label>测试名称</label><br><input name="title" value="DeepSeek_Connection_Test" required></p>
+    <p><label>测试名称</label><br><input name="title" value="AI_Connection_Test" required></p>
     <p><label>测试指令</label><br><textarea name="prompt" rows="5" placeholder="例如：请根据当前项目给出最值得优先推进的 3 项工作。">请用中文简要确认你已连通，并给出当前项目下一步最值得优先推进的 3 项工作。</textarea></p>
     <button type="submit">运行 AI 连通测试</button>
   </form>

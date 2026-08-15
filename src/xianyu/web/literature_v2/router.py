@@ -4,6 +4,7 @@ from fastapi import APIRouter,Form,UploadFile,File,HTTPException,Request
 from fastapi.responses import HTMLResponse,RedirectResponse,FileResponse,PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from .core import *
+from xianyu.web.ai_config import load_ai_config
 router=APIRouter(prefix='/literature-v2',tags=['literature-v2'])
 ROOT=Path(__file__).resolve().parents[4]
 PDF=ROOT/'04_文献笔记'/'PDF库';PDF.mkdir(parents=True,exist_ok=True)
@@ -40,32 +41,7 @@ def runtime_status():
 
 
 def ai_runtime_status():
- base = os.getenv("AI_API_BASE", "").rstrip("/")
- key = os.getenv("AI_API_KEY", "")
- model = os.getenv("AI_MODEL", "")
- low = base.lower()
- if "deepseek" in low:
-  provider = "DeepSeek"
- elif "openai" in low:
-  provider = "OpenAI Compatible"
- elif "siliconflow" in low:
-  provider = "SiliconFlow"
- elif "openrouter" in low:
-  provider = "OpenRouter"
- elif "localhost" in low or "127.0.0.1" in low or "ollama" in low:
-  provider = "Local / Ollama Compatible"
- else:
-  provider = "Custom Compatible"
- masked = ""
- if key:
-  masked = "*" * len(key) if len(key) <= 8 else key[:4] + "*" * (len(key) - 8) + key[-4:]
- return {
-  "configured": bool(base and key and model),
-  "provider": provider,
-  "base": base,
-  "model": model,
-  "key_masked": masked,
- }
+ return load_ai_config(ROOT)
 
 
 templates.env.globals["current_project"]=current_project

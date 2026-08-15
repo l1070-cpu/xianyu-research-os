@@ -3,6 +3,7 @@ from pathlib import Path
 import json,re,os
 import httpx
 from pypdf import PdfReader
+from xianyu.web.ai_config import load_ai_config
 
 DOI_RE=re.compile(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
 PMID_RE=re.compile(r"PMID[:\s]*(\d{6,10})",re.I)
@@ -64,7 +65,9 @@ def classify(text):
  if any(k in low for k in ['molecular docking','binding energy','molecular dynamics']):use.append('Docking / MD')
  return tags,use
 def ai_read(text,context):
- base=os.getenv('AI_API_BASE','').rstrip('/');key=os.getenv('AI_API_KEY','');model=os.getenv('AI_MODEL','')
+ root = Path(__file__).resolve().parents[4]
+ cfg = load_ai_config(root)
+ base=cfg['base'];key=cfg['key'];model=cfg['model']
  prompt=f"""课题背景：{context}\n请严格基于论文文本，以JSON输出：one_sentence_summary,background,objective,methods,main_results,innovation,limitations,research_gap,project_relevance,introduction_material,discussion_material,recommended_targets,recommended_pathways,recommended_experiments,confidence_notes。\n论文文本：\n{text[:24000]}"""
  if not(base and key and model): return {'status':'not_configured','prompt':prompt}
  try:
