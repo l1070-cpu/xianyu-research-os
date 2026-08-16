@@ -78,8 +78,9 @@
     <p><label>处理时间</label><br><input name="timepoint" placeholder="24h / 48h"></p>
     <p><label>空白组名称</label><br><input name="blank_group" value="Blank" placeholder="例如：Blank / 空白"></p>
     <p><label>对照组名称</label><br><input name="control_group" value="Control" placeholder="例如：Control / 对照"></p>
+    <p><label>统计比较基准组</label><br><input name="compare_group" placeholder="例如：Control / 0 / Model；留空则默认与对照组比较"></p>
     <p><label>备注</label><br><textarea name="assay_note" rows="4" placeholder="例如：第一列为 Group，后面各列为 Rep1/Rep2/Rep3"></textarea></p>
-    <p class="form-hint">默认按“第一列=分组，后续列=重复孔 OD 值”自动计算均值、SD、活率，并生成 Prism 导入表。</p>
+    <p class="form-hint">默认按“第一列=分组，后续列=重复孔 OD 值”自动计算均值、SD、活率，并生成 Prism 导入表与显著性分析。</p>
     <button type="submit">自动生成均值 / SD / 活率 / Prism 表</button>
   </form>
 </section>

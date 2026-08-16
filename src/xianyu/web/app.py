@@ -10719,6 +10719,36 @@ def find_cck8_group_mean(summary_rows, group_name: str, aliases: list[str]):
     return None
 
 
+def format_p_value(p_value):
+    if p_value is None:
+        return "NA"
+    if p_value < 0.0001:
+        return "<0.0001"
+    return f"{p_value:.4f}"
+
+
+def p_value_to_stars(p_value):
+    if p_value is None:
+        return "ns"
+    if p_value < 0.0001:
+        return "****"
+    if p_value < 0.001:
+        return "***"
+    if p_value < 0.01:
+        return "**"
+    if p_value < 0.05:
+        return "*"
+    return "ns"
+
+
+def find_cck8_group_row(summary_rows, group_name: str, aliases: list[str]):
+    normalized_targets = {_normalize_group_name(group_name)} | {_normalize_group_name(item) for item in aliases}
+    for row in summary_rows:
+        if _normalize_group_name(row["group"]) in normalized_targets:
+            return row
+    return None
+
+
 def analyze_cck8_dataframe(df, blank_group: str, control_group: str):
     import pandas as pd
 
@@ -10771,6 +10801,10 @@ def analyze_cck8_dataframe(df, blank_group: str, control_group: str):
 
     for row in summary_rows:
         row["viability_percent"] = ((row["mean_od"] - blank_mean) / (control_mean - blank_mean)) * 100
+        row["viability_replicates"] = [
+            None if value is None else ((value - blank_mean) / (control_mean - blank_mean)) * 100
+            for value in row["replicates"]
+        ]
 
     summary_table_lines = ["Group\tMean_OD\tSD\tViability_%"]
     for row in summary_rows:
@@ -10807,6 +10841,58 @@ def analyze_cck8_dataframe(df, blank_group: str, control_group: str):
         "blank_mean": blank_mean,
         "control_mean": control_mean,
         "raw_preview": cleaned.fillna("").to_csv(sep="\t", index=False),
+    }
+
+
+def build_cck8_stats_summary(analysis, compare_group: str):
+    from scipy import stats
+
+    compare_row = find_cck8_group_row(
+        analysis["summary_rows"],
+        compare_group,
+        ["control", "ctrl", "对照", "正常对照", "vehicle", "0", "0.0", "model", "模型"],
+    )
+    if compare_row is None:
+        raise ValueError(f"未找到统计比较基准组：{compare_group}")
+
+    compare_values = [value for value in compare_row["viability_replicates"] if value is not None]
+    if len(compare_values) < 2:
+        raise ValueError("统计比较基准组的有效重复数不足，至少需要 2 个数值。")
+
+    stat_lines = ["Group\tViability_%\tP_vs_Ref\tSignificance"]
+    result_rows = []
+    for row in analysis["summary_rows"]:
+        group_name = row["group"]
+        if _normalize_group_name(group_name) == _normalize_group_name(compare_row["group"]):
+            p_value = None
+            stars = "Ref"
+        else:
+            group_values = [value for value in row["viability_replicates"] if value is not None]
+            if len(group_values) < 2:
+                p_value = None
+                stars = "NA"
+            else:
+                _, p_value = stats.ttest_ind(group_values, compare_values, equal_var=False)
+                p_value = float(p_value)
+                stars = p_value_to_stars(p_value)
+
+        stat_lines.append(
+            f"{group_name}\t{row['viability_percent']:.2f}\t{format_p_value(p_value)}\t{stars}"
+        )
+        result_rows.append(
+            {
+                "group": group_name,
+                "viability_percent": row["viability_percent"],
+                "p_value": p_value,
+                "p_text": format_p_value(p_value),
+                "stars": stars,
+            }
+        )
+
+    return {
+        "compare_group": compare_row["group"],
+        "table": "\n".join(stat_lines),
+        "rows": result_rows,
     }
 
 
@@ -10921,6 +11007,7 @@ def cck8_auto_analyze_new(
     raw_file_path: str = Form(...),
     blank_group: str = Form("Blank"),
     control_group: str = Form("Control"),
+    compare_group: str = Form(""),
     cell: str = Form(""),
     timepoint: str = Form(""),
     assay_note: str = Form(""),
@@ -10933,6 +11020,7 @@ def cck8_auto_analyze_new(
     try:
         dataframe = load_cck8_raw_dataframe(raw_path)
         analysis = analyze_cck8_dataframe(dataframe, blank_group, control_group)
+        stats_summary = build_cck8_stats_summary(analysis, compare_group or control_group)
     except Exception as exc:
         return HTMLResponse(f"CCK-8 自动分析失败：{exc}", status_code=400)
 
@@ -10978,6 +11066,7 @@ def cck8_auto_analyze_new(
 ## 分析参数
 - 空白组名称：{blank_group}
 - 对照组名称：{control_group}
+- 统计比较基准组：{stats_summary['compare_group']}
 - 细胞类型：{cell or "待补充"}
 - 处理时间：{timepoint or "待补充"}
 - 备注：{assay_note or "无"}
@@ -10990,6 +11079,11 @@ def cck8_auto_analyze_new(
 ## 自动统计结果（均值 / SD / 活率）
 ```text
 {analysis['summary_table']}
+```
+
+## 显著性分析结果
+```text
+{stats_summary['table']}
 ```
 
 ## Prism 导入表（Long Format）
@@ -11005,16 +11099,17 @@ def cck8_auto_analyze_new(
 ## 自动解读
 - 空白组均值：{analysis['blank_mean']:.4f}
 - 对照组均值：{analysis['control_mean']:.4f}
+- 统计比较基准组：{stats_summary['compare_group']}
 - 最高活率处理组：{best_group or "待人工确认"}{f"（{best_value:.2f}%）" if best_value is not None else ""}
 
 ## Results 初稿（中文）
-基于导入的 CCK-8 原始 OD 数据，系统自动完成了各组均值、标准差及相对细胞活率计算。结果显示，对照组在扣除空白孔背景后作为 100% 活率参考，各处理组相对活率已完成标准化换算。{f"其中，{best_group} 组表现出当前数据中最高的相对活率（{best_value:.2f}%），提示其可能具有较好的细胞保护或抑制损伤作用。" if best_group and best_value is not None else "具体优势处理组需结合实验分组与统计学显著性进一步判断。"} 后续建议将该结果导入 Prism 进行统计检验和正式作图。
+基于导入的 CCK-8 原始 OD 数据，系统自动完成了各组均值、标准差及相对细胞活率计算。结果显示，对照组在扣除空白孔背景后作为 100% 活率参考，各处理组相对活率已完成标准化换算。{f"其中，{best_group} 组表现出当前数据中最高的相对活率（{best_value:.2f}%），提示其可能具有较好的细胞保护或抑制损伤作用。" if best_group and best_value is not None else "具体优势处理组需结合实验分组与统计学显著性进一步判断。"} 与统计比较基准组 {stats_summary['compare_group']} 相比，各处理组的显著性结果已自动输出，可直接用于后续 Prism 作图和结果段补写。
 
 ## Methods 初稿（中文）
-将整理后的 CCK-8 原始数据文件导入工作台，第一列作为实验分组列，其余列作为重复孔 OD450 数值。系统按“细胞活率 = (OD处理组 - OD空白组) / (OD对照组 - OD空白组) × 100%”自动完成均值、标准差及相对活率计算，并同步生成适用于 GraphPad Prism 的长表和宽表，用于后续统计学分析与图形绘制。
+将整理后的 CCK-8 原始数据文件导入工作台，第一列作为实验分组列，其余列作为重复孔 OD450 数值。系统按“细胞活率 = (OD处理组 - OD空白组) / (OD对照组 - OD空白组) × 100%”自动完成均值、标准差及相对活率计算，并同步生成适用于 GraphPad Prism 的长表和宽表。显著性分析采用基于重复值的双侧 Welch t 检验，以 {stats_summary['compare_group']} 组作为比较基准，用于后续统计学分析与图形绘制。
 
 ## Figure Legend Draft（English）
-Figure X. Cell viability was assessed by the CCK-8 assay. Raw OD450 values were normalized against the blank and control groups, and relative viability was calculated as mean ± SD. Statistical significance should be added after Prism-based analysis.
+Figure X. Cell viability was assessed by the CCK-8 assay. Raw OD450 values were normalized against the blank and control groups, and relative viability was calculated as mean ± SD. Statistical comparisons were performed against the {stats_summary['compare_group']} group using a two-sided Welch's t-test.
 
 ## 使用建议
 - [ ] 将 Long Format 导入 Prism 做散点/柱状图
