@@ -5632,6 +5632,14 @@ def media_file(path: str):
         return HTMLResponse("当前文件不是支持预览的图片格式", status_code=400)
     return FileResponse(p, media_type=media_type, filename=p.name)
 
+
+@app.get("/download")
+def download_file(path: str):
+    p = ROOT / path
+    if not p.exists() or not p.is_file():
+        return HTMLResponse("文件不存在", status_code=404)
+    return FileResponse(p, filename=p.name)
+
 @app.get("/new", response_class=HTMLResponse)
 def new_page():
     template = env.get_template("new.html")
@@ -10434,8 +10442,29 @@ def literature_v2_analyze(path: str = Form(...)):
 def cck8_index():
     files = list_md("05_数据分析/CCK8")
     items = [{"name": f.name, "path": str(f.relative_to(ROOT)), "content": read(f)[:500]} for f in files[:30]]
+    data_folder = ROOT / "05_数据分析" / "CCK8_原始数据"
+    data_files = []
+    if data_folder.exists():
+        for file_path in sorted(data_folder.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if not file_path.is_file() or file_path.suffix.lower() == ".md":
+                continue
+            note_path = file_path.with_suffix(".md")
+            data_files.append(
+                {
+                    "name": file_path.name,
+                    "path": str(file_path.relative_to(ROOT)),
+                    "note_path": str(note_path.relative_to(ROOT)) if note_path.exists() else "",
+                    "suffix": file_path.suffix.lower(),
+                }
+            )
+    current_project = get_current_project() or {}
     template = env.get_template("cck8/index.html")
-    return template.render(items=items, modules=MODULES)
+    return template.render(
+        items=items,
+        data_files=data_files[:20],
+        modules=MODULES,
+        active_project=current_project,
+    )
 
 @app.post("/cck8/new")
 def cck8_new(
@@ -10493,6 +10522,70 @@ def cck8_new(
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/cck8/data-upload")
+async def cck8_data_upload(
+    title: str = Form(...),
+    data_type: str = Form("OD原始数据"),
+    observation: str = Form(""),
+    file: UploadFile = File(...),
+):
+    current_project = get_current_project() or {}
+    folder = ROOT / "05_数据分析" / "CCK8_原始数据"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".csv", ".xlsx", ".xls", ".tsv", ".txt"}:
+        return HTMLResponse("仅支持 csv、xlsx、xls、tsv、txt 文件。", status_code=400)
+
+    today = date.today().isoformat()
+    filename = f"{today}_{safe_name(title)}{suffix}"
+    file_path = folder / filename
+    content = await file.read()
+    file_path.write_bytes(content)
+
+    note_path = file_path.with_suffix(".md")
+    if not note_path.exists():
+        note_path.write_text(
+            f"""# CCK-8 原始数据文件记录｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 数据类型
+{data_type or "待补充"}
+
+## 原始文件
+{file_path.relative_to(ROOT)}
+
+## 文件格式
+{suffix}
+
+## 备注
+{observation or "待补充"}
+
+## 推荐用途
+- [ ] 原始 OD 值归档
+- [ ] Prism 导入源文件
+- [ ] 统计补充材料
+- [ ] 审稿原始数据支持
+
+## 下一步
+- [ ] 校对空白孔 / 对照孔 / 处理组命名
+- [ ] 生成 CCK-8 记录或联合总包
+- [ ] 如需作图，进一步整理成均值 / SD / 活率表
+""",
+            encoding="utf-8",
+        )
+
+    return RedirectResponse(url="/cck8", status_code=303)
 
 
 def build_cck8_full_package_bundle(

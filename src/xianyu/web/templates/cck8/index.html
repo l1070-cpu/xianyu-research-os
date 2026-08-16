@@ -8,6 +8,14 @@
   <p>记录 CCK-8 原始数据，并生成 Results、Methods 和 Figure Legend 总包。</p>
 </header>
 
+{% if active_project %}
+<section>
+  <h3>📌 当前项目</h3>
+  <p><strong>{{ active_project.name }}</strong></p>
+  <p>{{ active_project.category }}｜{{ active_project.disease }}｜{{ active_project.stage }}</p>
+</section>
+{% endif %}
+
 <section>
   <h3>新建 CCK-8 数据记录</h3>
   <form method="post" action="/cck8/new">
@@ -21,6 +29,17 @@
 </section>
 
 <section>
+  <h3>上传 CCK-8 Excel / CSV 原始数据</h3>
+  <form method="post" action="/cck8/data-upload" enctype="multipart/form-data">
+    <p><label>文件名称</label><br><input name="title" placeholder="例如：HCT116_24h_CCK8_OD原始数据" required></p>
+    <p><label>数据类型</label><br><input name="data_type" placeholder="例如：OD原始数据 / 活率计算表 / Prism导出表"></p>
+    <p><label>上传文件</label><br><input type="file" name="file" accept=".csv,.xlsx,.xls,.tsv,.txt" required></p>
+    <p><label>备注</label><br><textarea name="observation" rows="5" placeholder="例如：包含空白孔、对照孔和给药组 OD450 原始值；Sheet2 为均值和活率计算"></textarea></p>
+    <button type="submit">上传并归档原始数据</button>
+  </form>
+</section>
+
+<section>
   <h3>一键生成 CCK-8 联合总包</h3>
   <form method="post" action="/cck8/full-package/new">
     <p><label>总包名称</label><br><input name="title" placeholder="例如：H_R_CCK8_联合总包" required></p>
@@ -30,6 +49,24 @@
     <p><label>原始 OD 数据</label><br><textarea name="od_data" rows="10" placeholder="例如：Group&#10;Control 0.82 0.80 0.84&#10;Model 0.51 0.49 0.53"></textarea></p>
     <button type="submit">生成 Results + Methods + Figure Legend 总包</button>
   </form>
+</section>
+
+<section>
+  <h3>最近上传的 CCK-8 原始数据文件</h3>
+  {% if data_files %}
+    {% for item in data_files %}
+    <div class="file-card">
+      <h3>{{ item.name }}</h3>
+      <p><strong>文件类型：</strong>{{ item.suffix }}</p>
+      <p><a href="/download?path={{ item.path }}">下载原始文件</a></p>
+      {% if item.note_path %}
+      <p><a href="/file?path={{ item.note_path }}">打开归档备注</a></p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>暂无已上传的 CCK-8 原始数据文件。</p>
+  {% endif %}
 </section>
 
 <section>
