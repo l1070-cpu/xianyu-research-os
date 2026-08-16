@@ -10609,6 +10609,127 @@ def load_cck8_raw_data_preview(path: Path) -> str:
     return ""
 
 
+def load_cck8_raw_dataframe(path: Path):
+    import pandas as pd
+
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return pd.read_csv(path)
+    if suffix == ".tsv":
+        return pd.read_csv(path, sep="\t")
+    if suffix == ".txt":
+        try:
+            return pd.read_csv(path, sep="\t")
+        except Exception:
+            return pd.read_csv(path)
+    if suffix in {".xlsx", ".xls"}:
+        return pd.read_excel(path)
+    raise ValueError("暂不支持该文件格式。")
+
+
+def _normalize_group_name(value: str) -> str:
+    return str(value).strip().lower().replace(" ", "")
+
+
+def find_cck8_group_mean(summary_rows, group_name: str, aliases: list[str]):
+    normalized_targets = {_normalize_group_name(group_name)} | {_normalize_group_name(item) for item in aliases}
+    for row in summary_rows:
+        if _normalize_group_name(row["group"]) in normalized_targets:
+            return row["mean_od"]
+    return None
+
+
+def analyze_cck8_dataframe(df, blank_group: str, control_group: str):
+    import pandas as pd
+
+    if df.empty:
+        raise ValueError("原始数据文件为空。")
+
+    cleaned = df.copy()
+    cleaned.columns = [str(col).strip() for col in cleaned.columns]
+    if cleaned.shape[1] < 2:
+        raise ValueError("至少需要 2 列：第一列为分组，后续列为重复孔 OD 值。")
+
+    group_col = cleaned.columns[0]
+    replicate_cols = list(cleaned.columns[1:])
+    cleaned[group_col] = cleaned[group_col].astype(str).str.strip()
+    cleaned = cleaned[cleaned[group_col] != ""].copy()
+
+    for col in replicate_cols:
+        cleaned[col] = pd.to_numeric(cleaned[col], errors="coerce")
+
+    cleaned = cleaned.dropna(subset=replicate_cols, how="all").copy()
+    if cleaned.empty:
+        raise ValueError("没有识别到可用于计算的 OD 数值列。")
+
+    cleaned["mean_od"] = cleaned[replicate_cols].mean(axis=1)
+    cleaned["sd_od"] = cleaned[replicate_cols].std(axis=1, ddof=1).fillna(0.0)
+
+    summary_rows = []
+    for _, row in cleaned.iterrows():
+        summary_rows.append(
+            {
+                "group": str(row[group_col]).strip(),
+                "mean_od": float(row["mean_od"]),
+                "sd_od": float(row["sd_od"]),
+                "replicates": [
+                    None if pd.isna(row[col]) else float(row[col])
+                    for col in replicate_cols
+                ],
+            }
+        )
+
+    blank_mean = find_cck8_group_mean(summary_rows, blank_group, ["blank", "空白", "空白孔", "blankcontrol"])
+    control_mean = find_cck8_group_mean(summary_rows, control_group, ["control", "ctrl", "对照", "正常对照", "vehicle"])
+
+    if blank_mean is None:
+        raise ValueError(f"未找到空白组：{blank_group}")
+    if control_mean is None:
+        raise ValueError(f"未找到对照组：{control_group}")
+    if abs(control_mean - blank_mean) < 1e-12:
+        raise ValueError("对照组均值与空白组均值相同，无法计算活率。")
+
+    for row in summary_rows:
+        row["viability_percent"] = ((row["mean_od"] - blank_mean) / (control_mean - blank_mean)) * 100
+
+    summary_table_lines = ["Group\tMean_OD\tSD\tViability_%"]
+    for row in summary_rows:
+        summary_table_lines.append(
+            f"{row['group']}\t{row['mean_od']:.4f}\t{row['sd_od']:.4f}\t{row['viability_percent']:.2f}"
+        )
+
+    prism_long_lines = ["Group\tReplicate\tOD450"]
+    for row in summary_rows:
+        for index, value in enumerate(row["replicates"], start=1):
+            if value is None:
+                continue
+            prism_long_lines.append(f"{row['group']}\tRep{index}\t{value:.4f}")
+
+    prism_wide_lines = ["Group\t" + "\t".join(f"Rep{i}" for i in range(1, len(replicate_cols) + 1)) + "\tMean\tSD\tViability_%"]
+    for row in summary_rows:
+        rep_values = [
+            "" if value is None else f"{value:.4f}"
+            for value in row["replicates"]
+        ]
+        prism_wide_lines.append(
+            f"{row['group']}\t" +
+            "\t".join(rep_values) +
+            f"\t{row['mean_od']:.4f}\t{row['sd_od']:.4f}\t{row['viability_percent']:.2f}"
+        )
+
+    return {
+        "group_column": group_col,
+        "replicate_columns": replicate_cols,
+        "summary_rows": summary_rows,
+        "summary_table": "\n".join(summary_table_lines),
+        "prism_long_table": "\n".join(prism_long_lines),
+        "prism_wide_table": "\n".join(prism_wide_lines),
+        "blank_mean": blank_mean,
+        "control_mean": control_mean,
+        "raw_preview": cleaned.fillna("").to_csv(sep="\t", index=False),
+    }
+
+
 def build_cck8_full_package_bundle(
     project_name: str,
     disease_name: str,
@@ -10711,6 +10832,117 @@ def cck8_full_package_new(
 """
         file_path.write_text(content, encoding="utf-8")
 
+    return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
+
+
+@app.post("/cck8/analyze/new")
+def cck8_auto_analyze_new(
+    title: str = Form(...),
+    raw_file_path: str = Form(...),
+    blank_group: str = Form("Blank"),
+    control_group: str = Form("Control"),
+    cell: str = Form(""),
+    timepoint: str = Form(""),
+    assay_note: str = Form(""),
+):
+    current_project = get_current_project() or {}
+    raw_path = ROOT / raw_file_path
+    if not raw_path.exists() or not raw_path.is_file():
+        return HTMLResponse("未找到选中的原始数据文件。", status_code=404)
+
+    try:
+        dataframe = load_cck8_raw_dataframe(raw_path)
+        analysis = analyze_cck8_dataframe(dataframe, blank_group, control_group)
+    except Exception as exc:
+        return HTMLResponse(f"CCK-8 自动分析失败：{exc}", status_code=400)
+
+    today = date.today().isoformat()
+    folder = ROOT / "05_数据分析" / "CCK8"
+    folder.mkdir(parents=True, exist_ok=True)
+    file_path = folder / f"{today}_{safe_name(title)}_Auto_Analysis.md"
+
+    best_group = None
+    best_value = None
+    for row in analysis["summary_rows"]:
+        normalized = _normalize_group_name(row["group"])
+        if normalized in {
+            _normalize_group_name(blank_group),
+            _normalize_group_name(control_group),
+            "blank",
+            "空白",
+            "control",
+            "ctrl",
+            "对照",
+        }:
+            continue
+        if best_value is None or row["viability_percent"] > best_value:
+            best_group = row["group"]
+            best_value = row["viability_percent"]
+
+    content = f"""# CCK-8 自动分析｜{title}
+
+## 日期
+{today}
+
+## 当前项目
+- 项目名称：{current_project.get('name', '')}
+- 研究对象：{current_project.get('research_object', '')}
+- 疾病 / 模型：{current_project.get('disease', '')}
+- 当前阶段：{current_project.get('stage', '')}
+
+## 联动原始数据文件
+- 文件路径：{raw_file_path}
+- 识别分组列：{analysis['group_column']}
+- 识别重复列：{", ".join(analysis['replicate_columns'])}
+
+## 分析参数
+- 空白组名称：{blank_group}
+- 对照组名称：{control_group}
+- 细胞类型：{cell or "待补充"}
+- 处理时间：{timepoint or "待补充"}
+- 备注：{assay_note or "无"}
+
+## 原始数据预览
+```text
+{analysis['raw_preview'][:6000]}
+```
+
+## 自动统计结果（均值 / SD / 活率）
+```text
+{analysis['summary_table']}
+```
+
+## Prism 导入表（Long Format）
+```text
+{analysis['prism_long_table']}
+```
+
+## Prism 导入表（Wide Format）
+```text
+{analysis['prism_wide_table']}
+```
+
+## 自动解读
+- 空白组均值：{analysis['blank_mean']:.4f}
+- 对照组均值：{analysis['control_mean']:.4f}
+- 最高活率处理组：{best_group or "待人工确认"}{f"（{best_value:.2f}%）" if best_value is not None else ""}
+
+## Results 初稿（中文）
+基于导入的 CCK-8 原始 OD 数据，系统自动完成了各组均值、标准差及相对细胞活率计算。结果显示，对照组在扣除空白孔背景后作为 100% 活率参考，各处理组相对活率已完成标准化换算。{f"其中，{best_group} 组表现出当前数据中最高的相对活率（{best_value:.2f}%），提示其可能具有较好的细胞保护或抑制损伤作用。" if best_group and best_value is not None else "具体优势处理组需结合实验分组与统计学显著性进一步判断。"} 后续建议将该结果导入 Prism 进行统计检验和正式作图。
+
+## Methods 初稿（中文）
+将整理后的 CCK-8 原始数据文件导入工作台，第一列作为实验分组列，其余列作为重复孔 OD450 数值。系统按“细胞活率 = (OD处理组 - OD空白组) / (OD对照组 - OD空白组) × 100%”自动完成均值、标准差及相对活率计算，并同步生成适用于 GraphPad Prism 的长表和宽表，用于后续统计学分析与图形绘制。
+
+## Figure Legend Draft（English）
+Figure X. Cell viability was assessed by the CCK-8 assay. Raw OD450 values were normalized against the blank and control groups, and relative viability was calculated as mean ± SD. Statistical significance should be added after Prism-based analysis.
+
+## 使用建议
+- [ ] 将 Long Format 导入 Prism 做散点/柱状图
+- [ ] 将 Wide Format 保存为补充材料原始统计表
+- [ ] 检查空白组和对照组命名是否与原始 Excel 完全一致
+- [ ] 如需正式论文结果，请补充显著性检验和重复次数说明
+"""
+    file_path.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
 
