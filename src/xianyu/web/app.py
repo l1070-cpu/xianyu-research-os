@@ -10596,14 +10596,15 @@ def load_cck8_raw_data_preview(path: Path) -> str:
         if suffix == ".tsv":
             return path.read_text(encoding="utf-8", errors="ignore")[:4000]
         if suffix in {".xlsx", ".xls"}:
-            import pandas as pd
-
-            excel = pd.read_excel(path, sheet_name=None)
-            blocks = []
-            for sheet_name, df in list(excel.items())[:3]:
-                preview = df.fillna("").head(20).to_csv(sep="\t", index=False)
-                blocks.append(f"[Sheet] {sheet_name}\n{preview}")
-            return "\n\n".join(blocks)[:4000]
+            parsed = load_cck8_raw_dataframe(path)
+            preview = parsed.fillna("").to_csv(sep="\t", index=False)
+            return preview[:4000]
+    except ImportError as exc:
+        if suffix == ".xlsx":
+            return f"文件已选择，但预览失败：缺少 Excel 读取依赖 openpyxl（{exc}）"
+        if suffix == ".xls":
+            return f"文件已选择，但预览失败：缺少 Excel 读取依赖 xlrd（{exc}）"
+        return f"文件已选择，但预览失败：{exc}"
     except Exception as exc:
         return f"文件已选择，但预览失败：{exc}"
     return ""
@@ -10623,8 +10624,87 @@ def load_cck8_raw_dataframe(path: Path):
         except Exception:
             return pd.read_csv(path)
     if suffix in {".xlsx", ".xls"}:
-        return pd.read_excel(path)
+        try:
+            excel = pd.read_excel(path, sheet_name=None)
+            parsed = extract_cck8_excel_matrix(excel)
+            if parsed is not None:
+                return parsed
+            first_non_empty = next((df for df in excel.values() if not df.empty), None)
+            if first_non_empty is not None:
+                return first_non_empty
+            return pd.read_excel(path)
+        except ImportError as exc:
+            if suffix == ".xlsx":
+                raise ValueError(f"读取 xlsx 失败，缺少 openpyxl：{exc}") from exc
+            raise ValueError(f"读取 xls 失败，缺少 xlrd：{exc}") from exc
     raise ValueError("暂不支持该文件格式。")
+
+
+def extract_cck8_excel_matrix(excel_sheets):
+    import pandas as pd
+
+    for sheet_name, raw_df in excel_sheets.items():
+        if raw_df.empty:
+            continue
+        df = raw_df.copy()
+        for row_index in range(len(df)):
+            row_values = [str(value).strip() for value in df.iloc[row_index].tolist() if pd.notna(value)]
+            if not row_values:
+                continue
+            row_text = " ".join(row_values).lower()
+            if "calculated difference between measurement and reference measurement" not in row_text:
+                continue
+
+            header_index = row_index + 1
+            if header_index >= len(df):
+                continue
+
+            header_row = df.iloc[header_index].tolist()
+            group_names = []
+            group_columns = []
+            for col_index in range(1, len(header_row)):
+                value = header_row[col_index]
+                if pd.isna(value):
+                    continue
+                group_name = str(value).strip()
+                if group_name == "" or group_name.lower() in {"nan", "none"}:
+                    continue
+                group_names.append(group_name)
+                group_columns.append(col_index)
+
+            if not group_names:
+                continue
+
+            replicate_records = []
+            data_start = header_index + 1
+            for data_index in range(data_start, len(df)):
+                row_label = df.iloc[data_index, 0]
+                if pd.isna(row_label):
+                    break
+                row_label_text = str(row_label).strip()
+                if len(row_label_text) != 1 or not row_label_text.isalpha():
+                    break
+                replicate_records.append((row_label_text, df.iloc[data_index]))
+
+            if not replicate_records:
+                continue
+
+            matrix_rows = []
+            for name, col_index in zip(group_names, group_columns):
+                row_data = {"Group": name}
+                has_numeric = False
+                for rep_idx, (rep_label, series) in enumerate(replicate_records, start=1):
+                    value = pd.to_numeric(series.iloc[col_index], errors="coerce")
+                    row_data[f"Rep{rep_idx}"] = value
+                    if pd.notna(value):
+                        has_numeric = True
+                if has_numeric:
+                    matrix_rows.append(row_data)
+
+            if matrix_rows:
+                return pd.DataFrame(matrix_rows)
+
+    return None
 
 
 def _normalize_group_name(value: str) -> str:
@@ -10680,7 +10760,7 @@ def analyze_cck8_dataframe(df, blank_group: str, control_group: str):
         )
 
     blank_mean = find_cck8_group_mean(summary_rows, blank_group, ["blank", "空白", "空白孔", "blankcontrol"])
-    control_mean = find_cck8_group_mean(summary_rows, control_group, ["control", "ctrl", "对照", "正常对照", "vehicle"])
+    control_mean = find_cck8_group_mean(summary_rows, control_group, ["control", "ctrl", "对照", "正常对照", "vehicle", "0", "0.0"])
 
     if blank_mean is None:
         raise ValueError(f"未找到空白组：{blank_group}")
