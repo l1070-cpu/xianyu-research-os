@@ -10645,8 +10645,8 @@ CCK-8 实验用于评估 {project_name} 在 {disease_name} 模型中的细胞活
 ### 五、Methods 初稿（中文）
 采用 CCK-8 法检测细胞活力。将细胞接种于 96 孔板中，待细胞贴壁或稳定后按实验设计给予相应处理，处理时间为 {timepoint or "待补充"}。随后向各孔加入 CCK-8 工作液，继续孵育适当时间后，在 450 nm 波长下使用酶标仪检测吸光度（OD）值。根据空白孔、对照孔及处理组的 OD 值计算相对细胞活力，并用于后续统计分析。
 
-### 六、Figure Legend 初稿（中文）
-- 图 X. CCK-8 检测 {project_name} 对 {disease_name} 模型细胞活力的影响。数据以 mean ± SD 表示，统计学差异请根据实际分析结果补充。
+### 六、Figure Legend 初稿（英文）
+- Figure X. Effects of {project_name} on cell viability in the {disease_name} model as determined by the CCK-8 assay. Data are presented as mean ± SD. Statistical significance should be added according to the final analysis results.
 
 ### 七、Supplementary 建议
 - Supplementary Table S1：各重复孔原始 OD 值
