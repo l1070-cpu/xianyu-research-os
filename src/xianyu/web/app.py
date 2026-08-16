@@ -10466,9 +10466,9 @@ def cck8_new(
 {groups}
 
 ## 原始 OD 数据
-{text_block_start}
+```text
 {od_data}
-{text_block_end}
+```
 
 ## 数据处理规则
 细胞活率 = (OD处理组 - OD空白) / (OD对照组 - OD空白) × 100%
@@ -10488,7 +10488,7 @@ def cck8_new(
 ## Results 草稿
 
 ## 下一步
-""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+"""
 
         file_path.write_text(content, encoding="utf-8")
 
@@ -10649,14 +10649,14 @@ def wb_new(
 {target_proteins}
 
 ## 实验分组
-{text_block_start}
+```text
 {groups}
-{text_block_end}
+```
 
 ## 抗体信息
-{text_block_start}
+```text
 {antibodies}
-{text_block_end}
+```
 
 ## 样本制备与上样
 - 裂解液：
@@ -10682,9 +10682,9 @@ Positive control
 ```
 
 ## 异常与备注
-{text_block_start}
+```text
 {notes}
-{text_block_end}
+```
 
 {bundle}
 
@@ -10696,7 +10696,7 @@ Positive control
 - [ ] 生成柱状图
 - [ ] 写入 Results
 - [ ] 与 qPCR 结果交叉验证
-""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+"""
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
@@ -11883,14 +11883,14 @@ def qpcr_new(
 {target_genes}
 
 ## 实验分组
-{text_block_start}
+```text
 {groups}
-{text_block_end}
+```
 
 ## 引物信息
-{text_block_start}
+```text
 {primers}
-{text_block_end}
+```
 
 ## RNA 与逆转录记录
 - RNA 提取试剂：
@@ -11912,9 +11912,9 @@ Gene	Control	Model	Treatment-Low	Treatment-High	Positive control
 ```
 
 ## 异常与备注
-{text_block_start}
+```text
 {notes}
-{text_block_end}
+```
 
 {bundle}
 
@@ -11926,7 +11926,7 @@ Gene	Control	Model	Treatment-Low	Treatment-High	Positive control
 - [ ] 计算 2^-ΔΔCt
 - [ ] 生成柱状图
 - [ ] 与 WB 结果交叉验证
-""".replace("{text_block_start}", "```text").replace("{text_block_end}", "```")
+"""
         file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
