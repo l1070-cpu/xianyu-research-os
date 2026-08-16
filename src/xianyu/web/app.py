@@ -10588,6 +10588,27 @@ async def cck8_data_upload(
     return RedirectResponse(url="/cck8", status_code=303)
 
 
+def load_cck8_raw_data_preview(path: Path) -> str:
+    suffix = path.suffix.lower()
+    try:
+        if suffix in {".csv", ".txt"}:
+            return path.read_text(encoding="utf-8", errors="ignore")[:4000]
+        if suffix == ".tsv":
+            return path.read_text(encoding="utf-8", errors="ignore")[:4000]
+        if suffix in {".xlsx", ".xls"}:
+            import pandas as pd
+
+            excel = pd.read_excel(path, sheet_name=None)
+            blocks = []
+            for sheet_name, df in list(excel.items())[:3]:
+                preview = df.fillna("").head(20).to_csv(sep="\t", index=False)
+                blocks.append(f"[Sheet] {sheet_name}\n{preview}")
+            return "\n\n".join(blocks)[:4000]
+    except Exception as exc:
+        return f"文件已选择，但预览失败：{exc}"
+    return ""
+
+
 def build_cck8_full_package_bundle(
     project_name: str,
     disease_name: str,
@@ -10595,6 +10616,7 @@ def build_cck8_full_package_bundle(
     timepoint: str,
     groups: str,
     od_data: str,
+    raw_file_path: str = "",
 ):
     return f"""## CCK-8 联合总包
 
@@ -10609,24 +10631,27 @@ def build_cck8_full_package_bundle(
 {groups or "Control / Model / Treatment-Low / Treatment-High / Positive control"}
 ```
 
+### 三、联动原始数据文件
+- 原始文件：{raw_file_path or "未选择已上传文件，当前使用手动粘贴数据"}
+
 ### 三、原始 OD 数据
 ```text
 {od_data or "Group\tRep1\tRep2\tRep3\tMean"}
 ```
 
-### 四、Results 初稿
-CCK-8 assay was performed to evaluate the effect of {project_name} on cell viability in the {disease_name} model. Compared with the control group, the model group exhibited a marked reduction in cell viability. Treatment with {project_name} partially or significantly restored cell viability, suggesting an overall protective effect against model-induced cellular injury.
+### 四、Results 初稿（中文）
+CCK-8 实验用于评估 {project_name} 在 {disease_name} 模型中的细胞活力变化。与对照组相比，模型组细胞活力明显下降。经 {project_name} 处理后，细胞活力较模型组出现不同程度恢复，提示其对模型诱导的细胞损伤具有一定保护或改善作用。具体结论应结合原始 OD 值、活率计算结果及统计学分析进一步完善。
 
-### 五、Methods 初稿
-Cell viability was assessed using the CCK-8 assay. Cells were seeded into 96-well plates and exposed to the indicated treatments for {timepoint or "the specified duration"}. After incubation, CCK-8 reagent was added to each well and the plates were further incubated under standard culture conditions. Absorbance was measured at 450 nm using a microplate reader, and relative cell viability was calculated according to the experimental design.
+### 五、Methods 初稿（中文）
+采用 CCK-8 法检测细胞活力。将细胞接种于 96 孔板中，待细胞贴壁或稳定后按实验设计给予相应处理，处理时间为 {timepoint or "待补充"}。随后向各孔加入 CCK-8 工作液，继续孵育适当时间后，在 450 nm 波长下使用酶标仪检测吸光度（OD）值。根据空白孔、对照孔及处理组的 OD 值计算相对细胞活力，并用于后续统计分析。
 
-### 六、Figure Legend 初稿
-- Figure X. Effects of {project_name} on cell viability in the {disease_name} model, as determined by the CCK-8 assay. Data are presented as mean ± SD.
+### 六、Figure Legend 初稿（中文）
+- 图 X. CCK-8 检测 {project_name} 对 {disease_name} 模型细胞活力的影响。数据以 mean ± SD 表示，统计学差异请根据实际分析结果补充。
 
 ### 七、Supplementary 建议
-- Supplementary Table S1：Raw OD values for each replicate
-- Supplementary Table S2：Cell viability calculation sheet
-- Supplementary Note S1：Plate layout and blank-control arrangement
+- Supplementary Table S1：各重复孔原始 OD 值
+- Supplementary Table S2：细胞活率计算表
+- Supplementary Note S1：孔板布局与空白/对照设置说明
 
 ### 八、投稿前核对清单
 - [ ] 是否补齐空白孔和对照孔信息
@@ -10643,6 +10668,7 @@ def cck8_full_package_new(
     timepoint: str = Form(""),
     groups: str = Form(""),
     od_data: str = Form(""),
+    raw_file_path: str = Form(""),
 ):
     today = date.today().isoformat()
     folder = ROOT / "06_论文写作"
@@ -10651,13 +10677,20 @@ def cck8_full_package_new(
     current_project = get_current_project() or {}
     project_name = current_project.get("research_object", "") or current_project.get("name", "") or "the project"
     disease_name = current_project.get("disease", "") or "the disease model"
+    linked_preview = ""
+    if raw_file_path:
+        linked_file = ROOT / raw_file_path
+        if linked_file.exists() and linked_file.is_file():
+            linked_preview = load_cck8_raw_data_preview(linked_file)
+    merged_od_data = od_data.strip() or linked_preview
     bundle = build_cck8_full_package_bundle(
         project_name,
         disease_name,
         cell,
         timepoint,
         groups,
-        od_data,
+        merged_od_data,
+        raw_file_path,
     )
 
     if not file_path.exists():
