@@ -10980,8 +10980,7 @@ def cck8_full_package_new(
         raw_file_path,
     )
 
-    if not file_path.exists():
-        content = f"""# CCK-8 联合总包｜{title}
+    content = f"""# CCK-8 联合总包｜{title}
 
 ## 日期
 {today}
@@ -10996,7 +10995,7 @@ def cck8_full_package_new(
 
 ## 修改记录
 """
-        file_path.write_text(content, encoding="utf-8")
+    file_path.write_text(content, encoding="utf-8")
 
     return RedirectResponse(url=f"/file?path={file_path.relative_to(ROOT)}", status_code=303)
 
