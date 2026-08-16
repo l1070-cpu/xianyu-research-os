@@ -1711,13 +1711,13 @@ def build_wb_full_draft_bundle(
 
 {build_wb_results_bundle(project_name, disease_name, target_proteins, normalized_data)}
 
-## Results 初稿
-Western blot analysis was performed to evaluate the protein-level changes associated with {disease_name}. Compared with the control group, the model group showed an abnormal expression pattern of the selected proteins. Treatment with {project_name} partially or markedly reversed these alterations, suggesting that the intervention modulated the corresponding signaling pathway at the protein level.
+## Results 初稿（中文）
+Western blot 用于评估 {disease_name} 相关蛋白水平变化。与对照组相比，模型组所选蛋白呈现异常表达模式。经 {project_name} 处理后，这些异常改变得到部分或明显逆转，提示该干预可能在蛋白水平调控了相应信号通路。具体结论仍需结合灰度定量结果与统计学分析进一步完善。
 
-## Methods 初稿
-Protein samples were prepared from {sample_type or "the indicated samples"} in each experimental group. Equal amounts of protein were separated by SDS-PAGE and transferred onto PVDF membranes. After blocking, the membranes were incubated with the primary antibodies against {target_proteins or "the selected targets"} followed by the corresponding secondary antibodies. The protein bands were visualized using a chemiluminescence system, and the gray values were quantified with image analysis software. Relative protein expression levels were normalized to the internal reference protein, and when necessary, phosphorylated proteins were additionally normalized to their corresponding total proteins.
+## Methods 初稿（中文）
+从各实验组的 {sample_type or "相应样本"} 中提取总蛋白。取等量蛋白经 SDS-PAGE 分离后转移至 PVDF 膜。封闭后，分别孵育针对 {target_proteins or "目标蛋白"} 的一抗及对应二抗。采用化学发光系统显影，并使用图像分析软件测定条带灰度值。相对蛋白表达量以内参蛋白进行归一化；如涉及磷酸化蛋白，进一步以对应总蛋白进行归一化。
 
-## Figure Legend 初稿
+## Figure Legend 初稿（英文）
 - Figure X. Effects of {project_name} on protein expression associated with {disease_name}. Representative immunoblots and quantitative analysis of normalized gray values are shown for each group.
 
 ## 下一步清单
@@ -1768,13 +1768,13 @@ def build_qpcr_full_draft_bundle(
 
 {build_qpcr_results_bundle(project_name, disease_name, target_genes, ddct_data)}
 
-## Results 初稿
-RT-qPCR analysis was conducted to determine the transcriptional changes related to {disease_name}. Relative to the control group, the model group exhibited dysregulated mRNA expression of the selected genes. Treatment with {project_name} reversed or attenuated these transcriptional abnormalities, supporting the involvement of the proposed targets and pathways at the gene-expression level.
+## Results 初稿（中文）
+RT-qPCR 用于评估 {disease_name} 相关转录水平变化。与对照组相比，模型组所选基因的 mRNA 表达出现明显异常。经 {project_name} 处理后，这些转录异常得到逆转或减轻，支持所提出靶点和通路在基因表达水平参与了相关机制。具体表述应结合 2^-ΔΔCt 结果及统计学分析进一步补充。
 
-## Methods 初稿
-Total RNA was extracted from {sample_type or "the indicated samples"} in each group and reverse-transcribed into cDNA according to the manufacturer's protocol. Quantitative PCR was then performed using gene-specific primers for {target_genes or "the selected genes"}, with the designated housekeeping gene as the internal reference. Relative mRNA expression was calculated using the 2^-ΔΔCt method, and the data were presented as mean ± SD.
+## Methods 初稿（中文）
+从各实验组的 {sample_type or "相应样本"} 中提取总 RNA，并按照试剂说明书逆转录生成 cDNA。随后采用针对 {target_genes or "目标基因"} 的特异性引物进行实时荧光定量 PCR，以设定的内参基因为参考。相对 mRNA 表达量采用 2^-ΔΔCt 方法进行计算，结果以 mean ± SD 表示。
 
-## Figure Legend 初稿
+## Figure Legend 初稿（英文）
 - Figure X. Effects of {project_name} on mRNA expression associated with {disease_name}. Relative expression levels of the selected genes were calculated using the 2^-ΔΔCt method.
 
 ## 下一步清单
@@ -2764,8 +2764,8 @@ def build_wb_qpcr_full_validation_bundle(
 {qpcr_block}
 ```
 
-### 九、联合 Results 初稿
-Combined WB and qPCR assays were performed to validate the proposed mechanism of {project_name} against {disease_name} at both protein and transcriptional levels. Compared with the control group, the model group exhibited abnormal expression patterns of the selected proteins and genes. Treatment with {project_name} partially or markedly reversed these changes. The consistency between the qPCR and WB results supported the interpretation that {project_name} regulated the selected targets and pathways at multiple biological levels.
+### 九、联合 Results 初稿（中文）
+联合 WB 与 qPCR 实验用于从蛋白水平和转录水平验证 {project_name} 对 {disease_name} 的潜在作用机制。与对照组相比，模型组所选蛋白及基因均表现出异常表达模式。经 {project_name} 处理后，这些异常改变得到部分或明显逆转。qPCR 与 WB 结果在整体趋势上的一致性，支持 {project_name} 可在多个生物学层面调控相关靶点及通路。
 
 ### 十、分段 Results 句库
 - Western blot analysis showed that the protein expression pattern of the selected targets was significantly dysregulated in the model group.
@@ -2773,12 +2773,12 @@ Combined WB and qPCR assays were performed to validate the proposed mechanism of
 - RT-qPCR analysis further demonstrated that the transcriptional changes of the selected genes were broadly consistent with the protein-level findings.
 - Taken together, the convergent qPCR and WB data provided wet-lab evidence supporting the proposed mechanism.
 
-### 十一、联合 Methods 初稿
-For protein-level validation, total protein was extracted from {sample_type_wb or "the indicated samples"}, separated by SDS-PAGE, and transferred onto PVDF membranes. After blocking, the membranes were incubated with primary antibodies against {target_proteins or "the selected protein targets"} followed by the appropriate secondary antibodies. Immunoreactive bands were visualized using a chemiluminescence system, and the gray values were quantified with image analysis software. Relative protein expression was normalized to the internal reference protein, and phosphorylated proteins were additionally normalized to their corresponding total proteins when applicable.
+### 十一、联合 Methods 初稿（中文）
+在蛋白水平验证部分，从 {sample_type_wb or "相应样本"} 中提取总蛋白，经 SDS-PAGE 分离后转移至 PVDF 膜。封闭后，分别孵育针对 {target_proteins or "目标蛋白"} 的一抗和对应二抗。采用化学发光系统显影，并使用图像分析软件进行灰度值定量。相对蛋白表达量以内参蛋白进行归一化；如涉及磷酸化蛋白，则进一步以对应总蛋白归一化。
 
-For transcriptional validation, total RNA was extracted from {sample_type_qpcr or "the indicated samples"} and reverse-transcribed into cDNA. Quantitative PCR was performed using gene-specific primers for {target_genes or "the selected genes"}, with the designated housekeeping gene as the internal reference. Relative mRNA expression was calculated using the 2^-ΔΔCt method. The combined WB and qPCR data were used to evaluate whether {project_name} modulated the proposed mechanism of {disease_name} at both transcriptional and protein levels.
+在转录水平验证部分，从 {sample_type_qpcr or "相应样本"} 中提取总 RNA，并逆转录生成 cDNA。随后使用针对 {target_genes or "目标基因"} 的特异性引物进行实时荧光定量 PCR，以设定的内参基因为参考。相对 mRNA 表达量采用 2^-ΔΔCt 方法计算。联合 WB 和 qPCR 数据用于评估 {project_name} 是否在蛋白和转录两个层面调控 {disease_name} 的相关机制。
 
-### 十二、联合 Figure Legend 清单
+### 十二、联合 Figure Legend 清单（英文）
 - Figure X. Effects of {project_name} on the protein expression related to {disease_name}. Representative immunoblots and normalized gray-value quantification are shown for each group.
 - Figure Y. Effects of {project_name} on the mRNA expression related to {disease_name}. Relative expression levels were calculated using the 2^-ΔΔCt method and are presented as mean ± SD.
 - Supplementary Figure S1. Full-length immunoblot images of the proteins analyzed in this study.
@@ -3105,8 +3105,8 @@ def build_functional_validation_full_bundle(
 ### 五、核心读数
 {main_readouts or "- 待补充凋亡率、ROS 强度、JC-1 红绿比、IF 定位或荧光强度"}
 
-### 六、联合 Results 初稿
-Functional validation assays further supported the protective effect of {project_name} against {disease_name}. Flow cytometry showed an improvement in the relevant cell phenotype, such as reduced apoptosis or restoration of the normal cellular distribution. ROS assays indicated attenuation of oxidative stress after treatment. JC-1 staining suggested recovery of mitochondrial membrane potential, while immunofluorescence analysis further confirmed the expression change or subcellular redistribution of the selected marker. Collectively, these functional data provided complementary evidence supporting the proposed mechanism of {project_name}.
+### 六、联合 Results 初稿（中文）
+功能验证实验进一步支持了 {project_name} 对 {disease_name} 的保护作用。流式细胞术结果显示相关细胞表型得到改善，例如细胞凋亡减少或异常分布得到纠正。ROS 检测提示处理后氧化应激水平下降。JC-1 染色结果提示线粒体膜电位有所恢复，而免疫荧光分析进一步证实了所选标志物的表达变化或亚细胞定位重分布。总体而言，这些功能学结果为 {project_name} 的作用机制提供了补充性证据。
 
 ### 七、分段 Results 句库
 - Flow cytometry demonstrated that the abnormal cell phenotype observed in the model group was partially or significantly reversed after treatment.
@@ -3114,10 +3114,10 @@ Functional validation assays further supported the protective effect of {project
 - JC-1 staining revealed a restoration of mitochondrial membrane potential following treatment.
 - Immunofluorescence analysis further confirmed the regulation of the selected marker at the cellular level.
 
-### 八、联合 Methods 初稿
-For functional validation, cells or samples derived from {sample_type or "the indicated model"} were assigned to the groups described above. Flow cytometry was performed to assess the relevant cellular phenotype using the designated staining reagents. Intracellular ROS accumulation was evaluated with the appropriate fluorescent probe, and mitochondrial membrane potential was determined by JC-1 staining. Immunofluorescence staining was conducted using antibodies against the selected marker to assess expression level or subcellular localization. Quantitative data were collected from at least three independent experiments and presented as mean ± SD.
+### 八、联合 Methods 初稿（中文）
+在功能验证部分，将来源于 {sample_type or "相应模型"} 的细胞或样本按上述分组进行处理。采用指定染色试剂进行流式细胞术检测，以评估相关细胞表型。使用相应荧光探针检测细胞内 ROS 累积水平，采用 JC-1 染色评估线粒体膜电位变化。免疫荧光染色则用于观察所选标志物的表达水平或亚细胞定位。所有定量数据至少来源于 3 次独立实验，结果以 mean ± SD 表示。
 
-### 九、Figure Legend 总清单
+### 九、Figure Legend 总清单（英文）
 - Figure X. Flow cytometry analysis of the relevant cell phenotype in the {disease_name} model after treatment with {project_name}.
 - Figure Y. Intracellular ROS levels in each group following treatment with {project_name}.
 - Figure Z. JC-1 fluorescence imaging and red/green ratio quantification showing changes in mitochondrial membrane potential.
